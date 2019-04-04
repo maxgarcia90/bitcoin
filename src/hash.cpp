@@ -98,3 +98,10 @@ uint256 SHA256Uint256(uint256&& hash_io)
     CSHA256().Write(hash_io.begin(), 32).Finalize(hash_io.begin());
     return hash_io;
 }
+
+uint256 SHA256Uint256(const uint256& hash)
+{
+    uint256 result;
+    CSHA256().Write(hash.begin(), hash.size()).Finalize(result.begin());
+    return result;
+}
