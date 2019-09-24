@@ -33,7 +33,7 @@ public:
         return m_fuzzed_data_provider.ConsumeBool();
     }
 
-    bool CheckSchnorrSignature(const std::vector<unsigned char>& sig, const std::vector<unsigned char>& pubkey, SigVersion sigversion) const override
+    bool CheckSchnorrSignature(const std::vector<unsigned char>& sig, const std::vector<unsigned char>& pubkey, SigVersion sigversion, const ScriptExecutionData& execdata) const override
     {
         return m_fuzzed_data_provider.ConsumeBool();
     }
