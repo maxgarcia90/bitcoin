@@ -1470,6 +1470,9 @@ void PrecomputedTransactionData::Init(const T& txTo, std::vector<CTxOut>&& spent
     // Determine which precomputation-impacting features this transaction uses.
     bool uses_bip143_segwit = false;
     bool uses_bip341_taproot = false;
+    // TODO: Improve this heuristic
+    bool uses_bip119_ctv = true;
+
     for (size_t inpos = 0; inpos < txTo.vin.size(); ++inpos) {
         if (!txTo.vin[inpos].scriptWitness.IsNull()) {
             if (m_spent_outputs_ready && m_spent_outputs[inpos].scriptPubKey.size() == 2 + WITNESS_V1_TAPROOT_SIZE &&
@@ -1489,11 +1492,25 @@ void PrecomputedTransactionData::Init(const T& txTo, std::vector<CTxOut>&& spent
         if (uses_bip341_taproot && uses_bip143_segwit) break; // No need to scan further if we already need all.
     }
 
-    if (uses_bip143_segwit || uses_bip341_taproot) {
+    if (uses_bip143_segwit || uses_bip341_taproot || uses_bip119_ctv) {
         // Computations shared between both sighash schemes.
         m_prevouts_single_hash = GetPrevoutsSHA256(txTo);
         m_sequences_single_hash = GetSequencesSHA256(txTo);
         m_outputs_single_hash = GetOutputsSHA256(txTo);
+
+        bool skip_scriptSigs = std::find_if(txTo.vin.begin(), txTo.vin.end(),
+                [](const CTxIn& c) { return c.scriptSig != CScript(); }) == txTo.vin.end();
+        if (skip_scriptSigs) {
+            // 0 hash used to signal if we should skip scriptSigs
+            // when re-computing for different indexes.
+            m_scriptSigs_single_hash = uint256{};
+            // TODO: Cache midstate?
+            m_standard_template_single_hash = GetStandardTemplateHashEmptyScript(txTo, m_outputs_single_hash, m_sequences_single_hash, 0);
+        } else {
+            m_scriptSigs_single_hash = GetScriptSigsSHA256(txTo);
+            m_standard_template_single_hash = GetStandardTemplateHashWithScript(txTo, m_outputs_single_hash, m_sequences_single_hash, m_scriptSigs_single_hash, 0);
+        }
+        m_bip119_ctv_ready = true;
     }
     if (uses_bip143_segwit) {
         hashPrevouts = SHA256Uint256(m_prevouts_single_hash);
@@ -1519,6 +1536,7 @@ template void PrecomputedTransactionData::Init(const CTransaction& txTo, std::ve
 template void PrecomputedTransactionData::Init(const CMutableTransaction& txTo, std::vector<CTxOut>&& spent_outputs);
 template PrecomputedTransactionData::PrecomputedTransactionData(const CTransaction& txTo);
 template PrecomputedTransactionData::PrecomputedTransactionData(const CMutableTransaction& txTo);
+
 
 static const CHashWriter HASHER_TAPSIGHASH = TaggedHash("TapSighash");
 static const CHashWriter HASHER_TAPLEAF = TaggedHash("TapLeaf");
@@ -1654,6 +1672,7 @@ uint256 GetStandardTemplateHashEmptyScript(const TxType& tx, const uint256& outp
         << input_index;
     return h.GetSHA256();
 }
+
 
 template <class T>
 uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn, int nHashType, const CAmount& amount, SigVersion sigversion, const PrecomputedTransactionData* cache)
@@ -1874,6 +1893,21 @@ bool GenericTransactionSignatureChecker<T>::CheckStandardTemplateHash(const std:
 {
     // Should already be checked before calling...
     assert(hash.size() == 32);
+    if (txdata && txdata->m_bip119_ctv_ready) {
+        // if nIn == 0, then we've already cached this and can directly check
+        if (nIn == 0) {
+            return std::equal(txdata->m_standard_template_single_hash.begin(), txdata->m_standard_template_single_hash.end(), hash.data());
+        } else {
+            // otherwise we still have *most* of the hash cached,
+            // so just re-compute the correct one and compare
+            assert(txTo != nullptr);
+            uint256 hash_tmpl = txdata->m_scriptSigs_single_hash.IsNull() ?
+                GetStandardTemplateHashEmptyScript(*txTo, txdata->m_outputs_single_hash, txdata->m_sequences_single_hash, nIn) :
+                GetStandardTemplateHashWithScript(*txTo, txdata->m_outputs_single_hash, txdata->m_sequences_single_hash,
+                        txdata->m_scriptSigs_single_hash, nIn);
+            return std::equal(hash_tmpl.begin(), hash_tmpl.end(), hash.data());
+        }
+    }
     assert(txTo != nullptr);
     uint256 hash_tmpl = GetStandardTemplateHash(*txTo, nIn);
     return std::equal(hash_tmpl.begin(), hash_tmpl.end(), hash.data());
