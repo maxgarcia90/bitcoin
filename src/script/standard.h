@@ -130,6 +130,7 @@ enum class TxoutType {
     WITNESS_V0_SCRIPTHASH,
     WITNESS_V0_KEYHASH,
     WITNESS_UNKNOWN, //!< Only for Witness versions not already defined above
+    TX_STANDARDTEMPLATE,
 };
 
 class CNoDestination {

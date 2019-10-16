@@ -55,6 +55,7 @@ std::string GetTxnOutputType(TxoutType t)
     case TxoutType::NULL_DATA: return "nulldata";
     case TxoutType::WITNESS_V0_KEYHASH: return "witness_v0_keyhash";
     case TxoutType::WITNESS_V0_SCRIPTHASH: return "witness_v0_scripthash";
+    case TX_STANDARDTEMPLATE: return "standard_template";
     case TxoutType::WITNESS_UNKNOWN: return "witness_unknown";
     } // no default case, so the compiler can warn about missing cases
     assert(false);
@@ -117,6 +118,10 @@ TxoutType Solver(const CScript& scriptPubKey, std::vector<std::vector<unsigned c
         std::vector<unsigned char> hashBytes(scriptPubKey.begin()+2, scriptPubKey.begin()+22);
         vSolutionsRet.push_back(hashBytes);
         return TxoutType::SCRIPTHASH;
+    }
+
+    if (scriptPubKey.IsPayToBasicStandardTemplate()) {
+        return TX_STANDARDTEMPLATE;
     }
 
     int witnessversion;
