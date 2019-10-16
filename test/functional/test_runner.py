@@ -197,6 +197,7 @@ BASE_SCRIPTS = [
     'rpc_generate.py',
     'wallet_balance.py',
     'feature_nulldummy.py',
+    'feature_checktemplateverify.py',
     'mempool_accept.py',
     'mempool_expiry.py',
     'wallet_import_rescan.py',
