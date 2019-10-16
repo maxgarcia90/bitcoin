@@ -1402,6 +1402,18 @@ uint256 GetSpentAmountsSHA256(const std::vector<CTxOut>& outputs_spent)
     CHashWriter ss(SER_GETHASH, 0);
     for (const auto& txout : outputs_spent) {
         ss << txout.nValue;
+
+    }
+    return ss.GetSHA256();
+}
+
+/** Compute the (single) SHA256 of the concatenation of all scriptSigs in a tx. */
+template <class T>
+uint256 GetScriptSigsSHA256(const T& txTo)
+{
+    CHashWriter ss(SER_GETHASH, 0);
+    for (const auto& in : txTo.vin) {
+        ss << in.scriptSig;
     }
     return ss.GetSHA256();
 }
@@ -1571,6 +1583,51 @@ bool SignatureHashSchnorr(uint256& hash_out, const ScriptExecutionData& execdata
 
     hash_out = ss.GetSHA256();
     return true;
+
+}
+
+template<typename TxType>
+uint256 GetStandardTemplateHash(const TxType& tx, uint32_t input_index) {
+    return GetStandardTemplateHash(tx, GetOutputsSHA256(tx), GetSequencesSHA256(tx), input_index);
+}
+
+template<typename TxType>
+uint256 GetStandardTemplateHash(const TxType& tx, const uint256& outputs_hash, const uint256& sequences_hash,
+                                const uint32_t input_index) {
+    bool skip_scriptSigs = std::find_if(tx.vin.begin(), tx.vin.end(),
+            [](const CTxIn& c) { return c.scriptSig != CScript(); }) == tx.vin.end();
+    return skip_scriptSigs ? GetStandardTemplateHashEmptyScript(tx, outputs_hash, sequences_hash, input_index) :
+        GetStandardTemplateHashWithScript(tx, outputs_hash, sequences_hash, GetScriptSigsSHA256(tx), input_index);
+}
+
+/* Not Exported, just convenience */
+template<typename TxType>
+uint256 GetStandardTemplateHashWithScript(const TxType& tx, const uint256& outputs_hash, const uint256& sequences_hash,
+                                const uint256& scriptSig_hash, const uint32_t input_index) {
+    auto h =  CHashWriter(SER_GETHASH, 0)
+        << tx.nVersion
+        << tx.nLockTime
+        << scriptSig_hash
+        << uint32_t(tx.vin.size())
+        << sequences_hash
+        << uint32_t(tx.vout.size())
+        << outputs_hash
+        << input_index;
+    return h.GetSHA256();
+}
+
+template<typename TxType>
+uint256 GetStandardTemplateHashEmptyScript(const TxType& tx, const uint256& outputs_hash, const uint256& sequences_hash,
+                                const uint32_t input_index) {
+    auto h =  CHashWriter(SER_GETHASH, 0)
+        << tx.nVersion
+        << tx.nLockTime
+        << uint32_t(tx.vin.size())
+        << sequences_hash
+        << uint32_t(tx.vout.size())
+        << outputs_hash
+        << input_index;
+    return h.GetSHA256();
 }
 
 template <class T>
