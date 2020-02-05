@@ -1350,7 +1350,7 @@ public:
 };
 
 template <class T>
-uint256 GetPrevoutHash(const T& txTo)
+uint256 GetPrevoutsSHA256(const T& txTo)
 {
     CHashWriter ss(SER_GETHASH, 0);
     for (const auto& txin : txTo.vin) {
@@ -1360,7 +1360,7 @@ uint256 GetPrevoutHash(const T& txTo)
 }
 
 template <class T>
-uint256 GetSequenceHash(const T& txTo)
+uint256 GetSequencesSHA256(const T& txTo)
 {
     CHashWriter ss(SER_GETHASH, 0);
     for (const auto& txin : txTo.vin) {
@@ -1370,7 +1370,7 @@ uint256 GetSequenceHash(const T& txTo)
 }
 
 template <class T>
-uint256 GetOutputsHash(const T& txTo)
+uint256 GetOutputsSHA256(const T& txTo)
 {
     CHashWriter ss(SER_GETHASH, 0);
     for (const auto& txout : txTo.vout) {
@@ -1408,11 +1408,11 @@ void PrecomputedTransactionData::Init(const T& txTo, std::vector<CTxOut> spent_o
 
     // Cache is calculated only for transactions with witness
     if (txTo.HasWitness()) {
-        m_prevouts_hash = GetPrevoutHash(txTo);
+        m_prevouts_hash = GetPrevoutsSHA256(txTo);
         hashPrevouts = SHA256Uint256(m_prevouts_hash);
-        m_sequences_hash = GetSequenceHash(txTo);
+        m_sequences_hash = GetSequencesSHA256(txTo);
         hashSequence = SHA256Uint256(m_sequences_hash);
-        m_outputs_hash = GetOutputsHash(txTo);
+        m_outputs_hash = GetOutputsSHA256(txTo);
         hashOutputs = SHA256Uint256(m_outputs_hash);
         if (!m_spent_outputs.empty()) {
             m_spent_amounts_hash = GetSpentAmountsHash(m_spent_outputs);
@@ -1533,7 +1533,7 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
         const bool cacheready = cache && cache->m_ready;
 
         if (!(nHashType & SIGHASH_ANYONECANPAY)) {
-            hashPrevouts = cacheready ? cache->hashPrevouts : SHA256Uint256(GetPrevoutHash(txTo));
+            hashPrevouts = cacheready ? cache->hashPrevouts : SHA256Uint256(GetPrevoutsSHA256(txTo));
         }
 
         if (!(nHashType & SIGHASH_ANYONECANPAY) && (nHashType & 0x1f) != SIGHASH_SINGLE && (nHashType & 0x1f) != SIGHASH_NONE) {
@@ -1542,7 +1542,7 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
 
 
         if ((nHashType & 0x1f) != SIGHASH_SINGLE && (nHashType & 0x1f) != SIGHASH_NONE) {
-            hashOutputs = cacheready ? cache->hashOutputs : SHA256Uint256(GetOutputsHash(txTo));
+            hashOutputs = cacheready ? cache->hashOutputs : SHA256Uint256(GetOutputsSHA256(txTo));
         } else if ((nHashType & 0x1f) == SIGHASH_SINGLE && nIn < txTo.vout.size()) {
             CHashWriter ss(SER_GETHASH, 0);
             ss << txTo.vout[nIn];
