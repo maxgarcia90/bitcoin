@@ -1413,6 +1413,7 @@ uint256 GetSpentAmountsSHA256(const std::vector<CTxOut>& outputs_spent)
     for (const auto& txout : outputs_spent) {
         ss << txout.nValue;
     }
+    return ss.GetSHA256();
 }
 template <class T>
 uint256 GetScriptSigsSHA256(const T& txTo)
