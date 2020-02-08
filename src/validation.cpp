@@ -1017,7 +1017,7 @@ bool MemPoolAccept::AcceptSingleTransaction(const CTransactionRef& ptx, ATMPArgs
     // scripts (ie, other policy checks pass). We perform the inexpensive
     // checks first and avoid hashing and signature verification unless those
     // checks pass, to mitigate CPU exhaustion denial-of-service attacks.
-    PrecomputedTransactionData txdata(*ptx);
+    PrecomputedTransactionData txdata;
 
     if (!PolicyScriptChecks(args, workspace, txdata)) return false;
 
@@ -1513,10 +1513,17 @@ bool CheckInputScripts(const CTransaction& tx, TxValidationState &state, const C
         return true;
     }
 
+    std::vector<CTxOut> spent_outputs;
+    spent_outputs.reserve(tx.vin.size());
     for (unsigned int i = 0; i < tx.vin.size(); i++) {
         const COutPoint &prevout = tx.vin[i].prevout;
         const Coin& coin = inputs.AccessCoin(prevout);
         assert(!coin.IsSpent());
+        spent_outputs.emplace_back(coin.out);
+    }
+
+    txdata.Init(tx, std::move(spent_outputs));
+    for (unsigned int i = 0; i < tx.vin.size(); i++) {
 
         // We very carefully only pass in things to CScriptCheck which
         // are clearly committed to by tx' witness hash. This provides
@@ -1525,7 +1532,7 @@ bool CheckInputScripts(const CTransaction& tx, TxValidationState &state, const C
         // spent being checked as a part of CScriptCheck.
 
         // Verify signature
-        CScriptCheck check(coin.out, tx, i, flags, cacheSigStore, &txdata);
+        CScriptCheck check(txdata.m_spent_outputs[i], tx, i, flags, cacheSigStore, &txdata);
         if (pvChecks) {
             pvChecks->push_back(CScriptCheck());
             check.swap(pvChecks->back());
@@ -1539,7 +1546,7 @@ bool CheckInputScripts(const CTransaction& tx, TxValidationState &state, const C
                 // splitting the network between upgraded and
                 // non-upgraded nodes by banning CONSENSUS-failing
                 // data providers.
-                CScriptCheck check2(coin.out, tx, i,
+                CScriptCheck check2(txdata.m_spent_outputs[i], tx, i,
                         flags & ~STANDARD_NOT_MANDATORY_VERIFY_FLAGS, cacheSigStore, &txdata);
                 if (check2())
                     return state.Invalid(TxValidationResult::TX_NOT_STANDARD, strprintf("non-mandatory-script-verify-flag (%s)", ScriptErrorString(check.GetScriptError())));
@@ -1871,6 +1878,11 @@ static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consens
         flags |= SCRIPT_VERIFY_CHECKSEQUENCEVERIFY;
     }
 
+    // Start enforcing Taproot using versionbits logic.
+    if (VersionBitsState(pindex->pprev, consensusparams, Consensus::DEPLOYMENT_TAPROOT, versionbitscache) == ThresholdState::ACTIVE) {
+        flags |= SCRIPT_VERIFY_TAPROOT;
+    }
+
     // Start enforcing BIP147 NULLDUMMY (activated simultaneously with segwit)
     if (IsWitnessEnabled(pindex->pprev, consensusparams)) {
         flags |= SCRIPT_VERIFY_NULLDUMMY;
@@ -2084,7 +2096,7 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
     int64_t nSigOpsCost = 0;
     blockundo.vtxundo.reserve(block.vtx.size() - 1);
     std::vector<PrecomputedTransactionData> txdata;
-    txdata.reserve(block.vtx.size()); // Required so that pointers to individual PrecomputedTransactionData don't get invalidated
+    txdata.resize(block.vtx.size()); // Required so that pointers to individual PrecomputedTransactionData don't get invalidated
     for (unsigned int i = 0; i < block.vtx.size(); i++)
     {
         const CTransaction &tx = *(block.vtx[i]);
@@ -2131,7 +2143,6 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
             return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-blk-sigops");
         }
 
-        txdata.emplace_back(tx);
         if (!tx.IsCoinBase())
         {
             std::vector<CScriptCheck> vChecks;
