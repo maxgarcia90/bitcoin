@@ -1353,7 +1353,7 @@ public:
 };
 
 template <class T>
-uint256 GetPrevoutHash(const T& txTo)
+uint256 GetPrevoutSHA256(const T& txTo)
 {
     CHashWriter ss(SER_GETHASH, 0);
     for (const auto& txin : txTo.vin) {
@@ -1363,7 +1363,7 @@ uint256 GetPrevoutHash(const T& txTo)
 }
 
 template <class T>
-uint256 GetSequenceHash(const T& txTo)
+uint256 GetSequenceSHA256(const T& txTo)
 {
     CHashWriter ss(SER_GETHASH, 0);
     for (const auto& txin : txTo.vin) {
@@ -1373,7 +1373,7 @@ uint256 GetSequenceHash(const T& txTo)
 }
 
 template <class T>
-uint256 GetOutputsHash(const T& txTo)
+uint256 GetOutputsSHA256(const T& txTo)
 {
     CHashWriter ss(SER_GETHASH, 0);
     for (const auto& txout : txTo.vout) {
@@ -1382,7 +1382,7 @@ uint256 GetOutputsHash(const T& txTo)
     return ss.GetSHA256();
 }
 
-uint256 GetSpentAmountsHash(const std::vector<CTxOut>& outputs_spent)
+uint256 GetSpentAmountsSHA256(const std::vector<CTxOut>& outputs_spent)
 {
     CHashWriter ss(SER_GETHASH, 0);
     for (const auto& txout : outputs_spent) {
@@ -1401,16 +1401,16 @@ void PrecomputedTransactionData::Init(const T& txTo, std::vector<CTxOut> spent_o
     if (ready) return;
     // Cache is calculated only for transactions with witness
     if (txTo.HasWitness()) {
-        m_prevouts_hash = GetPrevoutHash(txTo);
-        hashPrevouts = SHA256Uint256(m_prevouts_hash);
-        m_sequences_hash = GetSequenceHash(txTo);
-        hashSequence = SHA256Uint256(m_sequences_hash);
-        m_outputs_hash = GetOutputsHash(txTo);
-        hashOutputs = SHA256Uint256(m_outputs_hash);
+        hashPrevouts = m_prevouts_hash = GetPrevoutSHA256(txTo);
+        hashSequence = m_sequences_hash = GetSequenceSHA256(txTo);
+        hashOutputs = m_outputs_hash = GetOutputsSHA256(txTo);
+        SHA256Uint256(hashPrevouts);
+        SHA256Uint256(hashSequence);
+        SHA256Uint256(hashOutputs);
         ready = true;
 
         if (!m_spent_outputs.empty()) {
-            m_amounts_spent_hash = GetSpentAmountsHash(m_spent_outputs);
+            m_amounts_spent_hash = GetSpentAmountsSHA256(m_spent_outputs);
             m_amounts_spent_ready = true;
         }
     }
@@ -1526,16 +1526,16 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
         const bool cacheready = cache && cache->ready;
 
         if (!(nHashType & SIGHASH_ANYONECANPAY)) {
-            hashPrevouts = cacheready ? cache->hashPrevouts : SHA256Uint256(GetPrevoutHash(txTo));
+            hashPrevouts = cacheready ? cache->hashPrevouts : SHA256Uint256(GetPrevoutSHA256(txTo));
         }
 
         if (!(nHashType & SIGHASH_ANYONECANPAY) && (nHashType & 0x1f) != SIGHASH_SINGLE && (nHashType & 0x1f) != SIGHASH_NONE) {
-            hashSequence = cacheready ? cache->hashSequence : SHA256Uint256(GetSequenceHash(txTo));
+            hashSequence = cacheready ? cache->hashSequence : SHA256Uint256(GetSequenceSHA256(txTo));
         }
 
 
         if ((nHashType & 0x1f) != SIGHASH_SINGLE && (nHashType & 0x1f) != SIGHASH_NONE) {
-            hashOutputs = cacheready ? cache->hashOutputs : SHA256Uint256(GetOutputsHash(txTo));
+            hashOutputs = cacheready ? cache->hashOutputs : SHA256Uint256(GetOutputsSHA256(txTo));
         } else if ((nHashType & 0x1f) == SIGHASH_SINGLE && nIn < txTo.vout.size()) {
             CHashWriter ss(SER_GETHASH, 0);
             ss << txTo.vout[nIn];

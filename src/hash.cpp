@@ -88,9 +88,12 @@ CHashWriter TaggedHash(const std::string& tag)
     return writer;
 }
 
-uint256 SHA256Uint256(const uint256& hash)
+void SHA256Uint256(uint256& hash)
 {
-    uint256 result;
-    CSHA256().Write(hash.begin(), 32).Finalize(result.begin());
-    return result;
+    CSHA256().Write(hash.begin(), 32).Finalize(hash.begin());
+}
+uint256 SHA256Uint256(uint256&& hash)
+{
+    CSHA256().Write(hash.begin(), 32).Finalize(hash.begin());
+    return hash;
 }
