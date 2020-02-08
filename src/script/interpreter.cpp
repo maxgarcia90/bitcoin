@@ -1838,6 +1838,20 @@ bool GenericTransactionSignatureChecker<T>::CheckStandardTemplateHash(const std:
 template class GenericTransactionSignatureChecker<CTransaction>;
 template class GenericTransactionSignatureChecker<CMutableTransaction>;
 
+bool SimpleSignatureChecker::CheckSig(const std::vector<unsigned char>& vchSigIn, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const
+{
+    CPubKey pubkey(vchPubKey);
+    if (!pubkey.IsValid()) return false;
+
+    // Hash type is one byte tacked on to the end of the signature
+    std::vector<unsigned char> vchSig(vchSigIn);
+    if (vchSig.empty()) return false;
+    // int nHashType = vchSig.back();
+    vchSig.pop_back();
+
+    return pubkey.Verify(hash, vchSig);
+}
+
 static bool ExecuteWitnessProgram(std::vector<std::vector<unsigned char>> stack, const CScript& scriptPubKey, unsigned int flags, SigVersion sigversion, const BaseSignatureChecker& checker, const ScriptExecutionData& execdata, ScriptError* serror)
 {
     // OP_SUCCESSx processing overrides everything, including stack element size limits
