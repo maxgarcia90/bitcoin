@@ -66,12 +66,25 @@ void CTxMemPool::UpdateForDescendants(txiter update_it, cacheMap& cache, const s
     // transaction)
     vecEntries update_cache;
     update_cache.reserve(direct_children.size());
-    // mark every direct_child as visited so that we don't accidentally re-add them
-    // to the cache in the grandchild is child case
+    // mark every direct child as visited, so that if we encounter one of these transactions again
+    // (as the descendant of some other direct child), we don't re-add them to the cache. e.g.,
+    // Tx A: L1 -> {O1, O2}
+    // Tx B: {O1} -> {P1}
+    // Tx C: {P1, O2} -> {Q1}
+    // 
+    // In this case transaction C is both a direct child of A and a grandchild via B.
+
     for (const txiter direct_child : direct_children) {
         update_cache.emplace_back(direct_child);
         visited(direct_child);
     }
+
+    // caching statistics
+    uint64_t subcache_first_visits = 0;
+    uint64_t subcache_extra_visits = 0;
+    uint64_t cache_misses = 0;
+    uint64_t cache_hits = 0;
+
     // already_traversed index keeps track of the elements that we've
     // already expanded. If index is < already_traversed, we've walked it.
     // If index is >= already_traversed, we need to walk it.
@@ -84,22 +97,36 @@ void CTxMemPool::UpdateForDescendants(txiter update_it, cacheMap& cache, const s
         // N.B. grand_children may also be children
         const CTxMemPool::setEntries& grand_children = GetMemPoolChildren(child_it);
         for (const txiter grand_child_it : grand_children) {
-            if (visited(grand_child_it)) continue;
-            // Schedule for later processing
-            update_cache.emplace_back(grand_child_it);
-            // if it exists in the cache, unschedule and use cached descendants
-            cacheMap::iterator cached_great_grand_children = cache.find(grand_child_it);
-            if (cached_great_grand_children != cache.end()) {
-                std::swap(update_cache[already_traversed++], update_cache.back());
-                for (const txiter great_grand_child : cached_great_grand_children->second) {
-                    if (visited(great_grand_child)) continue;
-                    update_cache.emplace_back(great_grand_child);
-                    // place on the back and then swap into the already_traversed index
-                    // so we don't walk it ourselves (whoever put the grand
-                    // child in the cache must have already traversed this)
+            if (visited(grand_child_it)) {
+                subcache_extra_visits += 1;
+            } else {
+                subcache_first_visits += 1;
+                // Schedule for later processing
+                update_cache.emplace_back(grand_child_it);
+                // if it exists in the cache, unschedule and use cached descendants
+                cacheMap::iterator cached_great_grand_children = cache.find(grand_child_it);
+                if (cached_great_grand_children != cache.end()) {
+                    cache_hits += 1;
                     std::swap(update_cache[already_traversed++], update_cache.back());
+                    for (const txiter great_grand_child : cached_great_grand_children->second) {
+                        if (visited(great_grand_child)) {
+                            subcache_extra_visits += 1;
+                        } else {
+                            subcache_first_visits += 1;
+                            update_cache.emplace_back(great_grand_child);
+                            // place on the back and then swap into the already_traversed index
+                            // so we don't walk it ourselves (whoever put the grand
+                            // child in the cache must have already traversed this)
+                            std::swap(update_cache[already_traversed++], update_cache.back());
+
+                        }
+                    }
+                } else {
+                    cache_misses += 1;
                 }
+
             }
+
         }
     }
 
@@ -118,8 +145,36 @@ void CTxMemPool::UpdateForDescendants(txiter update_it, cacheMap& cache, const s
         }
     }
     mapTx.modify(update_it, update_descendant_state(modify_size, modify_fee, modify_count));
-    // share the cache (if there is one)
-    if (!update_cache.empty()) cache.emplace(update_it, std::move(update_cache));
+    // Determine if we should cache the result:
+
+    // scale_ration multiplies x by the golden ratio:
+    // This assumes x is less than 53.3 bits wide (reasonable!)
+    const auto scale_ratio = [](uint64_t x) {return (x*1618)>>10;};
+    uint64_t subcache_total_visits = subcache_first_visits + subcache_extra_visits;
+    uint64_t cache_reads = cache_hits + cache_misses;
+
+    // The heuristic for caching has two prongs that if triggered, it's worth it
+    // for us to make a cache. There could be other cases, but this should
+    // balance out the amount of work we're doing to re-traverse with the amount
+    // of memory that caching can use up.
+    //
+    // Prong Don't Re-Traverse Too Much:
+    // If the total work of visiting is more than 100,
+    // and the number of extra visits exceeds subcache_first_visits*golden,
+    // then create a new cache
+    //
+    // OR
+    //
+    // Prong Don't Over Check The Cache:
+    // If we're checking the cache more than 100 times,
+    // and we're missing 2x more than we're hitting,
+    // and we're making a subcache_extra_visits
+    // more than the max of 100 or golden*update_cache.size()
+    bool should_cache = update_cache.size() > 0 &&
+        ((subcache_total_visits > 100  &&
+        subcache_extra_visits > scale_ratio(subcache_first_visits)) 
+        || (cache_reads > 100 && cache_misses > 2*cache_hits && subcache_extra_visits > std::max(100ul,scale_ratio(update_cache.size()))));
+    if (should_cache) cache.emplace(update_it, std::move(update_cache));
 }
 // vHashesToUpdate is the set of transaction hashes from a disconnected block
 // which has been re-added to the mempool.
