@@ -84,6 +84,8 @@ void CTxMemPool::UpdateForDescendants(txiter update_it, cacheMap& cache, const s
     uint64_t subcache_extra_visits = 0;
     uint64_t cache_misses = 0;
     uint64_t cache_hits = 0;
+    uint64_t cachelines_to_replace = 0;
+    uint64_t first_visits_in_replaced_cachelines = 0;
 
     // already_traversed index keeps track of the elements that we've
     // already expanded. If index is < already_traversed, we've walked it.
@@ -100,19 +102,20 @@ void CTxMemPool::UpdateForDescendants(txiter update_it, cacheMap& cache, const s
             if (visited(grand_child_it)) {
                 subcache_extra_visits += 1;
             } else {
-                subcache_first_visits += 1;
+                uint64_t first_visits_in_this_cacheline = 0;
+                first_visits_in_this_cacheline += 1;
                 // Schedule for later processing
                 update_cache.emplace_back(grand_child_it);
                 // if it exists in the cache, unschedule and use cached descendants
-                cacheMap::iterator cached_great_grand_children = cache.find(grand_child_it);
-                if (cached_great_grand_children != cache.end()) {
+                cacheMap::first_type::iterator cached_great_grand_children = cache.first.find(grand_child_it);
+                if (cached_great_grand_children != cache.first.end()) {
                     cache_hits += 1;
                     std::swap(update_cache[already_traversed++], update_cache.back());
-                    for (const txiter great_grand_child : cached_great_grand_children->second) {
+                    for (const txiter great_grand_child : cached_great_grand_children->second.first) {
                         if (visited(great_grand_child)) {
                             subcache_extra_visits += 1;
                         } else {
-                            subcache_first_visits += 1;
+                            first_visits_in_this_cacheline += 1;
                             update_cache.emplace_back(great_grand_child);
                             // place on the back and then swap into the already_traversed index
                             // so we don't walk it ourselves (whoever put the grand
@@ -121,9 +124,20 @@ void CTxMemPool::UpdateForDescendants(txiter update_it, cacheMap& cache, const s
 
                         }
                     }
+                    // Update our cache reference count
+                    cached_great_grand_children->second.second -= 1;
+                    // if the reference count hits 0, then add it to wasted
+                    // space
+                    if (cached_great_grand_children->second.second == 0) {
+                        cache.second += memusage::DynamicUsage(cached_great_grand_children->second.first);
+                        cache.second += memusage::IncrementalDynamicUsage(cacheMap::first_type{});
+                        cachelines_to_replace += cached_great_grand_children->second.first.size();
+                        first_visits_in_replaced_cachelines += first_visits_in_this_cacheline;
+                    }
                 } else {
                     cache_misses += 1;
                 }
+                subcache_first_visits += first_visits_in_this_cacheline;
 
             }
 
@@ -153,7 +167,7 @@ void CTxMemPool::UpdateForDescendants(txiter update_it, cacheMap& cache, const s
     uint64_t subcache_total_visits = subcache_first_visits + subcache_extra_visits;
     uint64_t cache_reads = cache_hits + cache_misses;
 
-    // The heuristic for caching has two prongs that if triggered, it's worth it
+    // The heuristic for caching has three prongs that if triggered, it's worth it
     // for us to make a cache. There could be other cases, but this should
     // balance out the amount of work we're doing to re-traverse with the amount
     // of memory that caching can use up.
@@ -170,11 +184,36 @@ void CTxMemPool::UpdateForDescendants(txiter update_it, cacheMap& cache, const s
     // and we're missing 2x more than we're hitting,
     // and we're making a subcache_extra_visits
     // more than the max of 100 or golden*update_cache.size()
+    //
+    // This Cache cleared a lot of older Caches:
+    // If cachelines_to_replace > 100,
+    // and first_visits_in_replaced_cachelines > 100
     bool should_cache = update_cache.size() > 0 &&
         ((subcache_total_visits > 100  &&
         subcache_extra_visits > scale_ratio(subcache_first_visits)) 
-        || (cache_reads > 100 && cache_misses > 2*cache_hits && subcache_extra_visits > std::max(100ul,scale_ratio(update_cache.size()))));
-    if (should_cache) cache.emplace(update_it, std::move(update_cache));
+        || (cache_reads > 100 && cache_misses > 2*cache_hits && subcache_extra_visits > std::max(100ul,scale_ratio(update_cache.size())))
+        || (cachelines_to_replace > 100 && first_visits_in_replaced_cachelines > 100));
+    if (should_cache) {
+        // if the "wasted" space is now greater than a gigabyte, delete the
+        // entries that have been accessed enough
+        if (cache.second > 1000000000) {
+            for (auto it = cache.first.begin(); it != cache.first.end();) {
+                if (it->second.second <= 0) {
+                    it = cache.first.erase(it);
+                    cache.second -= memusage::DynamicUsage(it->second.first);
+                    cache.second -= memusage::IncrementalDynamicUsage(cacheMap::first_type{});
+                } else {
+                    ++it;
+                }
+            }
+            // If this is not true the implementation is incorrect as either
+            // cache entries were not accounted for correctly or were mutated.
+            assert(cache.second == 0);
+        }
+        // Allow reference count to grow to the golden ratio of the number of
+        // inputs before deleting
+        cache.first.emplace(update_it, make_pair(std::move(update_cache), scale_ratio(update_it->GetTx().vin.size())));
+    }
 }
 // vHashesToUpdate is the set of transaction hashes from a disconnected block
 // which has been re-added to the mempool.

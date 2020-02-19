@@ -536,7 +536,8 @@ public:
     const setEntries & GetMemPoolChildren(txiter entry) const EXCLUSIVE_LOCKS_REQUIRED(cs);
     uint64_t CalculateDescendantMaximum(txiter entry) const EXCLUSIVE_LOCKS_REQUIRED(cs);
 private:
-    typedef std::map<txiter, vecEntries, CompareIteratorByHash> cacheMap;
+    // (txiter -> (descendants, scaled reference count), useless space)
+    typedef std::pair<std::map<txiter, std::pair<vecEntries, int64_t>, CompareIteratorByHash>, size_t> cacheMap;
 
     struct TxLinks {
         setEntries parents;
