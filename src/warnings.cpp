@@ -66,6 +66,8 @@ std::string GetWarnings(bool verbose)
         warnings_verbose += (warnings_verbose.empty() ? "" : warning_separator) + _("Warning: We do not appear to fully agree with our peers! You may need to upgrade, or other nodes may need to upgrade.").translated;
     }
 
-    if (verbose) return warnings_verbose;
-    else return warnings_concise;
+    if (verbose)
+        return warnings_verbose;
+    else
+        return warnings_concise;
 }

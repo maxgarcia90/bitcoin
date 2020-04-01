@@ -2,13 +2,13 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <util/threadnames.h>
 #include <test/util/setup_common.h>
+#include <util/threadnames.h>
 
+#include <mutex>
+#include <set>
 #include <thread>
 #include <vector>
-#include <set>
-#include <mutex>
 
 #if defined(HAVE_CONFIG_H)
 #include <config/bitcoin-config.h>
@@ -41,7 +41,8 @@ std::set<std::string> RenameEnMasse(int num_threads)
         threads.push_back(std::thread(RenameThisThread, i));
     }
 
-    for (std::thread& thread : threads) thread.join();
+    for (std::thread& thread : threads)
+        thread.join();
 
     return names;
 }
@@ -67,7 +68,6 @@ BOOST_AUTO_TEST_CASE(util_threadnames_test_rename_threaded)
     for (int i = 0; i < 100; ++i) {
         BOOST_CHECK(names.find(TEST_THREAD_NAME_BASE + std::to_string(i)) != names.end());
     }
-
 }
 
 BOOST_AUTO_TEST_SUITE_END()

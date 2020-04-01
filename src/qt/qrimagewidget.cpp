@@ -22,14 +22,13 @@
 #include <qrencode.h>
 #endif
 
-QRImageWidget::QRImageWidget(QWidget *parent):
-    QLabel(parent), contextMenu(nullptr)
+QRImageWidget::QRImageWidget(QWidget* parent) : QLabel(parent), contextMenu(nullptr)
 {
     contextMenu = new QMenu(this);
-    QAction *saveImageAction = new QAction(tr("&Save Image..."), this);
+    QAction* saveImageAction = new QAction(tr("&Save Image..."), this);
     connect(saveImageAction, &QAction::triggered, this, &QRImageWidget::saveImage);
     contextMenu->addAction(saveImageAction);
-    QAction *copyImageAction = new QAction(tr("&Copy Image"), this);
+    QAction* copyImageAction = new QAction(tr("&Copy Image"), this);
     connect(copyImageAction, &QAction::triggered, this, &QRImageWidget::copyImage);
     contextMenu->addAction(copyImageAction);
 }
@@ -46,7 +45,7 @@ bool QRImageWidget::setQR(const QString& data, const QString& text)
         return false;
     }
 
-    QRcode *code = QRcode_encodeString(data.toUtf8().constData(), 0, QR_ECLEVEL_L, QR_MODE_8, 1);
+    QRcode* code = QRcode_encodeString(data.toUtf8().constData(), 0, QR_ECLEVEL_L, QR_MODE_8, 1);
 
     if (!code) {
         setText(tr("Error encoding URI into QR Code."));
@@ -55,7 +54,7 @@ bool QRImageWidget::setQR(const QString& data, const QString& text)
 
     QImage qrImage = QImage(code->width + 8, code->width + 8, QImage::Format_RGB32);
     qrImage.fill(0xffffff);
-    unsigned char *p = code->data;
+    unsigned char* p = code->data;
     for (int y = 0; y < code->width; ++y) {
         for (int x = 0; x < code->width; ++x) {
             qrImage.setPixel(x + 4, y + 4, ((*p & 1) ? 0x0 : 0xffffff));
@@ -79,8 +78,8 @@ bool QRImageWidget::setQR(const QString& data, const QString& text)
         font.setPointSizeF(font_size);
 
         painter.setFont(font);
-        paddedRect.setHeight(QR_IMAGE_SIZE+12);
-        painter.drawText(paddedRect, Qt::AlignBottom|Qt::AlignCenter, text);
+        paddedRect.setHeight(QR_IMAGE_SIZE + 12);
+        painter.drawText(paddedRect, Qt::AlignBottom | Qt::AlignCenter, text);
     }
 
     painter.end();
@@ -95,20 +94,19 @@ bool QRImageWidget::setQR(const QString& data, const QString& text)
 
 QImage QRImageWidget::exportImage()
 {
-    if(!pixmap())
+    if (!pixmap())
         return QImage();
     return pixmap()->toImage();
 }
 
-void QRImageWidget::mousePressEvent(QMouseEvent *event)
+void QRImageWidget::mousePressEvent(QMouseEvent* event)
 {
-    if(event->button() == Qt::LeftButton && pixmap())
-    {
+    if (event->button() == Qt::LeftButton && pixmap()) {
         event->accept();
-        QMimeData *mimeData = new QMimeData;
+        QMimeData* mimeData = new QMimeData;
         mimeData->setImageData(exportImage());
 
-        QDrag *drag = new QDrag(this);
+        QDrag* drag = new QDrag(this);
         drag->setMimeData(mimeData);
         drag->exec();
     } else {
@@ -118,25 +116,24 @@ void QRImageWidget::mousePressEvent(QMouseEvent *event)
 
 void QRImageWidget::saveImage()
 {
-    if(!pixmap())
+    if (!pixmap())
         return;
     QString fn = GUIUtil::getSaveFileName(this, tr("Save QR Code"), QString(), tr("PNG Image (*.png)"), nullptr);
-    if (!fn.isEmpty())
-    {
+    if (!fn.isEmpty()) {
         exportImage().save(fn);
     }
 }
 
 void QRImageWidget::copyImage()
 {
-    if(!pixmap())
+    if (!pixmap())
         return;
     QApplication::clipboard()->setImage(exportImage());
 }
 
-void QRImageWidget::contextMenuEvent(QContextMenuEvent *event)
+void QRImageWidget::contextMenuEvent(QContextMenuEvent* event)
 {
-    if(!pixmap())
+    if (!pixmap())
         return;
     contextMenu->exec(event->globalPos());
 }

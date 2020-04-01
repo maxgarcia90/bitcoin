@@ -6,8 +6,8 @@
 #include <config/bitcoin-config.h>
 #endif
 
-#include <qt/optionsdialog.h>
 #include <qt/forms/ui_optionsdialog.h>
+#include <qt/optionsdialog.h>
 
 #include <qt/bitcoinunits.h>
 #include <qt/guiconstants.h>
@@ -15,9 +15,9 @@
 #include <qt/optionsmodel.h>
 
 #include <interfaces/node.h>
-#include <validation.h> // for DEFAULT_SCRIPTCHECK_THREADS and MAX_SCRIPTCHECK_THREADS
 #include <netbase.h>
-#include <txdb.h> // for -dbcache defaults
+#include <txdb.h>       // for -dbcache defaults
+#include <validation.h> // for DEFAULT_SCRIPTCHECK_THREADS and MAX_SCRIPTCHECK_THREADS
 
 #include <QDataWidgetMapper>
 #include <QDir>
@@ -27,11 +27,10 @@
 #include <QSystemTrayIcon>
 #include <QTimer>
 
-OptionsDialog::OptionsDialog(QWidget *parent, bool enableWallet) :
-    QDialog(parent),
-    ui(new Ui::OptionsDialog),
-    model(nullptr),
-    mapper(nullptr)
+OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet) : QDialog(parent),
+                                                                   ui(new Ui::OptionsDialog),
+                                                                   model(nullptr),
+                                                                   mapper(nullptr)
 {
     ui->setupUi(this);
 
@@ -94,18 +93,14 @@ OptionsDialog::OptionsDialog(QWidget *parent, bool enableWallet) :
 
     ui->lang->setToolTip(ui->lang->toolTip().arg(PACKAGE_NAME));
     ui->lang->addItem(QString("(") + tr("default") + QString(")"), QVariant(""));
-    for (const QString &langStr : translations.entryList())
-    {
+    for (const QString& langStr : translations.entryList()) {
         QLocale locale(langStr);
 
         /** check if the locale name consists of 2 parts (language_country) */
-        if(langStr.contains("_"))
-        {
+        if (langStr.contains("_")) {
             /** display language strings as "native language - native country (locale name)", e.g. "Deutsch - Deutschland (de)" */
             ui->lang->addItem(locale.nativeLanguageName() + QString(" - ") + locale.nativeCountryName() + QString(" (") + langStr + QString(")"), QVariant(langStr));
-        }
-        else
-        {
+        } else {
             /** display language strings as "native language (locale name)", e.g. "Deutsch (de)" */
             ui->lang->addItem(locale.nativeLanguageName() + QString(" (") + langStr + QString(")"), QVariant(langStr));
         }
@@ -142,12 +137,11 @@ OptionsDialog::~OptionsDialog()
     delete ui;
 }
 
-void OptionsDialog::setModel(OptionsModel *_model)
+void OptionsDialog::setModel(OptionsModel* _model)
 {
     this->model = _model;
 
-    if(_model)
-    {
+    if (_model) {
         /* check if client restart is needed and show persistent message */
         if (_model->isRestartRequired())
             showRestartWarning(true);
@@ -183,13 +177,13 @@ void OptionsDialog::setModel(OptionsModel *_model)
     connect(ui->connectSocks, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
     connect(ui->connectSocksTor, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
     /* Display */
-    connect(ui->lang, static_cast<void (QValueComboBox::*)()>(&QValueComboBox::valueChanged), [this]{ showRestartWarning(); });
-    connect(ui->thirdPartyTxUrls, &QLineEdit::textChanged, [this]{ showRestartWarning(); });
+    connect(ui->lang, static_cast<void (QValueComboBox::*)()>(&QValueComboBox::valueChanged), [this] { showRestartWarning(); });
+    connect(ui->thirdPartyTxUrls, &QLineEdit::textChanged, [this] { showRestartWarning(); });
 }
 
 void OptionsDialog::setCurrentTab(OptionsDialog::Tab tab)
 {
-    QWidget *tab_widget = nullptr;
+    QWidget* tab_widget = nullptr;
     if (tab == OptionsDialog::Tab::TAB_NETWORK) tab_widget = ui->tabNetwork;
     if (tab == OptionsDialog::Tab::TAB_MAIN) tab_widget = ui->tabMain;
     if (tab_widget && ui->tabWidget->currentWidget() != tab_widget) {
@@ -244,14 +238,13 @@ void OptionsDialog::setOkButtonState(bool fState)
 
 void OptionsDialog::on_resetButton_clicked()
 {
-    if(model)
-    {
+    if (model) {
         // confirmation dialog
         QMessageBox::StandardButton btnRetVal = QMessageBox::question(this, tr("Confirm options reset"),
             tr("Client restart required to activate changes.") + "<br><br>" + tr("Client will be shut down. Do you want to proceed?"),
             QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel);
 
-        if(btnRetVal == QMessageBox::Cancel)
+        if (btnRetVal == QMessageBox::Cancel)
             return;
 
         /* reset all options and close GUI */
@@ -286,13 +279,10 @@ void OptionsDialog::on_cancelButton_clicked()
 
 void OptionsDialog::on_hideTrayIcon_stateChanged(int fState)
 {
-    if(fState)
-    {
+    if (fState) {
         ui->minimizeToTray->setChecked(false);
         ui->minimizeToTray->setEnabled(false);
-    }
-    else
-    {
+    } else {
         ui->minimizeToTray->setEnabled(true);
     }
 }
@@ -306,12 +296,9 @@ void OptionsDialog::showRestartWarning(bool fPersistent)
 {
     ui->statusLabel->setStyleSheet("QLabel { color: red; }");
 
-    if(fPersistent)
-    {
+    if (fPersistent) {
         ui->statusLabel->setText(tr("Client restart required to activate changes."));
-    }
-    else
-    {
+    } else {
         ui->statusLabel->setText(tr("This change would require a client restart."));
         // clear non-persistent status label after 10 seconds
         // Todo: should perhaps be a class attribute, if we extend the use of statusLabel
@@ -329,15 +316,12 @@ void OptionsDialog::clearStatusLabel()
 
 void OptionsDialog::updateProxyValidationState()
 {
-    QValidatedLineEdit *pUiProxyIp = ui->proxyIp;
-    QValidatedLineEdit *otherProxyWidget = (pUiProxyIp == ui->proxyIpTor) ? ui->proxyIp : ui->proxyIpTor;
-    if (pUiProxyIp->isValid() && (!ui->proxyPort->isEnabled() || ui->proxyPort->text().toInt() > 0) && (!ui->proxyPortTor->isEnabled() || ui->proxyPortTor->text().toInt() > 0))
-    {
+    QValidatedLineEdit* pUiProxyIp = ui->proxyIp;
+    QValidatedLineEdit* otherProxyWidget = (pUiProxyIp == ui->proxyIpTor) ? ui->proxyIp : ui->proxyIpTor;
+    if (pUiProxyIp->isValid() && (!ui->proxyPort->isEnabled() || ui->proxyPort->text().toInt() > 0) && (!ui->proxyPortTor->isEnabled() || ui->proxyPortTor->text().toInt() > 0)) {
         setOkButtonState(otherProxyWidget->isValid()); //only enable ok button if both proxys are valid
         clearStatusLabel();
-    }
-    else
-    {
+    } else {
         setOkButtonState(false);
         ui->statusLabel->setStyleSheet("QLabel { color: red; }");
         ui->statusLabel->setText(tr("The supplied proxy address is invalid."));
@@ -366,12 +350,11 @@ void OptionsDialog::updateDefaultProxyNets()
     (strProxy == strDefaultProxyGUI.toStdString()) ? ui->proxyReachTor->setChecked(true) : ui->proxyReachTor->setChecked(false);
 }
 
-ProxyAddressValidator::ProxyAddressValidator(QObject *parent) :
-QValidator(parent)
+ProxyAddressValidator::ProxyAddressValidator(QObject* parent) : QValidator(parent)
 {
 }
 
-QValidator::State ProxyAddressValidator::validate(QString &input, int &pos) const
+QValidator::State ProxyAddressValidator::validate(QString& input, int& pos) const
 {
     Q_UNUSED(pos);
     // Validate the proxy

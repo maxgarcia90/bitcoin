@@ -6,18 +6,18 @@
 #ifndef BITCOIN_CONSENSUS_VALIDATION_H
 #define BITCOIN_CONSENSUS_VALIDATION_H
 
+#include <consensus/consensus.h>
+#include <primitives/block.h>
+#include <primitives/transaction.h>
 #include <string>
 #include <version.h>
-#include <consensus/consensus.h>
-#include <primitives/transaction.h>
-#include <primitives/block.h>
 
 /** A "reason" why a transaction was invalid, suitable for determining whether the
   * provider of the transaction should be banned/ignored/disconnected/etc.
   */
 enum class TxValidationResult {
-    TX_RESULT_UNSET,         //!< initial value. Tx has not yet been rejected
-    TX_CONSENSUS,            //!< invalid by consensus rules
+    TX_RESULT_UNSET, //!< initial value. Tx has not yet been rejected
+    TX_CONSENSUS,    //!< invalid by consensus rules
     /**
      * Invalid by a change to consensus rules more recent than SegWit.
      * Currently unused as there are no such consensus rule changes, and any download
@@ -26,9 +26,9 @@ enum class TxValidationResult {
      * is uninteresting.
      */
     TX_RECENT_CONSENSUS_CHANGE,
-    TX_NOT_STANDARD,          //!< didn't meet our local policy rules
-    TX_MISSING_INPUTS,        //!< transaction was missing some of its inputs
-    TX_PREMATURE_SPEND,       //!< transaction spends a coinbase too early, or violates locktime/sequence locks
+    TX_NOT_STANDARD,    //!< didn't meet our local policy rules
+    TX_MISSING_INPUTS,  //!< transaction was missing some of its inputs
+    TX_PREMATURE_SPEND, //!< transaction spends a coinbase too early, or violates locktime/sequence locks
     /**
      * Transaction might be missing a witness, have a witness prior to SegWit
      * activation, or witness may have been malleated (which includes
@@ -41,7 +41,7 @@ enum class TxValidationResult {
      * Currently this is only used if the transaction already exists in the mempool or on chain.
      */
     TX_CONFLICT,
-    TX_MEMPOOL_POLICY,        //!< violated mempool's fee/size/descendant/RBF/etc limits
+    TX_MEMPOOL_POLICY, //!< violated mempool's fee/size/descendant/RBF/etc limits
 };
 
 /** A "reason" why a block was invalid, suitable for determining whether the
@@ -50,8 +50,8 @@ enum class TxValidationResult {
   * useful for some other use-cases.
   */
 enum class BlockValidationResult {
-    BLOCK_RESULT_UNSET,      //!< initial value. Block has not yet been rejected
-    BLOCK_CONSENSUS,         //!< invalid by consensus rules (excluding any below reasons)
+    BLOCK_RESULT_UNSET, //!< initial value. Block has not yet been rejected
+    BLOCK_CONSENSUS,    //!< invalid by consensus rules (excluding any below reasons)
     /**
      * Invalid by a change to consensus rules more recent than SegWit.
      * Currently unused as there are no such consensus rule changes, and any download
@@ -60,21 +60,21 @@ enum class BlockValidationResult {
      * is uninteresting.
      */
     BLOCK_RECENT_CONSENSUS_CHANGE,
-    BLOCK_CACHED_INVALID,    //!< this block was cached as being invalid and we didn't store the reason why
-    BLOCK_INVALID_HEADER,    //!< invalid proof of work or time too old
-    BLOCK_MUTATED,           //!< the block's data didn't match the data committed to by the PoW
-    BLOCK_MISSING_PREV,      //!< We don't have the previous block the checked one is built on
-    BLOCK_INVALID_PREV,      //!< A block this one builds on is invalid
-    BLOCK_TIME_FUTURE,       //!< block timestamp was > 2 hours in the future (or our clock is bad)
-    BLOCK_CHECKPOINT,        //!< the block failed to meet one of our checkpoints
+    BLOCK_CACHED_INVALID, //!< this block was cached as being invalid and we didn't store the reason why
+    BLOCK_INVALID_HEADER, //!< invalid proof of work or time too old
+    BLOCK_MUTATED,        //!< the block's data didn't match the data committed to by the PoW
+    BLOCK_MISSING_PREV,   //!< We don't have the previous block the checked one is built on
+    BLOCK_INVALID_PREV,   //!< A block this one builds on is invalid
+    BLOCK_TIME_FUTURE,    //!< block timestamp was > 2 hours in the future (or our clock is bad)
+    BLOCK_CHECKPOINT,     //!< the block failed to meet one of our checkpoints
 };
-
 
 
 /** Base class for capturing information about block/transaction validation. This is subclassed
  *  by TxValidationState and BlockValidationState for validation information on transactions
  *  and blocks respectively. */
-class ValidationState {
+class ValidationState
+{
 private:
     enum mode_state {
         MODE_VALID,   //!< everything ok
@@ -83,14 +83,16 @@ private:
     } m_mode;
     std::string m_reject_reason;
     std::string m_debug_message;
+
 protected:
-    void Invalid(const std::string &reject_reason="",
-                 const std::string &debug_message="")
+    void Invalid(const std::string& reject_reason = "",
+        const std::string& debug_message = "")
     {
         m_reject_reason = reject_reason;
         m_debug_message = debug_message;
         if (m_mode != MODE_ERROR) m_mode = MODE_INVALID;
     }
+
 public:
     // ValidationState is abstract. Have a pure virtual destructor.
     virtual ~ValidationState() = 0;
@@ -110,15 +112,17 @@ public:
     std::string GetDebugMessage() const { return m_debug_message; }
 };
 
-inline ValidationState::~ValidationState() {};
+inline ValidationState::~ValidationState(){};
 
-class TxValidationState : public ValidationState {
+class TxValidationState : public ValidationState
+{
 private:
     TxValidationResult m_result = TxValidationResult::TX_RESULT_UNSET;
+
 public:
     bool Invalid(TxValidationResult result,
-                 const std::string &reject_reason="",
-                 const std::string &debug_message="")
+        const std::string& reject_reason = "",
+        const std::string& debug_message = "")
     {
         m_result = result;
         ValidationState::Invalid(reject_reason, debug_message);
@@ -127,13 +131,16 @@ public:
     TxValidationResult GetResult() const { return m_result; }
 };
 
-class BlockValidationState : public ValidationState {
+class BlockValidationState : public ValidationState
+{
 private:
     BlockValidationResult m_result = BlockValidationResult::BLOCK_RESULT_UNSET;
+
 public:
     bool Invalid(BlockValidationResult result,
-                 const std::string &reject_reason="",
-                 const std::string &debug_message="") {
+        const std::string& reject_reason = "",
+        const std::string& debug_message = "")
+    {
         m_result = result;
         ValidationState::Invalid(reject_reason, debug_message);
         return false;

@@ -22,7 +22,7 @@ struct Available {
     CTransactionRef ref;
     size_t vin_left{0};
     size_t tx_count;
-    Available(CTransactionRef& ref, size_t tx_count) : ref(ref), tx_count(tx_count){}
+    Available(CTransactionRef& ref, size_t tx_count) : ref(ref), tx_count(tx_count) {}
 };
 
 static void ComplexMemPool(benchmark::State& state)
@@ -37,7 +37,7 @@ static void ComplexMemPool(benchmark::State& state)
         tx.vin.resize(1);
         tx.vin[0].scriptSig = CScript() << CScriptNum(tx_counter);
         tx.vin[0].scriptWitness.stack.push_back(CScriptNum(x).getvch());
-        tx.vout.resize(det_rand.randrange(10)+2);
+        tx.vout.resize(det_rand.randrange(10) + 2);
         for (auto& out : tx.vout) {
             out.scriptPubKey = CScript() << CScriptNum(tx_counter) << OP_EQUAL;
             out.nValue = 10 * COIN;
@@ -47,13 +47,13 @@ static void ComplexMemPool(benchmark::State& state)
     }
     for (auto x = 0; x < 800 && !available_coins.empty(); ++x) {
         CMutableTransaction tx = CMutableTransaction();
-        size_t n_ancestors = det_rand.randrange(10)+1;
-        for (size_t ancestor = 0; ancestor < n_ancestors && !available_coins.empty(); ++ancestor){
+        size_t n_ancestors = det_rand.randrange(10) + 1;
+        for (size_t ancestor = 0; ancestor < n_ancestors && !available_coins.empty(); ++ancestor) {
             size_t idx = det_rand.randrange(available_coins.size());
             Available coin = available_coins[idx];
             uint256 hash = coin.ref->GetHash();
             // biased towards taking just one ancestor, but maybe more
-            size_t n_to_take = det_rand.randrange(2) == 0 ? 1 : 1+det_rand.randrange(coin.ref->vout.size() - coin.vin_left);
+            size_t n_to_take = det_rand.randrange(2) == 0 ? 1 : 1 + det_rand.randrange(coin.ref->vout.size() - coin.vin_left);
             for (size_t i = 0; i < n_to_take; ++i) {
                 tx.vin.emplace_back();
                 tx.vin.back().prevout = COutPoint(hash, coin.vin_left++);
@@ -64,7 +64,7 @@ static void ComplexMemPool(benchmark::State& state)
                 coin = available_coins.back();
                 available_coins.pop_back();
             }
-            tx.vout.resize(det_rand.randrange(10)+2);
+            tx.vout.resize(det_rand.randrange(10) + 2);
             for (auto& out : tx.vout) {
                 out.scriptPubKey = CScript() << CScriptNum(tx_counter) << OP_EQUAL;
                 out.nValue = 10 * COIN;

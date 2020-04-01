@@ -31,14 +31,14 @@ struct ValidationInterfaceConnections {
 };
 
 struct MainSignalsInstance {
-    boost::signals2::signal<void (const CBlockIndex *, const CBlockIndex *, bool fInitialDownload)> UpdatedBlockTip;
-    boost::signals2::signal<void (const CTransactionRef &)> TransactionAddedToMempool;
-    boost::signals2::signal<void (const std::shared_ptr<const CBlock> &, const CBlockIndex *pindex, const std::vector<CTransactionRef>&)> BlockConnected;
-    boost::signals2::signal<void (const std::shared_ptr<const CBlock>&, const CBlockIndex* pindex)> BlockDisconnected;
-    boost::signals2::signal<void (const CTransactionRef &)> TransactionRemovedFromMempool;
-    boost::signals2::signal<void (const CBlockLocator &)> ChainStateFlushed;
-    boost::signals2::signal<void (const CBlock&, const BlockValidationState&)> BlockChecked;
-    boost::signals2::signal<void (const CBlockIndex *, const std::shared_ptr<const CBlock>&)> NewPoWValidBlock;
+    boost::signals2::signal<void(const CBlockIndex*, const CBlockIndex*, bool fInitialDownload)> UpdatedBlockTip;
+    boost::signals2::signal<void(const CTransactionRef&)> TransactionAddedToMempool;
+    boost::signals2::signal<void(const std::shared_ptr<const CBlock>&, const CBlockIndex* pindex, const std::vector<CTransactionRef>&)> BlockConnected;
+    boost::signals2::signal<void(const std::shared_ptr<const CBlock>&, const CBlockIndex* pindex)> BlockDisconnected;
+    boost::signals2::signal<void(const CTransactionRef&)> TransactionRemovedFromMempool;
+    boost::signals2::signal<void(const CBlockLocator&)> ChainStateFlushed;
+    boost::signals2::signal<void(const CBlock&, const BlockValidationState&)> BlockChecked;
+    boost::signals2::signal<void(const CBlockIndex*, const std::shared_ptr<const CBlock>&)> NewPoWValidBlock;
 
     // We are not allowed to assume the scheduler only runs in one thread,
     // but must ensure all callbacks happen in-order, so we end up creating
@@ -46,27 +46,31 @@ struct MainSignalsInstance {
     SingleThreadedSchedulerClient m_schedulerClient;
     std::unordered_map<CValidationInterface*, ValidationInterfaceConnections> m_connMainSignals;
 
-    explicit MainSignalsInstance(CScheduler *pscheduler) : m_schedulerClient(pscheduler) {}
+    explicit MainSignalsInstance(CScheduler* pscheduler) : m_schedulerClient(pscheduler) {}
 };
 
 static CMainSignals g_signals;
 
-void CMainSignals::RegisterBackgroundSignalScheduler(CScheduler& scheduler) {
+void CMainSignals::RegisterBackgroundSignalScheduler(CScheduler& scheduler)
+{
     assert(!m_internals);
     m_internals.reset(new MainSignalsInstance(&scheduler));
 }
 
-void CMainSignals::UnregisterBackgroundSignalScheduler() {
+void CMainSignals::UnregisterBackgroundSignalScheduler()
+{
     m_internals.reset(nullptr);
 }
 
-void CMainSignals::FlushBackgroundCallbacks() {
+void CMainSignals::FlushBackgroundCallbacks()
+{
     if (m_internals) {
         m_internals->m_schedulerClient.EmptyQueue();
     }
 }
 
-size_t CMainSignals::CallbacksPending() {
+size_t CMainSignals::CallbacksPending()
+{
     if (!m_internals) return 0;
     return m_internals->m_schedulerClient.CallbacksPending();
 }
@@ -76,7 +80,8 @@ CMainSignals& GetMainSignals()
     return g_signals;
 }
 
-void RegisterValidationInterface(CValidationInterface* pwalletIn) {
+void RegisterValidationInterface(CValidationInterface* pwalletIn)
+{
     ValidationInterfaceConnections& conns = g_signals.m_internals->m_connMainSignals[pwalletIn];
     conns.UpdatedBlockTip = g_signals.m_internals->UpdatedBlockTip.connect(std::bind(&CValidationInterface::UpdatedBlockTip, pwalletIn, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     conns.TransactionAddedToMempool = g_signals.m_internals->TransactionAddedToMempool.connect(std::bind(&CValidationInterface::TransactionAddedToMempool, pwalletIn, std::placeholders::_1));
@@ -88,24 +93,28 @@ void RegisterValidationInterface(CValidationInterface* pwalletIn) {
     conns.NewPoWValidBlock = g_signals.m_internals->NewPoWValidBlock.connect(std::bind(&CValidationInterface::NewPoWValidBlock, pwalletIn, std::placeholders::_1, std::placeholders::_2));
 }
 
-void UnregisterValidationInterface(CValidationInterface* pwalletIn) {
+void UnregisterValidationInterface(CValidationInterface* pwalletIn)
+{
     if (g_signals.m_internals) {
         g_signals.m_internals->m_connMainSignals.erase(pwalletIn);
     }
 }
 
-void UnregisterAllValidationInterfaces() {
+void UnregisterAllValidationInterfaces()
+{
     if (!g_signals.m_internals) {
         return;
     }
     g_signals.m_internals->m_connMainSignals.clear();
 }
 
-void CallFunctionInValidationInterfaceQueue(std::function<void ()> func) {
+void CallFunctionInValidationInterfaceQueue(std::function<void()> func)
+{
     g_signals.m_internals->m_schedulerClient.AddToProcessQueue(std::move(func));
 }
 
-void SyncWithValidationInterfaceQueue() {
+void SyncWithValidationInterfaceQueue()
+{
     AssertLockNotHeld(cs_main);
     // Block until the validation queue drains
     std::promise<void> promise;
@@ -132,7 +141,8 @@ void SyncWithValidationInterfaceQueue() {
 #define LOG_EVENT(fmt, ...) \
     LogPrint(BCLog::VALIDATION, fmt "\n", __VA_ARGS__)
 
-void CMainSignals::UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockIndex *pindexFork, bool fInitialDownload) {
+void CMainSignals::UpdatedBlockTip(const CBlockIndex* pindexNew, const CBlockIndex* pindexFork, bool fInitialDownload)
+{
     // Dependencies exist that require UpdatedBlockTip events to be delivered in the order in which
     // the chain actually updates. One way to ensure this is for the caller to invoke this signal
     // in the same critical section where the chain is updated
@@ -141,36 +151,39 @@ void CMainSignals::UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockInd
         m_internals->UpdatedBlockTip(pindexNew, pindexFork, fInitialDownload);
     };
     ENQUEUE_AND_LOG_EVENT(event, "%s: new block hash=%s fork block hash=%s (in IBD=%s)", __func__,
-                          pindexNew->GetBlockHash().ToString(),
-                          pindexFork ? pindexFork->GetBlockHash().ToString() : "null",
-                          fInitialDownload);
+        pindexNew->GetBlockHash().ToString(),
+        pindexFork ? pindexFork->GetBlockHash().ToString() : "null",
+        fInitialDownload);
 }
 
-void CMainSignals::TransactionAddedToMempool(const CTransactionRef &ptx) {
+void CMainSignals::TransactionAddedToMempool(const CTransactionRef& ptx)
+{
     auto event = [ptx, this] {
         m_internals->TransactionAddedToMempool(ptx);
     };
     ENQUEUE_AND_LOG_EVENT(event, "%s: txid=%s wtxid=%s", __func__,
-                          ptx->GetHash().ToString(),
-                          ptx->GetWitnessHash().ToString());
+        ptx->GetHash().ToString(),
+        ptx->GetWitnessHash().ToString());
 }
 
-void CMainSignals::TransactionRemovedFromMempool(const CTransactionRef &ptx) {
+void CMainSignals::TransactionRemovedFromMempool(const CTransactionRef& ptx)
+{
     auto event = [ptx, this] {
         m_internals->TransactionRemovedFromMempool(ptx);
     };
     ENQUEUE_AND_LOG_EVENT(event, "%s: txid=%s wtxid=%s", __func__,
-                          ptx->GetHash().ToString(),
-                          ptx->GetWitnessHash().ToString());
+        ptx->GetHash().ToString(),
+        ptx->GetWitnessHash().ToString());
 }
 
-void CMainSignals::BlockConnected(const std::shared_ptr<const CBlock> &pblock, const CBlockIndex *pindex, const std::shared_ptr<const std::vector<CTransactionRef>>& pvtxConflicted) {
+void CMainSignals::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindex, const std::shared_ptr<const std::vector<CTransactionRef>>& pvtxConflicted)
+{
     auto event = [pblock, pindex, pvtxConflicted, this] {
         m_internals->BlockConnected(pblock, pindex, *pvtxConflicted);
     };
     ENQUEUE_AND_LOG_EVENT(event, "%s: block hash=%s block height=%d", __func__,
-                          pblock->GetHash().ToString(),
-                          pindex->nHeight);
+        pblock->GetHash().ToString(),
+        pindex->nHeight);
 }
 
 void CMainSignals::BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindex)
@@ -179,25 +192,28 @@ void CMainSignals::BlockDisconnected(const std::shared_ptr<const CBlock>& pblock
         m_internals->BlockDisconnected(pblock, pindex);
     };
     ENQUEUE_AND_LOG_EVENT(event, "%s: block hash=%s block height=%d", __func__,
-                          pblock->GetHash().ToString(),
-                          pindex->nHeight);
+        pblock->GetHash().ToString(),
+        pindex->nHeight);
 }
 
-void CMainSignals::ChainStateFlushed(const CBlockLocator &locator) {
+void CMainSignals::ChainStateFlushed(const CBlockLocator& locator)
+{
     auto event = [locator, this] {
         m_internals->ChainStateFlushed(locator);
     };
     ENQUEUE_AND_LOG_EVENT(event, "%s: block hash=%s", __func__,
-                          locator.IsNull() ? "null" : locator.vHave.front().ToString());
+        locator.IsNull() ? "null" : locator.vHave.front().ToString());
 }
 
-void CMainSignals::BlockChecked(const CBlock& block, const BlockValidationState& state) {
+void CMainSignals::BlockChecked(const CBlock& block, const BlockValidationState& state)
+{
     LOG_EVENT("%s: block hash=%s state=%s", __func__,
-              block.GetHash().ToString(), FormatStateMessage(state));
+        block.GetHash().ToString(), FormatStateMessage(state));
     m_internals->BlockChecked(block, state);
 }
 
-void CMainSignals::NewPoWValidBlock(const CBlockIndex *pindex, const std::shared_ptr<const CBlock> &block) {
+void CMainSignals::NewPoWValidBlock(const CBlockIndex* pindex, const std::shared_ptr<const CBlock>& block)
+{
     LOG_EVENT("%s: block hash=%s", __func__, block->GetHash().ToString());
     m_internals->NewPoWValidBlock(pindex, block);
 }

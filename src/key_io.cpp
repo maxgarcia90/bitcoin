@@ -11,12 +11,11 @@
 #include <boost/variant/apply_visitor.hpp>
 #include <boost/variant/static_visitor.hpp>
 
+#include <algorithm>
 #include <assert.h>
 #include <string.h>
-#include <algorithm>
 
-namespace
-{
+namespace {
 class DestinationEncoder : public boost::static_visitor<std::string>
 {
 private:

@@ -10,7 +10,8 @@
 #include <map>
 #include <string>
 
-std::string StringForFeeReason(FeeReason reason) {
+std::string StringForFeeReason(FeeReason reason)
+{
     static const std::map<FeeReason, std::string> fee_reason_strings = {
         {FeeReason::NONE, "None"},
         {FeeReason::HALF_ESTIMATE, "Half Target 60% Threshold"},
@@ -29,7 +30,8 @@ std::string StringForFeeReason(FeeReason reason) {
     return reason_string->second;
 }
 
-bool FeeModeFromString(const std::string& mode_string, FeeEstimateMode& fee_estimate_mode) {
+bool FeeModeFromString(const std::string& mode_string, FeeEstimateMode& fee_estimate_mode)
+{
     static const std::map<std::string, FeeEstimateMode> fee_modes = {
         {"UNSET", FeeEstimateMode::UNSET},
         {"ECONOMICAL", FeeEstimateMode::ECONOMICAL},

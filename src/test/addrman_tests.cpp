@@ -2,11 +2,11 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #include <addrman.h>
-#include <test/util/setup_common.h>
-#include <string>
 #include <boost/test/unit_test.hpp>
-#include <util/asmap.h>
+#include <string>
 #include <test/data/asmap.raw.h>
+#include <test/util/setup_common.h>
+#include <util/asmap.h>
 
 #include <hash.h>
 #include <netbase.h>
@@ -16,6 +16,7 @@ class CAddrManTest : public CAddrMan
 {
 private:
     bool deterministic;
+
 public:
     explicit CAddrManTest(bool makeDeterministic = true,
         std::vector<bool> asmap = std::vector<bool>())
@@ -71,14 +72,14 @@ public:
     // Simulates connection failure so that we can test eviction of offline nodes
     void SimConnFail(CService& addr)
     {
-         LOCK(cs);
-         int64_t nLastSuccess = 1;
-         Good_(addr, true, nLastSuccess); // Set last good connection in the deep past.
+        LOCK(cs);
+        int64_t nLastSuccess = 1;
+        Good_(addr, true, nLastSuccess); // Set last good connection in the deep past.
 
-         bool count_failure = false;
-         int64_t nLastTry = GetAdjustedTime()-61;
-         Attempt(addr, count_failure, nLastTry);
-     }
+        bool count_failure = false;
+        int64_t nLastTry = GetAdjustedTime() - 61;
+        Attempt(addr, count_failure, nLastTry);
+    }
 
     void Clear()
     {
@@ -88,7 +89,6 @@ public:
             insecure_rand = FastRandomContext(true);
         }
     }
-
 };
 
 static CNetAddr ResolveIP(const std::string& ip)
@@ -106,7 +106,8 @@ static CService ResolveService(const std::string& ip, const int port = 0)
 }
 
 
-static std::vector<bool> FromBytes(const unsigned char* source, int vector_size) {
+static std::vector<bool> FromBytes(const unsigned char* source, int vector_size)
+{
     std::vector<bool> result(vector_size);
     for (int byte_i = 0; byte_i < vector_size / 8; ++byte_i) {
         unsigned char cur_byte = source[byte_i];
@@ -544,7 +545,8 @@ BOOST_AUTO_TEST_CASE(caddrinfo_get_new_bucket_legacy)
     for (int j = 0; j < 4 * 255; j++) {
         CAddrInfo infoj = CAddrInfo(CAddress(
                                         ResolveService(
-                                            std::to_string(250 + (j / 255)) + "." + std::to_string(j % 256) + ".1.1"), NODE_NONE),
+                                            std::to_string(250 + (j / 255)) + "." + std::to_string(j % 256) + ".1.1"),
+                                        NODE_NONE),
             ResolveIP("251.4.1.1"));
         int bucket = infoj.GetNewBucket(nKey1, asmap);
         buckets.insert(bucket);
@@ -677,7 +679,8 @@ BOOST_AUTO_TEST_CASE(caddrinfo_get_new_bucket)
     for (int j = 0; j < 4 * 255; j++) {
         CAddrInfo infoj = CAddrInfo(CAddress(
                                         ResolveService(
-                                            std::to_string(250 + (j / 255)) + "." + std::to_string(j % 256) + ".1.1"), NODE_NONE),
+                                            std::to_string(250 + (j / 255)) + "." + std::to_string(j % 256) + ".1.1"),
+                                        NODE_NONE),
             ResolveIP("251.4.1.1"));
         int bucket = infoj.GetNewBucket(nKey1, asmap);
         buckets.insert(bucket);
@@ -709,7 +712,6 @@ BOOST_AUTO_TEST_CASE(caddrinfo_get_new_bucket)
     // Test: IP addresses in the different source /16 prefixes sometimes map to NO MORE
     // than 1 bucket.
     BOOST_CHECK(buckets.size() == 1);
-
 }
 
 BOOST_AUTO_TEST_CASE(addrman_serialization)
@@ -791,7 +793,7 @@ BOOST_AUTO_TEST_CASE(addrman_selecttriedcollision)
     // Add twenty two addresses.
     CNetAddr source = ResolveIP("252.2.2.2");
     for (unsigned int i = 1; i < 23; i++) {
-        CService addr = ResolveService("250.1.1."+std::to_string(i));
+        CService addr = ResolveService("250.1.1." + std::to_string(i));
         BOOST_CHECK(addrman.Add(CAddress(addr, NODE_NONE), source));
         addrman.Good(addr);
 
@@ -802,13 +804,12 @@ BOOST_AUTO_TEST_CASE(addrman_selecttriedcollision)
 
     // Ensure Good handles duplicates well.
     for (unsigned int i = 1; i < 23; i++) {
-        CService addr = ResolveService("250.1.1."+std::to_string(i));
+        CService addr = ResolveService("250.1.1." + std::to_string(i));
         addrman.Good(addr);
 
         BOOST_CHECK(addrman.size() == 22);
         BOOST_CHECK(addrman.SelectTriedCollision().ToString() == "[::]:0");
     }
-
 }
 
 BOOST_AUTO_TEST_CASE(addrman_noevict)
@@ -818,7 +819,7 @@ BOOST_AUTO_TEST_CASE(addrman_noevict)
     // Add twenty two addresses.
     CNetAddr source = ResolveIP("252.2.2.2");
     for (unsigned int i = 1; i < 23; i++) {
-        CService addr = ResolveService("250.1.1."+std::to_string(i));
+        CService addr = ResolveService("250.1.1." + std::to_string(i));
         BOOST_CHECK(addrman.Add(CAddress(addr, NODE_NONE), source));
         addrman.Good(addr);
 
@@ -841,7 +842,7 @@ BOOST_AUTO_TEST_CASE(addrman_noevict)
 
     // Lets create two collisions.
     for (unsigned int i = 24; i < 33; i++) {
-        CService addr = ResolveService("250.1.1."+std::to_string(i));
+        CService addr = ResolveService("250.1.1." + std::to_string(i));
         BOOST_CHECK(addrman.Add(CAddress(addr, NODE_NONE), source));
         addrman.Good(addr);
 
@@ -879,7 +880,7 @@ BOOST_AUTO_TEST_CASE(addrman_evictionworks)
     // Add twenty two addresses.
     CNetAddr source = ResolveIP("252.2.2.2");
     for (unsigned int i = 1; i < 23; i++) {
-        CService addr = ResolveService("250.1.1."+std::to_string(i));
+        CService addr = ResolveService("250.1.1." + std::to_string(i));
         BOOST_CHECK(addrman.Add(CAddress(addr, NODE_NONE), source));
         addrman.Good(addr);
 

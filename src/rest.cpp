@@ -39,10 +39,10 @@ static const struct {
     RetFormat rf;
     const char* name;
 } rf_names[] = {
-      {RetFormat::UNDEF, ""},
-      {RetFormat::BINARY, "bin"},
-      {RetFormat::HEX, "hex"},
-      {RetFormat::JSON, "json"},
+    {RetFormat::UNDEF, ""},
+    {RetFormat::BINARY, "bin"},
+    {RetFormat::HEX, "hex"},
+    {RetFormat::JSON, "json"},
 };
 
 struct CCoin {
@@ -92,8 +92,7 @@ static CTxMemPool* GetMemPool(HTTPRequest* req)
 static RetFormat ParseDataFormat(std::string& param, const std::string& strReq)
 {
     const std::string::size_type pos = strReq.rfind('.');
-    if (pos == std::string::npos)
-    {
+    if (pos == std::string::npos) {
         param = strReq;
         return rf_names[0].rf;
     }
@@ -130,12 +129,12 @@ static bool CheckWarmup(HTTPRequest* req)
 {
     std::string statusmessage;
     if (RPCIsInWarmup(&statusmessage))
-         return RESTERR(req, HTTP_SERVICE_UNAVAILABLE, "Service temporarily unavailable: " + statusmessage);
+        return RESTERR(req, HTTP_SERVICE_UNAVAILABLE, "Service temporarily unavailable: " + statusmessage);
     return true;
 }
 
 static bool rest_headers(HTTPRequest* req,
-                         const std::string& strURIPart)
+    const std::string& strURIPart)
 {
     if (!CheckWarmup(req))
         return false;
@@ -157,7 +156,7 @@ static bool rest_headers(HTTPRequest* req,
         return RESTERR(req, HTTP_BAD_REQUEST, "Invalid hash: " + hashStr);
 
     const CBlockIndex* tip = nullptr;
-    std::vector<const CBlockIndex *> headers;
+    std::vector<const CBlockIndex*> headers;
     headers.reserve(count);
     {
         LOCK(cs_main);
@@ -174,7 +173,7 @@ static bool rest_headers(HTTPRequest* req,
     switch (rf) {
     case RetFormat::BINARY: {
         CDataStream ssHeader(SER_NETWORK, PROTOCOL_VERSION);
-        for (const CBlockIndex *pindex : headers) {
+        for (const CBlockIndex* pindex : headers) {
             ssHeader << pindex->GetBlockHeader();
         }
 
@@ -186,7 +185,7 @@ static bool rest_headers(HTTPRequest* req,
 
     case RetFormat::HEX: {
         CDataStream ssHeader(SER_NETWORK, PROTOCOL_VERSION);
-        for (const CBlockIndex *pindex : headers) {
+        for (const CBlockIndex* pindex : headers) {
             ssHeader << pindex->GetBlockHeader();
         }
 
@@ -197,7 +196,7 @@ static bool rest_headers(HTTPRequest* req,
     }
     case RetFormat::JSON: {
         UniValue jsonHeaders(UniValue::VARR);
-        for (const CBlockIndex *pindex : headers) {
+        for (const CBlockIndex* pindex : headers) {
             jsonHeaders.push_back(blockheaderToJSON(tip, pindex));
         }
         std::string strJSON = jsonHeaders.write() + "\n";
@@ -212,8 +211,8 @@ static bool rest_headers(HTTPRequest* req,
 }
 
 static bool rest_block(HTTPRequest* req,
-                       const std::string& strURIPart,
-                       bool showTxDetails)
+    const std::string& strURIPart,
+    bool showTxDetails)
 {
     if (!CheckWarmup(req))
         return false;
@@ -422,8 +421,7 @@ static bool rest_getutxos(HTTPRequest* req, const std::string& strURIPart)
     const RetFormat rf = ParseDataFormat(param, strURIPart);
 
     std::vector<std::string> uriParts;
-    if (param.length() > 1)
-    {
+    if (param.length() > 1) {
         std::string strUriParams = param.substr(1);
         boost::split(uriParts, strUriParams, boost::is_any_of("/"));
     }
@@ -440,17 +438,15 @@ static bool rest_getutxos(HTTPRequest* req, const std::string& strURIPart)
     // parse/deserialize input
     // input-format = output-format, rest/getutxos/bin requires binary input, gives binary output, ...
 
-    if (uriParts.size() > 0)
-    {
+    if (uriParts.size() > 0) {
         //inputs is sent over URI scheme (/rest/getutxos/checkmempool/txid1-n/txid2-n/...)
         if (uriParts[0] == "checkmempool") fCheckMemPool = true;
 
-        for (size_t i = (fCheckMemPool) ? 1 : 0; i < uriParts.size(); i++)
-        {
+        for (size_t i = (fCheckMemPool) ? 1 : 0; i < uriParts.size(); i++) {
             uint256 txid;
             int32_t nOutput;
             std::string strTxid = uriParts[i].substr(0, uriParts[i].find('-'));
-            std::string strOutput = uriParts[i].substr(uriParts[i].find('-')+1);
+            std::string strOutput = uriParts[i].substr(uriParts[i].find('-') + 1);
 
             if (!ParseInt32(strOutput, &nOutput) || !IsHex(strTxid))
                 return RESTERR(req, HTTP_BAD_REQUEST, "Parse error");
@@ -475,8 +471,7 @@ static bool rest_getutxos(HTTPRequest* req, const std::string& strURIPart)
     case RetFormat::BINARY: {
         try {
             //deserialize only if user sent a request
-            if (strRequestMutable.size() > 0)
-            {
+            if (strRequestMutable.size() > 0) {
                 if (fInputParsed) //don't allow sending input over URI and HTTP RAW DATA
                     return RESTERR(req, HTTP_BAD_REQUEST, "Combination of URI scheme inputs and raw post data is not allowed");
 
@@ -531,7 +526,7 @@ static bool rest_getutxos(HTTPRequest* req, const std::string& strURIPart)
             CCoinsViewMemPool viewMempool(&viewChain, *mempool);
             process_utxos(viewMempool, *mempool);
         } else {
-            LOCK(cs_main);  // no need to lock mempool!
+            LOCK(cs_main); // no need to lock mempool!
             process_utxos(::ChainstateActive().CoinsTip(), CTxMemPool());
         }
 
@@ -601,7 +596,7 @@ static bool rest_getutxos(HTTPRequest* req, const std::string& strURIPart)
 }
 
 static bool rest_blockhash_by_height(HTTPRequest* req,
-                       const std::string& str_uri_part)
+    const std::string& str_uri_part)
 {
     if (!CheckWarmup(req)) return false;
     std::string height_str;
@@ -650,15 +645,15 @@ static const struct {
     const char* prefix;
     bool (*handler)(HTTPRequest* req, const std::string& strReq);
 } uri_prefixes[] = {
-      {"/rest/tx/", rest_tx},
-      {"/rest/block/notxdetails/", rest_block_notxdetails},
-      {"/rest/block/", rest_block_extended},
-      {"/rest/chaininfo", rest_chaininfo},
-      {"/rest/mempool/info", rest_mempool_info},
-      {"/rest/mempool/contents", rest_mempool_contents},
-      {"/rest/headers/", rest_headers},
-      {"/rest/getutxos", rest_getutxos},
-      {"/rest/blockhashbyheight/", rest_blockhash_by_height},
+    {"/rest/tx/", rest_tx},
+    {"/rest/block/notxdetails/", rest_block_notxdetails},
+    {"/rest/block/", rest_block_extended},
+    {"/rest/chaininfo", rest_chaininfo},
+    {"/rest/mempool/info", rest_mempool_info},
+    {"/rest/mempool/contents", rest_mempool_contents},
+    {"/rest/headers/", rest_headers},
+    {"/rest/getutxos", rest_getutxos},
+    {"/rest/blockhashbyheight/", rest_blockhash_by_height},
 };
 
 void StartREST()

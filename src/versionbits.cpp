@@ -2,8 +2,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <versionbits.h>
 #include <consensus/params.h>
+#include <versionbits.h>
 
 ThresholdState AbstractThresholdConditionChecker::GetStateFor(const CBlockIndex* pindexPrev, const Consensus::Params& params, ThresholdConditionCache& cache) const
 {
@@ -50,43 +50,43 @@ ThresholdState AbstractThresholdConditionChecker::GetStateFor(const CBlockIndex*
         vToCompute.pop_back();
 
         switch (state) {
-            case ThresholdState::DEFINED: {
-                if (pindexPrev->GetMedianTimePast() >= nTimeTimeout) {
-                    stateNext = ThresholdState::FAILED;
-                } else if (pindexPrev->GetMedianTimePast() >= nTimeStart) {
-                    stateNext = ThresholdState::STARTED;
-                }
+        case ThresholdState::DEFINED: {
+            if (pindexPrev->GetMedianTimePast() >= nTimeTimeout) {
+                stateNext = ThresholdState::FAILED;
+            } else if (pindexPrev->GetMedianTimePast() >= nTimeStart) {
+                stateNext = ThresholdState::STARTED;
+            }
+            break;
+        }
+        case ThresholdState::STARTED: {
+            if (pindexPrev->GetMedianTimePast() >= nTimeTimeout) {
+                stateNext = ThresholdState::FAILED;
                 break;
             }
-            case ThresholdState::STARTED: {
-                if (pindexPrev->GetMedianTimePast() >= nTimeTimeout) {
-                    stateNext = ThresholdState::FAILED;
-                    break;
+            // We need to count
+            const CBlockIndex* pindexCount = pindexPrev;
+            int count = 0;
+            for (int i = 0; i < nPeriod; i++) {
+                if (Condition(pindexCount, params)) {
+                    count++;
                 }
-                // We need to count
-                const CBlockIndex* pindexCount = pindexPrev;
-                int count = 0;
-                for (int i = 0; i < nPeriod; i++) {
-                    if (Condition(pindexCount, params)) {
-                        count++;
-                    }
-                    pindexCount = pindexCount->pprev;
-                }
-                if (count >= nThreshold) {
-                    stateNext = ThresholdState::LOCKED_IN;
-                }
-                break;
+                pindexCount = pindexCount->pprev;
             }
-            case ThresholdState::LOCKED_IN: {
-                // Always progresses into ACTIVE.
-                stateNext = ThresholdState::ACTIVE;
-                break;
+            if (count >= nThreshold) {
+                stateNext = ThresholdState::LOCKED_IN;
             }
-            case ThresholdState::FAILED:
-            case ThresholdState::ACTIVE: {
-                // Nothing happens, these are terminal states.
-                break;
-            }
+            break;
+        }
+        case ThresholdState::LOCKED_IN: {
+            // Always progresses into ACTIVE.
+            stateNext = ThresholdState::ACTIVE;
+            break;
+        }
+        case ThresholdState::FAILED:
+        case ThresholdState::ACTIVE: {
+            // Nothing happens, these are terminal states.
+            break;
+        }
         }
         cache[pindexPrev] = state = stateNext;
     }
@@ -111,14 +111,14 @@ BIP9Stats AbstractThresholdConditionChecker::GetStateStatisticsFor(const CBlockI
     // Count from current block to beginning of period
     int count = 0;
     const CBlockIndex* currentIndex = pindex;
-    while (pindexEndOfPrevPeriod->nHeight != currentIndex->nHeight){
+    while (pindexEndOfPrevPeriod->nHeight != currentIndex->nHeight) {
         if (Condition(currentIndex, params))
             count++;
         currentIndex = currentIndex->pprev;
     }
 
     stats.count = count;
-    stats.possible = (stats.period - stats.threshold ) >= (stats.elapsed - count);
+    stats.possible = (stats.period - stats.threshold) >= (stats.elapsed - count);
 
     return stats;
 }
@@ -158,12 +158,12 @@ int AbstractThresholdConditionChecker::GetStateSinceHeightFor(const CBlockIndex*
     return pindexPrev->nHeight + 1;
 }
 
-namespace
-{
+namespace {
 /**
  * Class to implement versionbits logic.
  */
-class VersionBitsConditionChecker : public AbstractThresholdConditionChecker {
+class VersionBitsConditionChecker : public AbstractThresholdConditionChecker
+{
 private:
     const Consensus::DeploymentPos id;
 

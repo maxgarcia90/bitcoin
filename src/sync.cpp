@@ -68,9 +68,9 @@ private:
     int sourceLine;
 };
 
-typedef std::vector<std::pair<void*, CLockLocation> > LockStack;
+typedef std::vector<std::pair<void*, CLockLocation>> LockStack;
 typedef std::map<std::pair<void*, void*>, LockStack> LockOrders;
-typedef std::set<std::pair<void*, void*> > InvLockOrders;
+typedef std::set<std::pair<void*, void*>> InvLockOrders;
 
 struct LockData {
     // Very ugly hack: as the global constructs and destructors run single
@@ -85,7 +85,8 @@ struct LockData {
     InvLockOrders invlockorders;
     std::mutex dd_mutex;
 };
-LockData& GetLockData() {
+LockData& GetLockData()
+{
     static LockData lockdata;
     return lockdata;
 }
@@ -96,7 +97,7 @@ static void potential_deadlock_detected(const std::pair<void*, void*>& mismatch,
 {
     LogPrintf("POTENTIAL DEADLOCK DETECTED\n");
     LogPrintf("Previous lock order was:\n");
-    for (const std::pair<void*, CLockLocation> & i : s2) {
+    for (const std::pair<void*, CLockLocation>& i : s2) {
         if (i.first == mismatch.first) {
             LogPrintf(" (1)"); /* Continued */
         }
@@ -106,7 +107,7 @@ static void potential_deadlock_detected(const std::pair<void*, void*>& mismatch,
         LogPrintf(" %s\n", i.second.ToString());
     }
     LogPrintf("Current lock order is:\n");
-    for (const std::pair<void*, CLockLocation> & i : s1) {
+    for (const std::pair<void*, CLockLocation>& i : s1) {
         if (i.first == mismatch.first) {
             LogPrintf(" (1)"); /* Continued */
         }

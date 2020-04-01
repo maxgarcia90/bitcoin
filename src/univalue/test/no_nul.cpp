@@ -1,6 +1,6 @@
 #include "univalue.h"
 
-int main (int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     char buf[] = "___[1,2,3]___";
     UniValue val;

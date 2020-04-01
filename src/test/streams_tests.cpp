@@ -13,7 +13,7 @@ BOOST_AUTO_TEST_CASE(streams_vector_writer)
 {
     unsigned char a(1);
     unsigned char b(2);
-    unsigned char bytes[] = { 3, 4, 5, 6 };
+    unsigned char bytes[] = {3, 4, 5, 6};
     std::vector<unsigned char> vch;
 
     // Each test runs twice. Serializing a second time at the same starting
@@ -160,8 +160,8 @@ BOOST_AUTO_TEST_CASE(streams_serializedata_xor)
     key.push_back('\x00');
     ds.Xor(key);
     BOOST_CHECK_EQUAL(
-            std::string(expected_xor.begin(), expected_xor.end()),
-            std::string(ds.begin(), ds.end()));
+        std::string(expected_xor.begin(), expected_xor.end()),
+        std::string(ds.begin(), ds.end()));
 
     in.push_back('\x0f');
     in.push_back('\xf0');
@@ -177,8 +177,8 @@ BOOST_AUTO_TEST_CASE(streams_serializedata_xor)
     key.push_back('\xff');
     ds.Xor(key);
     BOOST_CHECK_EQUAL(
-            std::string(expected_xor.begin(), expected_xor.end()),
-            std::string(ds.begin(), ds.end()));
+        std::string(expected_xor.begin(), expected_xor.end()),
+        std::string(ds.begin(), ds.end()));
 
     // Multi character key
 
@@ -198,8 +198,8 @@ BOOST_AUTO_TEST_CASE(streams_serializedata_xor)
 
     ds.Xor(key);
     BOOST_CHECK_EQUAL(
-            std::string(expected_xor.begin(), expected_xor.end()),
-            std::string(ds.begin(), ds.end()));
+        std::string(expected_xor.begin(), expected_xor.end()),
+        std::string(ds.begin(), ds.end()));
 }
 
 BOOST_AUTO_TEST_CASE(streams_buffered_file)

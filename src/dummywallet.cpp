@@ -2,9 +2,9 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <support/allocators/secure.h>
 #include <util/system.h>
 #include <walletinitinterface.h>
-#include <support/allocators/secure.h>
 
 class CWallet;
 enum class WalletCreationStatus;
@@ -13,15 +13,15 @@ namespace interfaces {
 class Chain;
 class Handler;
 class Wallet;
-}
+} // namespace interfaces
 
-class DummyWalletInit : public WalletInitInterface {
+class DummyWalletInit : public WalletInitInterface
+{
 public:
-
-    bool HasWalletSupport() const override {return false;}
+    bool HasWalletSupport() const override { return false; }
     void AddWalletOptions() const override;
-    bool ParameterInteraction() const override {return true;}
-    void Construct(NodeContext& node) const override {LogPrintf("No wallet support compiled in!\n");}
+    bool ParameterInteraction() const override { return true; }
+    void Construct(NodeContext& node) const override { LogPrintf("No wallet support compiled in!\n"); }
 };
 
 void DummyWalletInit::AddWalletOptions() const

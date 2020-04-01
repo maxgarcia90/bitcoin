@@ -9,9 +9,9 @@
 #include <interfaces/node.h>
 #include <qt/bitcoin.h>
 #include <qt/test/apptests.h>
+#include <qt/test/compattests.h>
 #include <qt/test/rpcnestedtests.h>
 #include <qt/test/uritests.h>
-#include <qt/test/compattests.h>
 #include <test/util/setup_common.h>
 
 #ifdef ENABLE_WALLET
@@ -40,7 +40,7 @@ Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
 const std::function<void(const std::string&)> G_TEST_LOG_FUN{};
 
 // This is all you need to run all the tests
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     // Initialize persistent globals with the testing setup state for sanity.
     // E.g. -datadir in gArgs is set to a temp directory dummy value (instead
@@ -56,14 +56,14 @@ int main(int argc, char *argv[])
 
     bool fInvalid = false;
 
-    // Prefer the "minimal" platform for the test instead of the normal default
-    // platform ("xcb", "windows", or "cocoa") so tests can't unintentionally
-    // interfere with any background GUIs and don't require extra resources.
-    #if defined(WIN32)
-        if (getenv("QT_QPA_PLATFORM") == nullptr) _putenv_s("QT_QPA_PLATFORM", "minimal");
-    #else
-        setenv("QT_QPA_PLATFORM", "minimal", /* overwrite */ 0);
-    #endif
+// Prefer the "minimal" platform for the test instead of the normal default
+// platform ("xcb", "windows", or "cocoa") so tests can't unintentionally
+// interfere with any background GUIs and don't require extra resources.
+#if defined(WIN32)
+    if (getenv("QT_QPA_PLATFORM") == nullptr) _putenv_s("QT_QPA_PLATFORM", "minimal");
+#else
+    setenv("QT_QPA_PLATFORM", "minimal", /* overwrite */ 0);
+#endif
 
     // Don't remove this, it's needed to access
     // QApplication:: and QCoreApplication:: in the tests

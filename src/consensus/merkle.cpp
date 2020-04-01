@@ -42,7 +42,8 @@
 */
 
 
-uint256 ComputeMerkleRoot(std::vector<uint256> hashes, bool* mutated) {
+uint256 ComputeMerkleRoot(std::vector<uint256> hashes, bool* mutated)
+{
     bool mutation = false;
     while (hashes.size() > 1) {
         if (mutated) {
@@ -82,4 +83,3 @@ uint256 BlockWitnessMerkleRoot(const CBlock& block, bool* mutated)
     }
     return ComputeMerkleRoot(std::move(leaves), mutated);
 }
-

@@ -26,10 +26,8 @@ CScript ParseScript(const std::string& s)
 
     static std::map<std::string, opcodetype> mapOpNames;
 
-    if (mapOpNames.empty())
-    {
-        for (unsigned int op = 0; op <= MAX_OPCODE; op++)
-        {
+    if (mapOpNames.empty()) {
+        for (unsigned int op = 0; op <= MAX_OPCODE; op++) {
             // Allow OP_RESERVED to get into mapOpNames
             if (op < OP_NOP && op != OP_RESERVED)
                 continue;
@@ -48,39 +46,27 @@ CScript ParseScript(const std::string& s)
     std::vector<std::string> words;
     boost::algorithm::split(words, s, boost::algorithm::is_any_of(" \t\n"), boost::algorithm::token_compress_on);
 
-    for (std::vector<std::string>::const_iterator w = words.begin(); w != words.end(); ++w)
-    {
-        if (w->empty())
-        {
+    for (std::vector<std::string>::const_iterator w = words.begin(); w != words.end(); ++w) {
+        if (w->empty()) {
             // Empty string, ignore. (boost::split given '' will return one word)
-        }
-        else if (std::all_of(w->begin(), w->end(), ::IsDigit) ||
-            (w->front() == '-' && w->size() > 1 && std::all_of(w->begin()+1, w->end(), ::IsDigit)))
-        {
+        } else if (std::all_of(w->begin(), w->end(), ::IsDigit) ||
+                   (w->front() == '-' && w->size() > 1 && std::all_of(w->begin() + 1, w->end(), ::IsDigit))) {
             // Number
             int64_t n = atoi64(*w);
             result << n;
-        }
-        else if (w->substr(0,2) == "0x" && w->size() > 2 && IsHex(std::string(w->begin()+2, w->end())))
-        {
+        } else if (w->substr(0, 2) == "0x" && w->size() > 2 && IsHex(std::string(w->begin() + 2, w->end()))) {
             // Raw hex data, inserted NOT pushed onto stack:
-            std::vector<unsigned char> raw = ParseHex(std::string(w->begin()+2, w->end()));
+            std::vector<unsigned char> raw = ParseHex(std::string(w->begin() + 2, w->end()));
             result.insert(result.end(), raw.begin(), raw.end());
-        }
-        else if (w->size() >= 2 && w->front() == '\'' && w->back() == '\'')
-        {
+        } else if (w->size() >= 2 && w->front() == '\'' && w->back() == '\'') {
             // Single-quoted string, pushed as data. NOTE: this is poor-man's
             // parsing, spaces/tabs/newlines in single-quoted strings won't work.
-            std::vector<unsigned char> value(w->begin()+1, w->end()-1);
+            std::vector<unsigned char> value(w->begin() + 1, w->end() - 1);
             result << value;
-        }
-        else if (mapOpNames.count(*w))
-        {
+        } else if (mapOpNames.count(*w)) {
             // opcode, e.g. OP_ADD or ADD:
             result << mapOpNames[*w];
-        }
-        else
-        {
+        } else {
             throw std::runtime_error("script parse error");
         }
     }
@@ -167,8 +153,7 @@ bool DecodeHexBlk(CBlock& block, const std::string& strHexBlk)
     CDataStream ssBlock(blockData, SER_NETWORK, PROTOCOL_VERSION);
     try {
         ssBlock >> block;
-    }
-    catch (const std::exception&) {
+    } catch (const std::exception&) {
         return false;
     }
 
@@ -200,11 +185,11 @@ int ParseSighashString(const UniValue& sighash)
     if (!sighash.isNull()) {
         static std::map<std::string, int> map_sighash_values = {
             {std::string("ALL"), int(SIGHASH_ALL)},
-            {std::string("ALL|ANYONECANPAY"), int(SIGHASH_ALL|SIGHASH_ANYONECANPAY)},
+            {std::string("ALL|ANYONECANPAY"), int(SIGHASH_ALL | SIGHASH_ANYONECANPAY)},
             {std::string("NONE"), int(SIGHASH_NONE)},
-            {std::string("NONE|ANYONECANPAY"), int(SIGHASH_NONE|SIGHASH_ANYONECANPAY)},
+            {std::string("NONE|ANYONECANPAY"), int(SIGHASH_NONE | SIGHASH_ANYONECANPAY)},
             {std::string("SINGLE"), int(SIGHASH_SINGLE)},
-            {std::string("SINGLE|ANYONECANPAY"), int(SIGHASH_SINGLE|SIGHASH_ANYONECANPAY)},
+            {std::string("SINGLE|ANYONECANPAY"), int(SIGHASH_SINGLE | SIGHASH_ANYONECANPAY)},
         };
         std::string strHashType = sighash.get_str();
         const auto& it = map_sighash_values.find(strHashType);

@@ -2,11 +2,11 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <validation.h>
 #include <consensus/validation.h>
 #include <primitives/transaction.h>
 #include <script/script.h>
 #include <test/util/setup_common.h>
+#include <validation.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -37,11 +37,11 @@ BOOST_FIXTURE_TEST_CASE(tx_mempool_reject_coinbase, TestChain100Setup)
     unsigned int initialPoolSize = m_node.mempool->size();
 
     BOOST_CHECK_EQUAL(
-            false,
-            AcceptToMemoryPool(*m_node.mempool, state, MakeTransactionRef(coinbaseTx),
-                nullptr /* plTxnReplaced */,
-                true /* bypass_limits */,
-                0 /* nAbsurdFee */));
+        false,
+        AcceptToMemoryPool(*m_node.mempool, state, MakeTransactionRef(coinbaseTx),
+            nullptr /* plTxnReplaced */,
+            true /* bypass_limits */,
+            0 /* nAbsurdFee */));
 
     // Check that the transaction hasn't been added to mempool.
     BOOST_CHECK_EQUAL(m_node.mempool->size(), initialPoolSize);

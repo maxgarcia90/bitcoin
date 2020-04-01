@@ -12,8 +12,8 @@
 
 #include <clientversion.h>
 #include <init.h>
-#include <util/system.h>
 #include <util/strencodings.h>
+#include <util/system.h>
 
 #include <stdio.h>
 
@@ -26,16 +26,14 @@
 #include <QVBoxLayout>
 
 /** "Help message" or "About" dialog box */
-HelpMessageDialog::HelpMessageDialog(interfaces::Node& node, QWidget *parent, bool about) :
-    QDialog(parent),
-    ui(new Ui::HelpMessageDialog)
+HelpMessageDialog::HelpMessageDialog(interfaces::Node& node, QWidget* parent, bool about) : QDialog(parent),
+                                                                                            ui(new Ui::HelpMessageDialog)
 {
     ui->setupUi(this);
 
     QString version = QString{PACKAGE_NAME} + " " + tr("version") + " " + QString::fromStdString(FormatFullVersion());
 
-    if (about)
-    {
+    if (about) {
         setWindowTitle(tr("About %1").arg(PACKAGE_NAME));
 
         std::string licenseInfo = LicenseInfo();
@@ -78,16 +76,15 @@ HelpMessageDialog::HelpMessageDialog(interfaces::Node& node, QWidget *parent, bo
         QTextCharFormat bold;
         bold.setFontWeight(QFont::Bold);
 
-        for (const QString &line : coreOptions.split("\n")) {
-            if (line.startsWith("  -"))
-            {
+        for (const QString& line : coreOptions.split("\n")) {
+            if (line.startsWith("  -")) {
                 cursor.currentTable()->appendRows(1);
                 cursor.movePosition(QTextCursor::PreviousCell);
                 cursor.movePosition(QTextCursor::NextRow);
                 cursor.insertText(line.trimmed());
                 cursor.movePosition(QTextCursor::NextCell);
             } else if (line.startsWith("   ")) {
-                cursor.insertText(line.trimmed()+' ');
+                cursor.insertText(line.trimmed() + ' ');
             } else if (line.size() > 0) {
                 //Title of a group
                 if (cursor.currentTable())
@@ -133,10 +130,9 @@ void HelpMessageDialog::on_okButton_accepted()
 
 
 /** "Shutdown" window */
-ShutdownWindow::ShutdownWindow(QWidget *parent, Qt::WindowFlags f):
-    QWidget(parent, f)
+ShutdownWindow::ShutdownWindow(QWidget* parent, Qt::WindowFlags f) : QWidget(parent, f)
 {
-    QVBoxLayout *layout = new QVBoxLayout();
+    QVBoxLayout* layout = new QVBoxLayout();
     layout->addWidget(new QLabel(
         tr("%1 is shutting down...").arg(PACKAGE_NAME) + "<br /><br />" +
         tr("Do not shut down the computer until this window disappears.")));
@@ -148,7 +144,7 @@ QWidget* ShutdownWindow::showShutdownWindow(QMainWindow* window)
     assert(window != nullptr);
 
     // Show a simple window indicating shutdown status
-    QWidget *shutdownWindow = new ShutdownWindow();
+    QWidget* shutdownWindow = new ShutdownWindow();
     shutdownWindow->setWindowTitle(window->windowTitle());
 
     // Center shutdown window at where main window was
@@ -158,7 +154,7 @@ QWidget* ShutdownWindow::showShutdownWindow(QMainWindow* window)
     return shutdownWindow;
 }
 
-void ShutdownWindow::closeEvent(QCloseEvent *event)
+void ShutdownWindow::closeEvent(QCloseEvent* event)
 {
     event->ignore();
 }

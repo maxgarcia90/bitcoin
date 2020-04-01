@@ -14,7 +14,6 @@ BOOST_FIXTURE_TEST_SUITE(logging_tests, BasicTestingSetup)
 
 BOOST_AUTO_TEST_CASE(logging_timer)
 {
-
     SetMockTime(1);
     auto sec_timer = BCLog::Timer<std::chrono::seconds>("tests", "end_msg");
     SetMockTime(2);

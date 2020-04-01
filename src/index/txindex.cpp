@@ -17,26 +17,29 @@ constexpr char DB_TXINDEX_BLOCK = 'T';
 
 std::unique_ptr<TxIndex> g_txindex;
 
-struct CDiskTxPos : public FlatFilePos
-{
+struct CDiskTxPos : public FlatFilePos {
     unsigned int nTxOffset; // after header
 
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
         READWRITEAS(FlatFilePos, *this);
         READWRITE(VARINT(nTxOffset));
     }
 
-    CDiskTxPos(const FlatFilePos &blockIn, unsigned int nTxOffsetIn) : FlatFilePos(blockIn.nFile, blockIn.nPos), nTxOffset(nTxOffsetIn) {
+    CDiskTxPos(const FlatFilePos& blockIn, unsigned int nTxOffsetIn) : FlatFilePos(blockIn.nFile, blockIn.nPos), nTxOffset(nTxOffsetIn)
+    {
     }
 
-    CDiskTxPos() {
+    CDiskTxPos()
+    {
         SetNull();
     }
 
-    void SetNull() {
+    void SetNull()
+    {
         FlatFilePos::SetNull();
         nTxOffset = 0;
     }
@@ -68,11 +71,11 @@ public:
     bool MigrateData(CBlockTreeDB& block_tree_db, const CBlockLocator& best_locator);
 };
 
-TxIndex::DB::DB(size_t n_cache_size, bool f_memory, bool f_wipe) :
-    BaseIndex::DB(GetDataDir() / "indexes" / "txindex", n_cache_size, f_memory, f_wipe)
-{}
+TxIndex::DB::DB(size_t n_cache_size, bool f_memory, bool f_wipe) : BaseIndex::DB(GetDataDir() / "indexes" / "txindex", n_cache_size, f_memory, f_wipe)
+{
+}
 
-bool TxIndex::DB::ReadTxPos(const uint256 &txid, CDiskTxPos& pos) const
+bool TxIndex::DB::ReadTxPos(const uint256& txid, CDiskTxPos& pos) const
 {
     return Read(std::make_pair(DB_TXINDEX, txid), pos);
 }
@@ -90,13 +93,10 @@ bool TxIndex::DB::WriteTxs(const std::vector<std::pair<uint256, CDiskTxPos>>& v_
  * Safely persist a transfer of data from the old txindex database to the new one, and compact the
  * range of keys updated. This is used internally by MigrateData.
  */
-static void WriteTxIndexMigrationBatches(CDBWrapper& newdb, CDBWrapper& olddb,
-                                         CDBBatch& batch_newdb, CDBBatch& batch_olddb,
-                                         const std::pair<unsigned char, uint256>& begin_key,
-                                         const std::pair<unsigned char, uint256>& end_key)
+static void WriteTxIndexMigrationBatches(CDBWrapper& newdb, CDBWrapper& olddb, CDBBatch& batch_newdb, CDBBatch& batch_olddb, const std::pair<unsigned char, uint256>& begin_key, const std::pair<unsigned char, uint256>& end_key)
 {
     // Sync new DB changes to disk before deleting from old DB.
-    newdb.WriteBatch(batch_newdb, /*fSync=*/ true);
+    newdb.WriteBatch(batch_newdb, /*fSync=*/true);
     olddb.WriteBatch(batch_olddb);
     olddb.CompactRange(begin_key, end_key);
 
@@ -176,9 +176,9 @@ bool TxIndex::DB::MigrateData(CBlockTreeDB& block_tree_db, const CBlockLocator& 
             int percentage_done = (int)(high_nibble * 100.0 / 65536.0 + 0.5);
 
             uiInterface.ShowProgress(_("Upgrading txindex database").translated, percentage_done, true);
-            if (report_done < percentage_done/10) {
+            if (report_done < percentage_done / 10) {
                 LogPrintf("Upgrading txindex database... [%d%%]\n", percentage_done);
-                report_done = percentage_done/10;
+                report_done = percentage_done / 10;
             }
         }
 
@@ -194,8 +194,8 @@ bool TxIndex::DB::MigrateData(CBlockTreeDB& block_tree_db, const CBlockLocator& 
             // because LevelDB iterators are guaranteed to provide a consistent view of the
             // underlying data, like a lightweight snapshot.
             WriteTxIndexMigrationBatches(*this, block_tree_db,
-                                         batch_newdb, batch_olddb,
-                                         prev_key, key);
+                batch_newdb, batch_olddb,
+                prev_key, key);
             prev_key = key;
         }
     }
@@ -210,8 +210,8 @@ bool TxIndex::DB::MigrateData(CBlockTreeDB& block_tree_db, const CBlockLocator& 
     }
 
     WriteTxIndexMigrationBatches(*this, block_tree_db,
-                                 batch_newdb, batch_olddb,
-                                 begin_key, key);
+        batch_newdb, batch_olddb,
+        begin_key, key);
 
     if (interrupted) {
         LogPrintf("[CANCELLED].\n");
@@ -226,7 +226,8 @@ bool TxIndex::DB::MigrateData(CBlockTreeDB& block_tree_db, const CBlockLocator& 
 
 TxIndex::TxIndex(size_t n_cache_size, bool f_memory, bool f_wipe)
     : m_db(MakeUnique<TxIndex::DB>(n_cache_size, f_memory, f_wipe))
-{}
+{
+}
 
 TxIndex::~TxIndex() {}
 

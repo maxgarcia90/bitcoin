@@ -29,16 +29,23 @@ bool TryParsePermissionFlags(const std::string str, NetPermissionFlags& output, 
             const auto len = commaSeparator == std::string::npos ? permissions.length() - readen : commaSeparator - readen;
             // permission == perm1
             const auto permission = permissions.substr(readen, len);
-            readen += len; // We read "perm1"
+            readen += len;                                     // We read "perm1"
             if (commaSeparator != std::string::npos) readen++; // We read ","
 
-            if (permission == "bloomfilter" || permission == "bloom") NetPermissions::AddFlag(flags, PF_BLOOMFILTER);
-            else if (permission == "noban") NetPermissions::AddFlag(flags, PF_NOBAN);
-            else if (permission == "forcerelay") NetPermissions::AddFlag(flags, PF_FORCERELAY);
-            else if (permission == "mempool") NetPermissions::AddFlag(flags, PF_MEMPOOL);
-            else if (permission == "all") NetPermissions::AddFlag(flags, PF_ALL);
-            else if (permission == "relay") NetPermissions::AddFlag(flags, PF_RELAY);
-            else if (permission.length() == 0); // Allow empty entries
+            if (permission == "bloomfilter" || permission == "bloom")
+                NetPermissions::AddFlag(flags, PF_BLOOMFILTER);
+            else if (permission == "noban")
+                NetPermissions::AddFlag(flags, PF_NOBAN);
+            else if (permission == "forcerelay")
+                NetPermissions::AddFlag(flags, PF_FORCERELAY);
+            else if (permission == "mempool")
+                NetPermissions::AddFlag(flags, PF_MEMPOOL);
+            else if (permission == "all")
+                NetPermissions::AddFlag(flags, PF_ALL);
+            else if (permission == "relay")
+                NetPermissions::AddFlag(flags, PF_RELAY);
+            else if (permission.length() == 0)
+                ; // Allow empty entries
             else {
                 error = strprintf(_("Invalid P2P permission: '%s'").translated, permission);
                 return false;

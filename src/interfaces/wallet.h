@@ -297,8 +297,7 @@ public:
 };
 
 //! Information about one wallet address.
-struct WalletAddress
-{
+struct WalletAddress {
     CTxDestination dest;
     isminetype is_mine;
     std::string name;
@@ -311,8 +310,7 @@ struct WalletAddress
 };
 
 //! Collection of wallet balances.
-struct WalletBalances
-{
+struct WalletBalances {
     CAmount balance = 0;
     CAmount unconfirmed_balance = 0;
     CAmount immature_balance = 0;
@@ -331,8 +329,7 @@ struct WalletBalances
 };
 
 // Wallet transaction information.
-struct WalletTx
-{
+struct WalletTx {
     CTransactionRef tx;
     std::vector<isminetype> txin_is_mine;
     std::vector<isminetype> txout_is_mine;
@@ -347,8 +344,7 @@ struct WalletTx
 };
 
 //! Updated transaction status.
-struct WalletTxStatus
-{
+struct WalletTxStatus {
     int block_height;
     int blocks_to_maturity;
     int depth_in_main_chain;
@@ -362,8 +358,7 @@ struct WalletTxStatus
 };
 
 //! Wallet transaction output.
-struct WalletTxOut
-{
+struct WalletTxOut {
     CTxOut txout;
     int64_t time;
     int depth_in_main_chain = -1;

@@ -12,8 +12,8 @@
 #include <serialize.h>
 #include <streams.h>
 #include <univalue.h>
-#include <util/system.h>
 #include <util/strencodings.h>
+#include <util/system.h>
 
 UniValue ValueFromAmount(const CAmount& amount)
 {
@@ -22,7 +22,7 @@ UniValue ValueFromAmount(const CAmount& amount)
     int64_t quotient = n_abs / COIN;
     int64_t remainder = n_abs % COIN;
     return UniValue(UniValue::VNUM,
-            strprintf("%s%d.%08d", sign ? "-" : "", quotient, remainder));
+        strprintf("%s%d.%08d", sign ? "-" : "", quotient, remainder));
 }
 
 std::string FormatScript(const CScript& script)
@@ -62,11 +62,11 @@ std::string FormatScript(const CScript& script)
 
 const std::map<unsigned char, std::string> mapSigHashTypes = {
     {static_cast<unsigned char>(SIGHASH_ALL), std::string("ALL")},
-    {static_cast<unsigned char>(SIGHASH_ALL|SIGHASH_ANYONECANPAY), std::string("ALL|ANYONECANPAY")},
+    {static_cast<unsigned char>(SIGHASH_ALL | SIGHASH_ANYONECANPAY), std::string("ALL|ANYONECANPAY")},
     {static_cast<unsigned char>(SIGHASH_NONE), std::string("NONE")},
-    {static_cast<unsigned char>(SIGHASH_NONE|SIGHASH_ANYONECANPAY), std::string("NONE|ANYONECANPAY")},
+    {static_cast<unsigned char>(SIGHASH_NONE | SIGHASH_ANYONECANPAY), std::string("NONE|ANYONECANPAY")},
     {static_cast<unsigned char>(SIGHASH_SINGLE), std::string("SINGLE")},
-    {static_cast<unsigned char>(SIGHASH_SINGLE|SIGHASH_ANYONECANPAY), std::string("SINGLE|ANYONECANPAY")},
+    {static_cast<unsigned char>(SIGHASH_SINGLE | SIGHASH_ANYONECANPAY), std::string("SINGLE|ANYONECANPAY")},
 };
 
 std::string SighashToStr(unsigned char sighash_type)
@@ -150,7 +150,8 @@ void ScriptToUniv(const CScript& script, UniValue& out, bool include_address)
 }
 
 void ScriptPubKeyToUniv(const CScript& scriptPubKey,
-                        UniValue& out, bool fIncludeHex)
+    UniValue& out,
+    bool fIncludeHex)
 {
     txnouttype type;
     std::vector<CTxDestination> addresses;

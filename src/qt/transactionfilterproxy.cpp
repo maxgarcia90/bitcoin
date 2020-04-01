@@ -4,8 +4,8 @@
 
 #include <qt/transactionfilterproxy.h>
 
-#include <qt/transactiontablemodel.h>
 #include <qt/transactionrecord.h>
+#include <qt/transactiontablemodel.h>
 
 #include <cstdlib>
 
@@ -14,20 +14,19 @@ const QDateTime TransactionFilterProxy::MIN_DATE = QDateTime::fromTime_t(0);
 // Last date that can be represented (far in the future)
 const QDateTime TransactionFilterProxy::MAX_DATE = QDateTime::fromTime_t(0xFFFFFFFF);
 
-TransactionFilterProxy::TransactionFilterProxy(QObject *parent) :
-    QSortFilterProxyModel(parent),
-    dateFrom(MIN_DATE),
-    dateTo(MAX_DATE),
-    m_search_string(),
-    typeFilter(ALL_TYPES),
-    watchOnlyFilter(WatchOnlyFilter_All),
-    minAmount(0),
-    limitRows(-1),
-    showInactive(true)
+TransactionFilterProxy::TransactionFilterProxy(QObject* parent) : QSortFilterProxyModel(parent),
+                                                                  dateFrom(MIN_DATE),
+                                                                  dateTo(MAX_DATE),
+                                                                  m_search_string(),
+                                                                  typeFilter(ALL_TYPES),
+                                                                  watchOnlyFilter(WatchOnlyFilter_All),
+                                                                  minAmount(0),
+                                                                  limitRows(-1),
+                                                                  showInactive(true)
 {
 }
 
-bool TransactionFilterProxy::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
+bool TransactionFilterProxy::filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const
 {
     QModelIndex index = sourceModel()->index(sourceRow, 0, sourceParent);
 
@@ -53,8 +52,8 @@ bool TransactionFilterProxy::filterAcceptsRow(int sourceRow, const QModelIndex &
     QString label = index.data(TransactionTableModel::LabelRole).toString();
     QString txid = index.data(TransactionTableModel::TxHashRole).toString();
     if (!address.contains(m_search_string, Qt::CaseInsensitive) &&
-        !  label.contains(m_search_string, Qt::CaseInsensitive) &&
-        !   txid.contains(m_search_string, Qt::CaseInsensitive)) {
+        !label.contains(m_search_string, Qt::CaseInsensitive) &&
+        !txid.contains(m_search_string, Qt::CaseInsensitive)) {
         return false;
     }
 
@@ -65,14 +64,14 @@ bool TransactionFilterProxy::filterAcceptsRow(int sourceRow, const QModelIndex &
     return true;
 }
 
-void TransactionFilterProxy::setDateRange(const QDateTime &from, const QDateTime &to)
+void TransactionFilterProxy::setDateRange(const QDateTime& from, const QDateTime& to)
 {
     this->dateFrom = from;
     this->dateTo = to;
     invalidateFilter();
 }
 
-void TransactionFilterProxy::setSearchString(const QString &search_string)
+void TransactionFilterProxy::setSearchString(const QString& search_string)
 {
     if (m_search_string == search_string) return;
     m_search_string = search_string;
@@ -108,14 +107,11 @@ void TransactionFilterProxy::setShowInactive(bool _showInactive)
     invalidateFilter();
 }
 
-int TransactionFilterProxy::rowCount(const QModelIndex &parent) const
+int TransactionFilterProxy::rowCount(const QModelIndex& parent) const
 {
-    if(limitRows != -1)
-    {
+    if (limitRows != -1) {
         return std::min(QSortFilterProxyModel::rowCount(parent), limitRows);
-    }
-    else
-    {
+    } else {
         return QSortFilterProxyModel::rowCount(parent);
     }
 }

@@ -6,15 +6,15 @@
 #include <config/bitcoin-config.h>
 #endif
 
-#include <cstdio>       // for fileno(), stdin
+#include <cstdio> // for fileno(), stdin
 
 #ifdef WIN32
-#include <windows.h>    // for SetStdinEcho()
-#include <io.h>         // for isatty()
+#include <io.h>      // for isatty()
+#include <windows.h> // for SetStdinEcho()
 #else
-#include <termios.h>    // for SetStdinEcho()
-#include <unistd.h>     // for SetStdinEcho(), isatty()
-#include <poll.h>       // for StdinReady()
+#include <poll.h>    // for StdinReady()
+#include <termios.h> // for SetStdinEcho()
+#include <unistd.h>  // for SetStdinEcho(), isatty()
 #endif
 
 #include <compat/stdin.h>

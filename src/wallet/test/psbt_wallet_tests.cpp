@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE(parse_hd_keypath)
     BOOST_CHECK(ParseHDKeypath("42", keypath));
     BOOST_CHECK(!ParseHDKeypath("m42", keypath));
 
-    BOOST_CHECK(ParseHDKeypath("4294967295", keypath)); // 4294967295 == 0xFFFFFFFF (uint32_t max)
+    BOOST_CHECK(ParseHDKeypath("4294967295", keypath));  // 4294967295 == 0xFFFFFFFF (uint32_t max)
     BOOST_CHECK(!ParseHDKeypath("4294967296", keypath)); // 4294967296 == 0xFFFFFFFF (uint32_t max) + 1
 
     BOOST_CHECK(ParseHDKeypath("m", keypath));
@@ -146,10 +146,10 @@ BOOST_AUTO_TEST_CASE(parse_hd_keypath)
     BOOST_CHECK(ParseHDKeypath("m/1/", keypath));
     BOOST_CHECK(!ParseHDKeypath("m/1//", keypath));
 
-    BOOST_CHECK(ParseHDKeypath("m/0/4294967295", keypath)); // 4294967295 == 0xFFFFFFFF (uint32_t max)
+    BOOST_CHECK(ParseHDKeypath("m/0/4294967295", keypath));  // 4294967295 == 0xFFFFFFFF (uint32_t max)
     BOOST_CHECK(!ParseHDKeypath("m/0/4294967296", keypath)); // 4294967296 == 0xFFFFFFFF (uint32_t max) + 1
 
-    BOOST_CHECK(ParseHDKeypath("m/4294967295", keypath)); // 4294967295 == 0xFFFFFFFF (uint32_t max)
+    BOOST_CHECK(ParseHDKeypath("m/4294967295", keypath));  // 4294967295 == 0xFFFFFFFF (uint32_t max)
     BOOST_CHECK(!ParseHDKeypath("m/4294967296", keypath)); // 4294967296 == 0xFFFFFFFF (uint32_t max) + 1
 }
 

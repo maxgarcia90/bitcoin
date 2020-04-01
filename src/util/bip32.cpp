@@ -35,7 +35,7 @@ bool ParseHDKeypath(const std::string& keypath_str, std::vector<uint32_t>& keypa
         }
 
         // Ensure this is only numbers
-        if (item.find_first_not_of( "0123456789" ) != std::string::npos) {
+        if (item.find_first_not_of("0123456789") != std::string::npos) {
             return false;
         }
         uint32_t number;

@@ -10,10 +10,10 @@ namespace util {
 namespace {
 
 enum class Source {
-   FORCED,
-   COMMAND_LINE,
-   CONFIG_FILE_NETWORK_SECTION,
-   CONFIG_FILE_DEFAULT_SECTION
+    FORCED,
+    COMMAND_LINE,
+    CONFIG_FILE_NETWORK_SECTION,
+    CONFIG_FILE_DEFAULT_SECTION
 };
 
 //! Merge settings from multiple sources in precedence order:
@@ -152,9 +152,12 @@ bool OnlyHasDefaultSectionSetting(const Settings& settings, const std::string& s
     bool has_default_section_setting = false;
     bool has_other_setting = false;
     MergeSettings(settings, section, name, [&](SettingsSpan span, Source source) {
-        if (span.empty()) return;
-        else if (source == Source::CONFIG_FILE_DEFAULT_SECTION) has_default_section_setting = true;
-        else has_other_setting = true;
+        if (span.empty())
+            return;
+        else if (source == Source::CONFIG_FILE_DEFAULT_SECTION)
+            has_default_section_setting = true;
+        else
+            has_other_setting = true;
     });
     // If a value is set in the default section and not explicitly overwritten by the
     // user on the command line or in a different section, then we want to enable

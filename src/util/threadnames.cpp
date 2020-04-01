@@ -51,7 +51,7 @@ static void SetInternalName(std::string name) { g_thread_name = std::move(name);
 
 static const std::string empty_string;
 const std::string& util::ThreadGetInternalName() { return empty_string; }
-static void SetInternalName(std::string name) { }
+static void SetInternalName(std::string name) {}
 #endif
 
 void util::ThreadRename(std::string&& name)

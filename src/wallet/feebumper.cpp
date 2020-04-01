@@ -3,16 +3,16 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <interfaces/chain.h>
-#include <wallet/coincontrol.h>
-#include <wallet/feebumper.h>
-#include <wallet/fees.h>
-#include <wallet/wallet.h>
 #include <policy/fees.h>
 #include <policy/policy.h>
 #include <util/moneystr.h>
 #include <util/rbf.h>
 #include <util/system.h>
 #include <util/validation.h>
+#include <wallet/coincontrol.h>
+#include <wallet/feebumper.h>
+#include <wallet/fees.h>
+#include <wallet/wallet.h>
 
 //! Check whether transaction has descendant in wallet or mempool, or has been
 //! mined, or conflicts with a mined transaction. Return a feebumper::Result.
@@ -58,7 +58,8 @@ static feebumper::Result PreconditionChecks(const CWallet& wallet, const CWallet
 }
 
 //! Check if the user provided a valid feeRate
-static feebumper::Result CheckFeeRate(const CWallet& wallet, const CWalletTx& wtx, const CFeeRate& newFeerate, const int64_t maxTxSize, std::vector<std::string>& errors) {
+static feebumper::Result CheckFeeRate(const CWallet& wallet, const CWalletTx& wtx, const CFeeRate& newFeerate, const int64_t maxTxSize, std::vector<std::string>& errors)
+{
     // check that fee rate is higher than mempool's minimum fee
     // (no point in bumping fee if we know that the new tx won't be accepted to the mempool)
     // This may occur if the user set FeeRate, TotalFee or paytxfee too low, if fallbackfee is too low, or, perhaps,
@@ -103,7 +104,7 @@ static feebumper::Result CheckFeeRate(const CWallet& wallet, const CWalletTx& wt
     const CAmount max_tx_fee = wallet.m_default_max_tx_fee;
     if (new_total_fee > max_tx_fee) {
         errors.push_back(strprintf("Specified or calculated fee %s is too high (cannot be higher than -maxtxfee %s)",
-                            FormatMoney(new_total_fee), FormatMoney(max_tx_fee)));
+            FormatMoney(new_total_fee), FormatMoney(max_tx_fee)));
         return feebumper::Result::WALLET_ERROR;
     }
 
@@ -151,8 +152,7 @@ bool TransactionCanBeBumped(const CWallet& wallet, const uint256& txid)
     return res == feebumper::Result::OK;
 }
 
-Result CreateTotalBumpTransaction(const CWallet* wallet, const uint256& txid, const CCoinControl& coin_control, CAmount total_fee, std::vector<std::string>& errors,
-                                  CAmount& old_fee, CAmount& new_fee, CMutableTransaction& mtx)
+Result CreateTotalBumpTransaction(const CWallet* wallet, const uint256& txid, const CCoinControl& coin_control, CAmount total_fee, std::vector<std::string>& errors, CAmount& old_fee, CAmount& new_fee, CMutableTransaction& mtx)
 {
     new_fee = total_fee;
 
@@ -223,12 +223,12 @@ Result CreateTotalBumpTransaction(const CWallet* wallet, const uint256& txid, co
     }
 
     // Check that in all cases the new fee doesn't violate maxTxFee
-     const CAmount max_tx_fee = wallet->m_default_max_tx_fee;
-     if (new_fee > max_tx_fee) {
-         errors.push_back(strprintf("Specified or calculated fee %s is too high (cannot be higher than -maxtxfee %s)",
-                               FormatMoney(new_fee), FormatMoney(max_tx_fee)));
-         return Result::WALLET_ERROR;
-     }
+    const CAmount max_tx_fee = wallet->m_default_max_tx_fee;
+    if (new_fee > max_tx_fee) {
+        errors.push_back(strprintf("Specified or calculated fee %s is too high (cannot be higher than -maxtxfee %s)",
+            FormatMoney(new_fee), FormatMoney(max_tx_fee)));
+        return Result::WALLET_ERROR;
+    }
 
     // check that fee rate is higher than mempool's minimum fee
     // (no point in bumping fee if we know that the new tx won't be accepted to the mempool)
@@ -277,8 +277,7 @@ Result CreateTotalBumpTransaction(const CWallet* wallet, const uint256& txid, co
 }
 
 
-Result CreateRateBumpTransaction(CWallet& wallet, const uint256& txid, const CCoinControl& coin_control, std::vector<std::string>& errors,
-                                 CAmount& old_fee, CAmount& new_fee, CMutableTransaction& mtx)
+Result CreateRateBumpTransaction(CWallet& wallet, const uint256& txid, const CCoinControl& coin_control, std::vector<std::string>& errors, CAmount& old_fee, CAmount& new_fee, CMutableTransaction& mtx)
 {
     // We are going to modify coin control later, copy to re-use
     CCoinControl new_coin_control(coin_control);
@@ -366,7 +365,8 @@ Result CreateRateBumpTransaction(CWallet& wallet, const uint256& txid, const CCo
     return Result::OK;
 }
 
-bool SignTransaction(CWallet& wallet, CMutableTransaction& mtx) {
+bool SignTransaction(CWallet& wallet, CMutableTransaction& mtx)
+{
     auto locked_chain = wallet.chain().lock();
     LOCK(wallet.cs_wallet);
     return wallet.SignTransaction(mtx);

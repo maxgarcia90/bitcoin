@@ -3,14 +3,14 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #include <key.h>
 
-#include <uint256.h>
 #include <test/util/setup_common.h>
+#include <uint256.h>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
+#include <rapidcheck/Gen.h>
 #include <rapidcheck/boost_test.h>
 #include <rapidcheck/gen/Arbitrary.h>
-#include <rapidcheck/Gen.h>
 
 #include <test/gen/crypto_gen.h>
 

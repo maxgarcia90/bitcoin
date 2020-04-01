@@ -7,8 +7,8 @@
 
 #include <policy/policy.h>
 
-#include <consensus/validation.h>
 #include <coins.h>
+#include <consensus/validation.h>
 
 
 CAmount GetDustThreshold(const CTxOut& txout, const CFeeRate& dustRelayFeeIn)
@@ -52,7 +52,7 @@ bool IsDust(const CTxOut& txout, const CFeeRate& dustRelayFeeIn)
 
 bool IsStandard(const CScript& scriptPubKey, txnouttype& whichType)
 {
-    std::vector<std::vector<unsigned char> > vSolutions;
+    std::vector<std::vector<unsigned char>> vSolutions;
     whichType = Solver(scriptPubKey, vSolutions);
 
     if (whichType == TX_NONSTANDARD) {
@@ -67,7 +67,7 @@ bool IsStandard(const CScript& scriptPubKey, txnouttype& whichType)
             return false;
     } else if (whichType == TX_NULL_DATA &&
                (!fAcceptDatacarrier || scriptPubKey.size() > nMaxDatacarrierBytes)) {
-          return false;
+        return false;
     }
 
     return true;
@@ -90,8 +90,7 @@ bool IsStandardTx(const CTransaction& tx, bool permit_bare_multisig, const CFeeR
         return false;
     }
 
-    for (const CTxIn& txin : tx.vin)
-    {
+    for (const CTxIn& txin : tx.vin) {
         // Biggest 'standard' txin is a 15-of-15 P2SH multisig with compressed
         // keys (remember the 520 byte limit on redeemScript size). That works
         // out to a (15*(33+1))+3=513 byte redeemScript, 513+1+15*(73+1)+3=1627
@@ -158,16 +157,15 @@ bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs)
     if (tx.IsCoinBase())
         return true; // Coinbases don't use vin normally
 
-    for (unsigned int i = 0; i < tx.vin.size(); i++)
-    {
+    for (unsigned int i = 0; i < tx.vin.size(); i++) {
         const CTxOut& prev = mapInputs.AccessCoin(tx.vin[i].prevout).out;
 
-        std::vector<std::vector<unsigned char> > vSolutions;
+        std::vector<std::vector<unsigned char>> vSolutions;
         txnouttype whichType = Solver(prev.scriptPubKey, vSolutions);
         if (whichType == TX_NONSTANDARD) {
             return false;
         } else if (whichType == TX_SCRIPTHASH) {
-            std::vector<std::vector<unsigned char> > stack;
+            std::vector<std::vector<unsigned char>> stack;
             // convert the scriptSig into a stack, so we can inspect the redeemScript
             if (!EvalScript(stack, tx.vin[i].scriptSig, SCRIPT_VERIFY_NONE, BaseSignatureChecker(), SigVersion::BASE))
                 return false;
@@ -188,20 +186,19 @@ bool IsWitnessStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs)
     if (tx.IsCoinBase())
         return true; // Coinbases are skipped
 
-    for (unsigned int i = 0; i < tx.vin.size(); i++)
-    {
+    for (unsigned int i = 0; i < tx.vin.size(); i++) {
         // We don't care if witness for this input is empty, since it must not be bloated.
         // If the script is invalid without witness, it would be caught sooner or later during validation.
         if (tx.vin[i].scriptWitness.IsNull())
             continue;
 
-        const CTxOut &prev = mapInputs.AccessCoin(tx.vin[i].prevout).out;
+        const CTxOut& prev = mapInputs.AccessCoin(tx.vin[i].prevout).out;
 
         // get the scriptPubKey corresponding to this input:
         CScript prevScript = prev.scriptPubKey;
 
         if (prevScript.IsPayToScriptHash()) {
-            std::vector <std::vector<unsigned char> > stack;
+            std::vector<std::vector<unsigned char>> stack;
             // If the scriptPubKey is P2SH, we try to extract the redeemScript casually by converting the scriptSig
             // into a stack. We do not check IsPushOnly nor compare the hash as these will be done later anyway.
             // If the check fails at this stage, we know that this txid must be a bad one.

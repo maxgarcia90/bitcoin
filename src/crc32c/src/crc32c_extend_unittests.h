@@ -15,7 +15,7 @@
 
 namespace crc32c {
 
-template<typename TestTraits>
+template <typename TestTraits>
 class ExtendTest : public testing::Test {};
 
 TYPED_TEST_SUITE_P(ExtendTest);
@@ -32,13 +32,11 @@ TYPED_TEST_P(ExtendTest, StandardResults) {
   EXPECT_EQ(static_cast<uint32_t>(0x62a8ab43),
             TypeParam::Extend(0, buf, sizeof(buf)));
 
-  for (int i = 0; i < 32; ++i)
-    buf[i] = static_cast<uint8_t>(i);
+  for (int i = 0; i < 32; ++i) buf[i] = static_cast<uint8_t>(i);
   EXPECT_EQ(static_cast<uint32_t>(0x46dd794e),
             TypeParam::Extend(0, buf, sizeof(buf)));
 
-  for (int i = 0; i < 32; ++i)
-    buf[i] = static_cast<uint8_t>(31 - i);
+  for (int i = 0; i < 32; ++i) buf[i] = static_cast<uint8_t>(31 - i);
   EXPECT_EQ(static_cast<uint32_t>(0x113fdb5c),
             TypeParam::Extend(0, buf, sizeof(buf)));
 
@@ -101,11 +99,8 @@ TYPED_TEST_P(ExtendTest, LargeBufferSlicing) {
   }
 }
 
-REGISTER_TYPED_TEST_SUITE_P(ExtendTest,
-    StandardResults,
-    HelloWorld,
-    BufferSlicing,
-    LargeBufferSlicing);
+REGISTER_TYPED_TEST_SUITE_P(ExtendTest, StandardResults, HelloWorld,
+                            BufferSlicing, LargeBufferSlicing);
 
 }  // namespace crc32c
 

@@ -6,10 +6,10 @@
 #include <addrman.h>
 
 #include <hash.h>
-#include <serialize.h>
 #include <logging.h>
+#include <serialize.h>
 
-int CAddrInfo::GetTriedBucket(const uint256& nKey, const std::vector<bool> &asmap) const
+int CAddrInfo::GetTriedBucket(const uint256& nKey, const std::vector<bool>& asmap) const
 {
     uint64_t hash1 = (CHashWriter(SER_GETHASH, 0) << nKey << GetKey()).GetCheapHash();
     uint64_t hash2 = (CHashWriter(SER_GETHASH, 0) << nKey << GetGroup(asmap) << (hash1 % ADDRMAN_TRIED_BUCKETS_PER_GROUP)).GetCheapHash();
@@ -19,7 +19,7 @@ int CAddrInfo::GetTriedBucket(const uint256& nKey, const std::vector<bool> &asma
     return tried_bucket;
 }
 
-int CAddrInfo::GetNewBucket(const uint256& nKey, const CNetAddr& src, const std::vector<bool> &asmap) const
+int CAddrInfo::GetNewBucket(const uint256& nKey, const CNetAddr& src, const std::vector<bool>& asmap) const
 {
     std::vector<unsigned char> vchSourceGroupKey = src.GetGroup(asmap);
     uint64_t hash1 = (CHashWriter(SER_GETHASH, 0) << nKey << GetGroup(asmap) << vchSourceGroupKey).GetCheapHash();
@@ -30,7 +30,7 @@ int CAddrInfo::GetNewBucket(const uint256& nKey, const CNetAddr& src, const std:
     return new_bucket;
 }
 
-int CAddrInfo::GetBucketPosition(const uint256 &nKey, bool fNew, int nBucket) const
+int CAddrInfo::GetBucketPosition(const uint256& nKey, bool fNew, int nBucket) const
 {
     uint64_t hash1 = (CHashWriter(SER_GETHASH, 0) << nKey << (fNew ? 'N' : 'K') << nBucket << GetKey()).GetCheapHash();
     return hash1 % ADDRMAN_BUCKET_SIZE;
@@ -364,7 +364,7 @@ CAddrInfo CAddrMan::Select_(bool newOnly)
 
     // Use a 50% chance for choosing between tried and new table entries.
     if (!newOnly &&
-       (nTried > 0 && (nNew == 0 || insecure_rand.randbool() == 0))) {
+        (nTried > 0 && (nNew == 0 || insecure_rand.randbool() == 0))) {
         // use a tried node
         double fChanceFactor = 1.0;
         while (1) {
@@ -443,15 +443,15 @@ int CAddrMan::Check_()
 
     for (int n = 0; n < ADDRMAN_TRIED_BUCKET_COUNT; n++) {
         for (int i = 0; i < ADDRMAN_BUCKET_SIZE; i++) {
-             if (vvTried[n][i] != -1) {
-                 if (!setTried.count(vvTried[n][i]))
-                     return -11;
-                 if (mapInfo[vvTried[n][i]].GetTriedBucket(nKey, m_asmap) != n)
-                     return -17;
-                 if (mapInfo[vvTried[n][i]].GetBucketPosition(nKey, false, n) != i)
-                     return -18;
-                 setTried.erase(vvTried[n][i]);
-             }
+            if (vvTried[n][i] != -1) {
+                if (!setTried.count(vvTried[n][i]))
+                    return -11;
+                if (mapInfo[vvTried[n][i]].GetTriedBucket(nKey, m_asmap) != n)
+                    return -17;
+                if (mapInfo[vvTried[n][i]].GetBucketPosition(nKey, false, n) != i)
+                    return -18;
+                setTried.erase(vvTried[n][i]);
+            }
         }
     }
 
@@ -563,9 +563,9 @@ void CAddrMan::ResolveCollisions_()
                 CAddrInfo& info_old = mapInfo[id_old];
 
                 // Has successfully connected in last X hours
-                if (GetAdjustedTime() - info_old.nLastSuccess < ADDRMAN_REPLACEMENT_HOURS*(60*60)) {
+                if (GetAdjustedTime() - info_old.nLastSuccess < ADDRMAN_REPLACEMENT_HOURS * (60 * 60)) {
                     erase_collision = true;
-                } else if (GetAdjustedTime() - info_old.nLastTry < ADDRMAN_REPLACEMENT_HOURS*(60*60)) { // attempted to connect and failed in last X hours
+                } else if (GetAdjustedTime() - info_old.nLastTry < ADDRMAN_REPLACEMENT_HOURS * (60 * 60)) { // attempted to connect and failed in last X hours
 
                     // Give address at least 60 seconds to successfully connect
                     if (GetAdjustedTime() - info_old.nLastTry > 60) {
@@ -627,7 +627,7 @@ CAddrInfo CAddrMan::SelectTriedCollision_()
 std::vector<bool> CAddrMan::DecodeAsmap(fs::path path)
 {
     std::vector<bool> bits;
-    FILE *filestr = fsbridge::fopen(path, "rb");
+    FILE* filestr = fsbridge::fopen(path, "rb");
     CAutoFile file(filestr, SER_DISK, CLIENT_VERSION);
     if (file.IsNull()) {
         LogPrintf("Failed to open asmap file from disk.\n");

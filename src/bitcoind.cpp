@@ -27,8 +27,7 @@ const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
 
 static void WaitForShutdown(NodeContext& node)
 {
-    while (!ShutdownRequested())
-    {
+    while (!ShutdownRequested()) {
         MilliSleep(200);
     }
     Interrupt(node);
@@ -61,12 +60,9 @@ static bool AppInit(int argc, char* argv[])
     if (HelpRequested(gArgs) || gArgs.IsArgSet("-version")) {
         std::string strUsage = PACKAGE_NAME " version " + FormatFullVersion() + "\n";
 
-        if (gArgs.IsArgSet("-version"))
-        {
+        if (gArgs.IsArgSet("-version")) {
             strUsage += FormatParagraph(LicenseInfo()) + "\n";
-        }
-        else
-        {
+        } else {
             strUsage += "\nUsage:  bitcoind [options]                     Start " PACKAGE_NAME "\n";
             strUsage += "\n" + gArgs.GetHelpMessage();
         }
@@ -75,8 +71,7 @@ static bool AppInit(int argc, char* argv[])
         return true;
     }
 
-    try
-    {
+    try {
         if (!CheckDataDirOption()) {
             return InitError(strprintf("Specified data directory \"%s\" does not exist.\n", gArgs.GetArg("-datadir", "")));
         }
@@ -102,23 +97,19 @@ static bool AppInit(int argc, char* argv[])
         // Set this early so that parameter interactions go to console
         InitLogging();
         InitParameterInteraction();
-        if (!AppInitBasicSetup())
-        {
+        if (!AppInitBasicSetup()) {
             // InitError will have been called with detailed error, which ends up on console
             return false;
         }
-        if (!AppInitParameterInteraction())
-        {
+        if (!AppInitParameterInteraction()) {
             // InitError will have been called with detailed error, which ends up on console
             return false;
         }
-        if (!AppInitSanityChecks())
-        {
+        if (!AppInitSanityChecks()) {
             // InitError will have been called with detailed error, which ends up on console
             return false;
         }
-        if (gArgs.GetBoolArg("-daemon", false))
-        {
+        if (gArgs.GetBoolArg("-daemon", false)) {
 #if HAVE_DECL_DAEMON
 #if defined(MAC_OSX)
 #pragma GCC diagnostic push
@@ -138,21 +129,18 @@ static bool AppInit(int argc, char* argv[])
 #endif // HAVE_DECL_DAEMON
         }
         // Lock data directory after daemonization
-        if (!AppInitLockDataDirectory())
-        {
+        if (!AppInitLockDataDirectory()) {
             // If locking the data directory failed, exit immediately
             return false;
         }
         fRet = AppInitMain(node);
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         PrintExceptionContinue(&e, "AppInit()");
     } catch (...) {
         PrintExceptionContinue(nullptr, "AppInit()");
     }
 
-    if (!fRet)
-    {
+    if (!fRet) {
         Interrupt(node);
     } else {
         WaitForShutdown(node);

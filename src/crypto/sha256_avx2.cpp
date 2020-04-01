@@ -4,8 +4,8 @@
 
 #ifdef ENABLE_AVX2
 
-#include <stdint.h>
 #include <immintrin.h>
+#include <stdint.h>
 
 #include <crypto/common.h>
 
@@ -18,9 +18,21 @@ __m256i inline Add(__m256i x, __m256i y) { return _mm256_add_epi32(x, y); }
 __m256i inline Add(__m256i x, __m256i y, __m256i z) { return Add(Add(x, y), z); }
 __m256i inline Add(__m256i x, __m256i y, __m256i z, __m256i w) { return Add(Add(x, y), Add(z, w)); }
 __m256i inline Add(__m256i x, __m256i y, __m256i z, __m256i w, __m256i v) { return Add(Add(x, y, z), Add(w, v)); }
-__m256i inline Inc(__m256i& x, __m256i y) { x = Add(x, y); return x; }
-__m256i inline Inc(__m256i& x, __m256i y, __m256i z) { x = Add(x, y, z); return x; }
-__m256i inline Inc(__m256i& x, __m256i y, __m256i z, __m256i w) { x = Add(x, y, z, w); return x; }
+__m256i inline Inc(__m256i& x, __m256i y)
+{
+    x = Add(x, y);
+    return x;
+}
+__m256i inline Inc(__m256i& x, __m256i y, __m256i z)
+{
+    x = Add(x, y, z);
+    return x;
+}
+__m256i inline Inc(__m256i& x, __m256i y, __m256i z, __m256i w)
+{
+    x = Add(x, y, z, w);
+    return x;
+}
 __m256i inline Xor(__m256i x, __m256i y) { return _mm256_xor_si256(x, y); }
 __m256i inline Xor(__m256i x, __m256i y, __m256i z) { return Xor(Xor(x, y), z); }
 __m256i inline Or(__m256i x, __m256i y) { return _mm256_or_si256(x, y); }
@@ -44,7 +56,8 @@ void inline __attribute__((always_inline)) Round(__m256i a, __m256i b, __m256i c
     h = Add(t1, t2);
 }
 
-__m256i inline Read8(const unsigned char* chunk, int offset) {
+__m256i inline Read8(const unsigned char* chunk, int offset)
+{
     __m256i ret = _mm256_set_epi32(
         ReadLE32(chunk + 0 + offset),
         ReadLE32(chunk + 64 + offset),
@@ -53,12 +66,12 @@ __m256i inline Read8(const unsigned char* chunk, int offset) {
         ReadLE32(chunk + 256 + offset),
         ReadLE32(chunk + 320 + offset),
         ReadLE32(chunk + 384 + offset),
-        ReadLE32(chunk + 448 + offset)
-    );
+        ReadLE32(chunk + 448 + offset));
     return _mm256_shuffle_epi8(ret, _mm256_set_epi32(0x0C0D0E0FUL, 0x08090A0BUL, 0x04050607UL, 0x00010203UL, 0x0C0D0E0FUL, 0x08090A0BUL, 0x04050607UL, 0x00010203UL));
 }
 
-void inline Write8(unsigned char* out, int offset, __m256i v) {
+void inline Write8(unsigned char* out, int offset, __m256i v)
+{
     v = _mm256_shuffle_epi8(v, _mm256_set_epi32(0x0C0D0E0FUL, 0x08090A0BUL, 0x04050607UL, 0x00010203UL, 0x0C0D0E0FUL, 0x08090A0BUL, 0x04050607UL, 0x00010203UL));
     WriteLE32(out + 0 + offset, _mm256_extract_epi32(v, 7));
     WriteLE32(out + 32 + offset, _mm256_extract_epi32(v, 6));
@@ -70,7 +83,7 @@ void inline Write8(unsigned char* out, int offset, __m256i v) {
     WriteLE32(out + 224 + offset, _mm256_extract_epi32(v, 0));
 }
 
-}
+} // namespace
 
 void Transform_8way(unsigned char* out, const unsigned char* in)
 {
@@ -323,6 +336,6 @@ void Transform_8way(unsigned char* out, const unsigned char* in)
     Write8(out, 28, Add(h, K(0x5be0cd19ul)));
 }
 
-}
+} // namespace sha256d64_avx2
 
 #endif

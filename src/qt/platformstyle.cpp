@@ -10,7 +10,7 @@
 #include <QPalette>
 
 static const struct {
-    const char *platformId;
+    const char* platformId;
     /** Show images on push buttons */
     const bool imagesOnButtons;
     /** Colorize single-color icons */
@@ -21,9 +21,8 @@ static const struct {
     {"macosx", false, false, true},
     {"windows", true, false, false},
     /* Other: linux, unix, ... */
-    {"other", true, true, false}
-};
-static const unsigned platform_styles_count = sizeof(platform_styles)/sizeof(*platform_styles);
+    {"other", true, true, false}};
+static const unsigned platform_styles_count = sizeof(platform_styles) / sizeof(*platform_styles);
 
 namespace {
 /* Local functions for colorizing single-color images */
@@ -31,10 +30,8 @@ namespace {
 void MakeSingleColorImage(QImage& img, const QColor& colorbase)
 {
     img = img.convertToFormat(QImage::Format_ARGB32);
-    for (int x = img.width(); x--; )
-    {
-        for (int y = img.height(); y--; )
-        {
+    for (int x = img.width(); x--;) {
+        for (int y = img.height(); y--;) {
             const QRgb rgb = img.pixel(x, y);
             img.setPixel(x, y, qRgba(colorbase.red(), colorbase.green(), colorbase.blue(), qAlpha(rgb)));
         }
@@ -44,8 +41,7 @@ void MakeSingleColorImage(QImage& img, const QColor& colorbase)
 QIcon ColorizeIcon(const QIcon& ico, const QColor& colorbase)
 {
     QIcon new_ico;
-    for (const QSize& sz : ico.availableSizes())
-    {
+    for (const QSize& sz : ico.availableSizes()) {
         QImage img(ico.pixmap(sz).toImage());
         MakeSingleColorImage(img, colorbase);
         new_ico.addPixmap(QPixmap::fromImage(img));
@@ -65,16 +61,15 @@ QIcon ColorizeIcon(const QString& filename, const QColor& colorbase)
     return QIcon(QPixmap::fromImage(ColorizeImage(filename, colorbase)));
 }
 
-}
+} // namespace
 
 
-PlatformStyle::PlatformStyle(const QString &_name, bool _imagesOnButtons, bool _colorizeIcons, bool _useExtraSpacing):
-    name(_name),
-    imagesOnButtons(_imagesOnButtons),
-    colorizeIcons(_colorizeIcons),
-    useExtraSpacing(_useExtraSpacing),
-    singleColor(0,0,0),
-    textColor(0,0,0)
+PlatformStyle::PlatformStyle(const QString& _name, bool _imagesOnButtons, bool _colorizeIcons, bool _useExtraSpacing) : name(_name),
+                                                                                                                        imagesOnButtons(_imagesOnButtons),
+                                                                                                                        colorizeIcons(_colorizeIcons),
+                                                                                                                        useExtraSpacing(_useExtraSpacing),
+                                                                                                                        singleColor(0, 0, 0),
+                                                                                                                        textColor(0, 0, 0)
 {
     // Determine icon highlighting color
     if (colorizeIcons) {
@@ -119,19 +114,16 @@ QIcon PlatformStyle::TextColorIcon(const QIcon& icon) const
     return ColorizeIcon(icon, TextColor());
 }
 
-const PlatformStyle *PlatformStyle::instantiate(const QString &platformId)
+const PlatformStyle* PlatformStyle::instantiate(const QString& platformId)
 {
-    for (unsigned x=0; x<platform_styles_count; ++x)
-    {
-        if (platformId == platform_styles[x].platformId)
-        {
+    for (unsigned x = 0; x < platform_styles_count; ++x) {
+        if (platformId == platform_styles[x].platformId) {
             return new PlatformStyle(
-                    platform_styles[x].platformId,
-                    platform_styles[x].imagesOnButtons,
-                    platform_styles[x].colorizeIcons,
-                    platform_styles[x].useExtraSpacing);
+                platform_styles[x].platformId,
+                platform_styles[x].imagesOnButtons,
+                platform_styles[x].colorizeIcons,
+                platform_styles[x].useExtraSpacing);
         }
     }
     return nullptr;
 }
-

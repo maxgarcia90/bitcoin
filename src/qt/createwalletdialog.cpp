@@ -11,9 +11,8 @@
 
 #include <QPushButton>
 
-CreateWalletDialog::CreateWalletDialog(QWidget* parent) :
-    QDialog(parent),
-    ui(new Ui::CreateWalletDialog)
+CreateWalletDialog::CreateWalletDialog(QWidget* parent) : QDialog(parent),
+                                                          ui(new Ui::CreateWalletDialog)
 {
     ui->setupUi(this);
     ui->buttonBox->button(QDialogButtonBox::Ok)->setText(tr("Create"));

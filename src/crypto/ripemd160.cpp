@@ -9,11 +9,9 @@
 #include <string.h>
 
 // Internal implementation code.
-namespace
-{
+namespace {
 /// Internal RIPEMD-160 implementation.
-namespace ripemd160
-{
+namespace ripemd160 {
 uint32_t inline f1(uint32_t x, uint32_t y, uint32_t z) { return x ^ y ^ z; }
 uint32_t inline f2(uint32_t x, uint32_t y, uint32_t z) { return (x & y) | (~x & z); }
 uint32_t inline f3(uint32_t x, uint32_t y, uint32_t z) { return (x | ~y) ^ z; }

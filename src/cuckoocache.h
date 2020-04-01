@@ -23,8 +23,7 @@
  * 2. @ref cache is a cache which is performant in memory usage and lookup speed. It
  * is lockfree for erase operations. Elements are lazily erased on the next insert.
  */
-namespace CuckooCache
-{
+namespace CuckooCache {
 /** @ref bit_packed_atomic_flags implements a container for garbage collection flags
  * that is only thread unsafe on calls to setup. This class bit-packs collection
  * flags for memory efficiency.
@@ -241,13 +240,13 @@ private:
     inline std::array<uint32_t, 8> compute_hashes(const Element& e) const
     {
         return {{(uint32_t)(((uint64_t)hash_function.template operator()<0>(e) * (uint64_t)size) >> 32),
-                 (uint32_t)(((uint64_t)hash_function.template operator()<1>(e) * (uint64_t)size) >> 32),
-                 (uint32_t)(((uint64_t)hash_function.template operator()<2>(e) * (uint64_t)size) >> 32),
-                 (uint32_t)(((uint64_t)hash_function.template operator()<3>(e) * (uint64_t)size) >> 32),
-                 (uint32_t)(((uint64_t)hash_function.template operator()<4>(e) * (uint64_t)size) >> 32),
-                 (uint32_t)(((uint64_t)hash_function.template operator()<5>(e) * (uint64_t)size) >> 32),
-                 (uint32_t)(((uint64_t)hash_function.template operator()<6>(e) * (uint64_t)size) >> 32),
-                 (uint32_t)(((uint64_t)hash_function.template operator()<7>(e) * (uint64_t)size) >> 32)}};
+            (uint32_t)(((uint64_t)hash_function.template operator()<1>(e) * (uint64_t)size) >> 32),
+            (uint32_t)(((uint64_t)hash_function.template operator()<2>(e) * (uint64_t)size) >> 32),
+            (uint32_t)(((uint64_t)hash_function.template operator()<3>(e) * (uint64_t)size) >> 32),
+            (uint32_t)(((uint64_t)hash_function.template operator()<4>(e) * (uint64_t)size) >> 32),
+            (uint32_t)(((uint64_t)hash_function.template operator()<5>(e) * (uint64_t)size) >> 32),
+            (uint32_t)(((uint64_t)hash_function.template operator()<6>(e) * (uint64_t)size) >> 32),
+            (uint32_t)(((uint64_t)hash_function.template operator()<7>(e) * (uint64_t)size) >> 32)}};
     }
 
     /** invalid returns a special index that can never be inserted to
@@ -315,7 +314,7 @@ private:
             // epoch_unused_count), but we already know that `epoch_unused_count
             // < epoch_size` in this branch
             epoch_heuristic_counter = std::max(1u, std::max(epoch_size / 16,
-                        epoch_size - epoch_unused_count));
+                                                       epoch_size - epoch_unused_count));
     }
 
 public:
@@ -323,7 +322,7 @@ public:
      * call to setup or setup_bytes, otherwise operations may segfault.
      */
     cache() : table(), size(), collection_flags(0), epoch_flags(),
-    epoch_heuristic_counter(), epoch_size(), depth_limit(0), hash_function()
+              epoch_heuristic_counter(), epoch_size(), depth_limit(0), hash_function()
     {
     }
 
@@ -364,7 +363,7 @@ public:
      */
     uint32_t setup_bytes(size_t bytes)
     {
-        return setup(bytes/sizeof(Element));
+        return setup(bytes / sizeof(Element));
     }
 
     /** insert loops at most depth_limit times trying to insert a hash

@@ -67,7 +67,11 @@ struct MergeTestingSetup : public BasicTestingSetup {
     //! debugging to make test results easier to understand.
     static constexpr int MAX_ACTIONS = 3;
 
-    enum Action { END, SET, NEGATE, SECTION_SET, SECTION_NEGATE };
+    enum Action { END,
+        SET,
+        NEGATE,
+        SECTION_SET,
+        SECTION_NEGATE };
     using ActionList = Action[MAX_ACTIONS];
 
     //! Enumerate all possible test configurations.
@@ -76,9 +80,9 @@ struct MergeTestingSetup : public BasicTestingSetup {
     {
         ActionList arg_actions = {};
         // command_line_options do not have sections. Only iterate over SET and NEGATE
-        ForEachNoDup(arg_actions, SET, NEGATE, [&]{
+        ForEachNoDup(arg_actions, SET, NEGATE, [&] {
             ActionList conf_actions = {};
-            ForEachNoDup(conf_actions, SET, SECTION_NEGATE, [&]{
+            ForEachNoDup(conf_actions, SET, SECTION_NEGATE, [&] {
                 for (bool force_set : {false, true}) {
                     for (bool ignore_default_section_config : {false, true}) {
                         fn(arg_actions, conf_actions, force_set, ignore_default_section_config);

@@ -9,11 +9,11 @@
 
 #include <mutex>
 
-const char * const DEFAULT_DEBUGLOGFILE = "debug.log";
+const char* const DEFAULT_DEBUGLOGFILE = "debug.log";
 
 BCLog::Logger& LogInstance()
 {
-/**
+    /**
  * NOTE: the logger instances is leaked on exit. This is ugly, but will be
  * cleaned up by the OS/libc. Defining a logger as a global object doesn't work
  * since the order of destruction of static/global objects is undefined.
@@ -34,7 +34,7 @@ BCLog::Logger& LogInstance()
 
 bool fLogIPs = DEFAULT_LOGIPS;
 
-static int FileWriteStr(const std::string &str, FILE *fp)
+static int FileWriteStr(const std::string& str, FILE* fp)
 {
     return fwrite(str.data(), 1, str.size(), fp);
 }
@@ -131,40 +131,39 @@ bool BCLog::Logger::DefaultShrinkDebugFile() const
     return m_categories == BCLog::NONE;
 }
 
-struct CLogCategoryDesc
-{
+struct CLogCategoryDesc {
     BCLog::LogFlags flag;
     std::string category;
 };
 
 const CLogCategoryDesc LogCategories[] =
-{
-    {BCLog::NONE, "0"},
-    {BCLog::NONE, "none"},
-    {BCLog::NET, "net"},
-    {BCLog::TOR, "tor"},
-    {BCLog::MEMPOOL, "mempool"},
-    {BCLog::HTTP, "http"},
-    {BCLog::BENCH, "bench"},
-    {BCLog::ZMQ, "zmq"},
-    {BCLog::WALLETDB, "walletdb"},
-    {BCLog::RPC, "rpc"},
-    {BCLog::ESTIMATEFEE, "estimatefee"},
-    {BCLog::ADDRMAN, "addrman"},
-    {BCLog::SELECTCOINS, "selectcoins"},
-    {BCLog::REINDEX, "reindex"},
-    {BCLog::CMPCTBLOCK, "cmpctblock"},
-    {BCLog::RAND, "rand"},
-    {BCLog::PRUNE, "prune"},
-    {BCLog::PROXY, "proxy"},
-    {BCLog::MEMPOOLREJ, "mempoolrej"},
-    {BCLog::LIBEVENT, "libevent"},
-    {BCLog::COINDB, "coindb"},
-    {BCLog::QT, "qt"},
-    {BCLog::LEVELDB, "leveldb"},
-    {BCLog::VALIDATION, "validation"},
-    {BCLog::ALL, "1"},
-    {BCLog::ALL, "all"},
+    {
+        {BCLog::NONE, "0"},
+        {BCLog::NONE, "none"},
+        {BCLog::NET, "net"},
+        {BCLog::TOR, "tor"},
+        {BCLog::MEMPOOL, "mempool"},
+        {BCLog::HTTP, "http"},
+        {BCLog::BENCH, "bench"},
+        {BCLog::ZMQ, "zmq"},
+        {BCLog::WALLETDB, "walletdb"},
+        {BCLog::RPC, "rpc"},
+        {BCLog::ESTIMATEFEE, "estimatefee"},
+        {BCLog::ADDRMAN, "addrman"},
+        {BCLog::SELECTCOINS, "selectcoins"},
+        {BCLog::REINDEX, "reindex"},
+        {BCLog::CMPCTBLOCK, "cmpctblock"},
+        {BCLog::RAND, "rand"},
+        {BCLog::PRUNE, "prune"},
+        {BCLog::PROXY, "proxy"},
+        {BCLog::MEMPOOLREJ, "mempoolrej"},
+        {BCLog::LIBEVENT, "libevent"},
+        {BCLog::COINDB, "coindb"},
+        {BCLog::QT, "qt"},
+        {BCLog::LEVELDB, "leveldb"},
+        {BCLog::VALIDATION, "validation"},
+        {BCLog::ALL, "1"},
+        {BCLog::ALL, "all"},
 };
 
 bool GetLogCategory(BCLog::LogFlags& flag, const std::string& str)
@@ -221,10 +220,10 @@ std::string BCLog::Logger::LogTimestampStr(const std::string& str)
 
     if (m_started_new_line) {
         int64_t nTimeMicros = GetTimeMicros();
-        strStamped = FormatISO8601DateTime(nTimeMicros/1000000);
+        strStamped = FormatISO8601DateTime(nTimeMicros / 1000000);
         if (m_log_time_micros) {
             strStamped.pop_back();
-            strStamped += strprintf(".%06dZ", nTimeMicros%1000000);
+            strStamped += strprintf(".%06dZ", nTimeMicros % 1000000);
         }
         int64_t mocktime = GetMockTime();
         if (mocktime) {
@@ -238,26 +237,27 @@ std::string BCLog::Logger::LogTimestampStr(const std::string& str)
 }
 
 namespace BCLog {
-    /** Belts and suspenders: make sure outgoing log messages don't contain
+/** Belts and suspenders: make sure outgoing log messages don't contain
      * potentially suspicious characters, such as terminal control codes.
      *
      * This escapes control characters except newline ('\n') in C syntax.
      * It escapes instead of removes them to still allow for troubleshooting
      * issues where they accidentally end up in strings.
      */
-    std::string LogEscapeMessage(const std::string& str) {
-        std::string ret;
-        for (char ch_in : str) {
-            uint8_t ch = (uint8_t)ch_in;
-            if ((ch >= 32 || ch == '\n') && ch != '\x7f') {
-                ret += ch_in;
-            } else {
-                ret += strprintf("\\x%02x", ch);
-            }
+std::string LogEscapeMessage(const std::string& str)
+{
+    std::string ret;
+    for (char ch_in : str) {
+        uint8_t ch = (uint8_t)ch_in;
+        if ((ch >= 32 || ch == '\n') && ch != '\x7f') {
+            ret += ch_in;
+        } else {
+            ret += strprintf("\\x%02x", ch);
         }
-        return ret;
     }
+    return ret;
 }
+} // namespace BCLog
 
 void BCLog::Logger::LogPrintStr(const std::string& str)
 {
@@ -270,7 +270,7 @@ void BCLog::Logger::LogPrintStr(const std::string& str)
 
     str_prefixed = LogTimestampStr(str_prefixed);
 
-    m_started_new_line = !str.empty() && str[str.size()-1] == '\n';
+    m_started_new_line = !str.empty() && str[str.size() - 1] == '\n';
 
     if (m_buffering) {
         // buffer if we haven't started logging yet
@@ -317,12 +317,12 @@ void BCLog::Logger::ShrinkDebugFile()
     size_t log_size = 0;
     try {
         log_size = fs::file_size(m_file_path);
-    } catch (const fs::filesystem_error&) {}
+    } catch (const fs::filesystem_error&) {
+    }
 
     // If debug.log file is more than 10% bigger the RECENT_DEBUG_HISTORY_SIZE
     // trim it down by saving only the last RECENT_DEBUG_HISTORY_SIZE bytes
-    if (file && log_size > 11 * (RECENT_DEBUG_HISTORY_SIZE / 10))
-    {
+    if (file && log_size > 11 * (RECENT_DEBUG_HISTORY_SIZE / 10)) {
         // Restart the file with some of the end
         std::vector<char> vch(RECENT_DEBUG_HISTORY_SIZE, 0);
         if (fseek(file, -((long)vch.size()), SEEK_END)) {
@@ -334,12 +334,10 @@ void BCLog::Logger::ShrinkDebugFile()
         fclose(file);
 
         file = fsbridge::fopen(m_file_path, "w");
-        if (file)
-        {
+        if (file) {
             fwrite(vch.data(), 1, nBytes, file);
             fclose(file);
         }
-    }
-    else if (file != nullptr)
+    } else if (file != nullptr)
         fclose(file);
 }

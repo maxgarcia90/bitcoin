@@ -5,8 +5,8 @@
 #include <random.h>
 #include <scheduler.h>
 
-#include <boost/thread.hpp>
 #include <boost/test/unit_test.hpp>
+#include <boost/thread.hpp>
 
 BOOST_AUTO_TEST_SUITE(scheduler_tests)
 
@@ -30,8 +30,8 @@ static void MicroSleep(uint64_t n)
 #elif defined(HAVE_WORKING_BOOST_SLEEP)
     boost::this_thread::sleep(boost::posix_time::microseconds(n));
 #else
-    //should never get here
-    #error missing boost sleep implementation
+//should never get here
+#error missing boost sleep implementation
 #endif
 }
 
@@ -50,10 +50,10 @@ BOOST_AUTO_TEST_CASE(manythreads)
     CScheduler microTasks;
 
     boost::mutex counterMutex[10];
-    int counter[10] = { 0 };
+    int counter[10] = {0};
     FastRandomContext rng{/* fDeterministic */ true};
-    auto zeroToNine = [](FastRandomContext& rc) -> int { return rc.randrange(10); }; // [0, 9]
-    auto randomMsec = [](FastRandomContext& rc) -> int { return -11 + (int)rc.randrange(1012); }; // [-11, 1000]
+    auto zeroToNine = [](FastRandomContext& rc) -> int { return rc.randrange(10); };                 // [0, 9]
+    auto randomMsec = [](FastRandomContext& rc) -> int { return -11 + (int)rc.randrange(1012); };    // [-11, 1000]
     auto randomDelta = [](FastRandomContext& rc) -> int { return -1000 + (int)rc.randrange(2001); }; // [-1000, 1000]
 
     boost::chrono::system_clock::time_point start = boost::chrono::system_clock::now();
@@ -67,8 +67,8 @@ BOOST_AUTO_TEST_CASE(manythreads)
         boost::chrono::system_clock::time_point tReschedule = now + boost::chrono::microseconds(500 + randomMsec(rng));
         int whichCounter = zeroToNine(rng);
         CScheduler::Function f = std::bind(&microTask, std::ref(microTasks),
-                                             std::ref(counterMutex[whichCounter]), std::ref(counter[whichCounter]),
-                                             randomDelta(rng), tReschedule);
+            std::ref(counterMutex[whichCounter]), std::ref(counter[whichCounter]),
+            randomDelta(rng), tReschedule);
         microTasks.schedule(f, t);
     }
     nTasks = microTasks.getQueueInfo(first, last);
@@ -92,8 +92,8 @@ BOOST_AUTO_TEST_CASE(manythreads)
         boost::chrono::system_clock::time_point tReschedule = now + boost::chrono::microseconds(500 + randomMsec(rng));
         int whichCounter = zeroToNine(rng);
         CScheduler::Function f = std::bind(&microTask, std::ref(microTasks),
-                                             std::ref(counterMutex[whichCounter]), std::ref(counter[whichCounter]),
-                                             randomDelta(rng), tReschedule);
+            std::ref(counterMutex[whichCounter]), std::ref(counter[whichCounter]),
+            randomDelta(rng), tReschedule);
         microTasks.schedule(f, t);
     }
 
@@ -158,13 +158,13 @@ BOOST_AUTO_TEST_CASE(mockforward)
     CScheduler scheduler;
 
     int counter{0};
-    CScheduler::Function dummy = [&counter]{counter++;};
+    CScheduler::Function dummy = [&counter] { counter++; };
 
     // schedule jobs for 2, 5 & 8 minutes into the future
-    int64_t min_in_milli = 60*1000;
-    scheduler.scheduleFromNow(dummy, 2*min_in_milli);
-    scheduler.scheduleFromNow(dummy, 5*min_in_milli);
-    scheduler.scheduleFromNow(dummy, 8*min_in_milli);
+    int64_t min_in_milli = 60 * 1000;
+    scheduler.scheduleFromNow(dummy, 2 * min_in_milli);
+    scheduler.scheduleFromNow(dummy, 5 * min_in_milli);
+    scheduler.scheduleFromNow(dummy, 8 * min_in_milli);
 
     // check taskQueue
     boost::chrono::system_clock::time_point first, last;
@@ -174,10 +174,10 @@ BOOST_AUTO_TEST_CASE(mockforward)
     std::thread scheduler_thread([&]() { scheduler.serviceQueue(); });
 
     // bump the scheduler forward 5 minutes
-    scheduler.MockForward(boost::chrono::seconds(5*60));
+    scheduler.MockForward(boost::chrono::seconds(5 * 60));
 
     // ensure scheduler has chance to process all tasks queued for before 1 ms from now.
-    scheduler.scheduleFromNow([&scheduler]{ scheduler.stop(false); }, 1);
+    scheduler.scheduleFromNow([&scheduler] { scheduler.stop(false); }, 1);
     scheduler_thread.join();
 
     // check that the queue only has one job remaining
@@ -191,7 +191,7 @@ BOOST_AUTO_TEST_CASE(mockforward)
     boost::chrono::system_clock::time_point now = boost::chrono::system_clock::now();
     int delta = boost::chrono::duration_cast<boost::chrono::seconds>(first - now).count();
     // should be between 2 & 3 minutes from now
-    BOOST_CHECK(delta > 2*60 && delta < 3*60);
+    BOOST_CHECK(delta > 2 * 60 && delta < 3 * 60);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

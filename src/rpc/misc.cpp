@@ -27,12 +27,13 @@
 
 static UniValue validateaddress(const JSONRPCRequest& request)
 {
-            RPCHelpMan{"validateaddress",
-                "\nReturn information about the given bitcoin address.\n",
-                {
-                    {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address to validate"},
-                },
-                RPCResult{
+    RPCHelpMan{
+        "validateaddress",
+        "\nReturn information about the given bitcoin address.\n",
+        {
+            {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address to validate"},
+        },
+        RPCResult{
             "{\n"
             "  \"isvalid\" : true|false,       (boolean) If the address is valid or not. If not, this is the only property returned.\n"
             "  \"address\" : \"address\",        (string) The bitcoin address validated\n"
@@ -41,21 +42,19 @@ static UniValue validateaddress(const JSONRPCRequest& request)
             "  \"iswitness\" : true|false,     (boolean) If the address is a witness address\n"
             "  \"witness_version\" : version   (numeric, optional) The version number of the witness program\n"
             "  \"witness_program\" : \"hex\"     (string, optional) The hex value of the witness program\n"
-            "}\n"
-                },
-                RPCExamples{
-                    HelpExampleCli("validateaddress", EXAMPLE_ADDRESS) +
-                    HelpExampleRpc("validateaddress", EXAMPLE_ADDRESS)
-                },
-            }.Check(request);
+            "}\n"},
+        RPCExamples{
+            HelpExampleCli("validateaddress", EXAMPLE_ADDRESS) +
+            HelpExampleRpc("validateaddress", EXAMPLE_ADDRESS)},
+    }
+        .Check(request);
 
     CTxDestination dest = DecodeDestination(request.params[0].get_str());
     bool isValid = IsValidDestination(dest);
 
     UniValue ret(UniValue::VOBJ);
     ret.pushKV("isvalid", isValid);
-    if (isValid)
-    {
+    if (isValid) {
         std::string currentAddress = EncodeDestination(dest);
         ret.pushKV("address", currentAddress);
 
@@ -70,31 +69,29 @@ static UniValue validateaddress(const JSONRPCRequest& request)
 
 static UniValue createmultisig(const JSONRPCRequest& request)
 {
-            RPCHelpMan{"createmultisig",
-                "\nCreates a multi-signature address with n signature of m keys required.\n"
-                "It returns a json object with the address and redeemScript.\n",
+    RPCHelpMan{
+        "createmultisig",
+        "\nCreates a multi-signature address with n signature of m keys required.\n"
+        "It returns a json object with the address and redeemScript.\n",
+        {
+            {"nrequired", RPCArg::Type::NUM, RPCArg::Optional::NO, "The number of required signatures out of the n keys."},
+            {"keys", RPCArg::Type::ARR, RPCArg::Optional::NO, "A json array of hex-encoded public keys.",
                 {
-                    {"nrequired", RPCArg::Type::NUM, RPCArg::Optional::NO, "The number of required signatures out of the n keys."},
-                    {"keys", RPCArg::Type::ARR, RPCArg::Optional::NO, "A json array of hex-encoded public keys.",
-                        {
-                            {"key", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED, "The hex-encoded public key"},
-                        }},
-                    {"address_type", RPCArg::Type::STR, /* default */ "legacy", "The address type to use. Options are \"legacy\", \"p2sh-segwit\", and \"bech32\"."},
-                },
-                RPCResult{
+                    {"key", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED, "The hex-encoded public key"},
+                }},
+            {"address_type", RPCArg::Type::STR, /* default */ "legacy", "The address type to use. Options are \"legacy\", \"p2sh-segwit\", and \"bech32\"."},
+        },
+        RPCResult{
             "{\n"
             "  \"address\" : \"multisigaddress\",  (string) The value of the new multisig address.\n"
             "  \"redeemScript\" : \"script\"       (string) The string value of the hex-encoded redemption script.\n"
             "  \"descriptor\" : \"descriptor\"     (string) The descriptor for this multisig\n"
-            "}\n"
-                },
-                RPCExamples{
-            "\nCreate a multisig address from 2 public keys\n"
-            + HelpExampleCli("createmultisig", "2 \"[\\\"03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd\\\",\\\"03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626\\\"]\"") +
-            "\nAs a JSON-RPC call\n"
-            + HelpExampleRpc("createmultisig", "2, \"[\\\"03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd\\\",\\\"03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626\\\"]\"")
-                },
-            }.Check(request);
+            "}\n"},
+        RPCExamples{
+            "\nCreate a multisig address from 2 public keys\n" + HelpExampleCli("createmultisig", "2 \"[\\\"03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd\\\",\\\"03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626\\\"]\"") +
+            "\nAs a JSON-RPC call\n" + HelpExampleRpc("createmultisig", "2, \"[\\\"03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd\\\",\\\"03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626\\\"]\"")},
+    }
+        .Check(request);
 
     int required = request.params[0].get_int();
 
@@ -135,24 +132,23 @@ static UniValue createmultisig(const JSONRPCRequest& request)
 
 UniValue getdescriptorinfo(const JSONRPCRequest& request)
 {
-            RPCHelpMan{"getdescriptorinfo",
-            {"\nAnalyses a descriptor.\n"},
-            {
-                {"descriptor", RPCArg::Type::STR, RPCArg::Optional::NO, "The descriptor."},
-            },
-            RPCResult{
+    RPCHelpMan{"getdescriptorinfo",
+        {"\nAnalyses a descriptor.\n"},
+        {
+            {"descriptor", RPCArg::Type::STR, RPCArg::Optional::NO, "The descriptor."},
+        },
+        RPCResult{
             "{\n"
             "  \"descriptor\" : \"desc\",         (string) The descriptor in canonical form, without private keys\n"
             "  \"checksum\" : \"chksum\",         (string) The checksum for the input descriptor\n"
             "  \"isrange\" : true|false,        (boolean) Whether the descriptor is ranged\n"
             "  \"issolvable\" : true|false,     (boolean) Whether the descriptor is solvable\n"
             "  \"hasprivatekeys\" : true|false, (boolean) Whether the input descriptor contained at least one private key\n"
-            "}\n"
-            },
-            RPCExamples{
-                "Analyse a descriptor\n" +
-                HelpExampleCli("getdescriptorinfo", "\"wpkh([d34db33f/84h/0h/0h]0279be667ef9dcbbac55a06295Ce870b07029Bfcdb2dce28d959f2815b16f81798)\"")
-            }}.Check(request);
+            "}\n"},
+        RPCExamples{
+            "Analyse a descriptor\n" +
+            HelpExampleCli("getdescriptorinfo", "\"wpkh([d34db33f/84h/0h/0h]0279be667ef9dcbbac55a06295Ce870b07029Bfcdb2dce28d959f2815b16f81798)\"")}}
+        .Check(request);
 
     RPCTypeCheck(request.params, {UniValue::VSTR});
 
@@ -174,27 +170,26 @@ UniValue getdescriptorinfo(const JSONRPCRequest& request)
 
 UniValue deriveaddresses(const JSONRPCRequest& request)
 {
-            RPCHelpMan{"deriveaddresses",
-            {"\nDerives one or more addresses corresponding to an output descriptor.\n"
-            "Examples of output descriptors are:\n"
-            "    pkh(<pubkey>)                        P2PKH outputs for the given pubkey\n"
-            "    wpkh(<pubkey>)                       Native segwit P2PKH outputs for the given pubkey\n"
-            "    sh(multi(<n>,<pubkey>,<pubkey>,...)) P2SH-multisig outputs for the given threshold and pubkeys\n"
-            "    raw(<hex script>)                    Outputs whose scriptPubKey equals the specified hex scripts\n"
-            "\nIn the above, <pubkey> either refers to a fixed public key in hexadecimal notation, or to an xpub/xprv optionally followed by one\n"
-            "or more path elements separated by \"/\", where \"h\" represents a hardened child key.\n"
-            "For more information on output descriptors, see the documentation in the doc/descriptors.md file.\n"},
-            {
-                {"descriptor", RPCArg::Type::STR, RPCArg::Optional::NO, "The descriptor."},
-                {"range", RPCArg::Type::RANGE, RPCArg::Optional::OMITTED_NAMED_ARG, "If a ranged descriptor is used, this specifies the end or the range (in [begin,end] notation) to derive."},
-            },
-            RPCResult{
-                "[ address ] (json array) the derived addresses\n"
-            },
-            RPCExamples{
-                "First three native segwit receive addresses\n" +
-                HelpExampleCli("deriveaddresses", "\"wpkh([d34db33f/84h/0h/0h]xpub6DJ2dNUysrn5Vt36jH2KLBT2i1auw1tTSSomg8PhqNiUtx8QX2SvC9nrHu81fT41fvDUnhMjEzQgXnQjKEu3oaqMSzhSrHMxyyoEAmUHQbY/0/*)#cjjspncu\" \"[0,2]\"")
-            }}.Check(request);
+    RPCHelpMan{"deriveaddresses",
+        {"\nDerives one or more addresses corresponding to an output descriptor.\n"
+         "Examples of output descriptors are:\n"
+         "    pkh(<pubkey>)                        P2PKH outputs for the given pubkey\n"
+         "    wpkh(<pubkey>)                       Native segwit P2PKH outputs for the given pubkey\n"
+         "    sh(multi(<n>,<pubkey>,<pubkey>,...)) P2SH-multisig outputs for the given threshold and pubkeys\n"
+         "    raw(<hex script>)                    Outputs whose scriptPubKey equals the specified hex scripts\n"
+         "\nIn the above, <pubkey> either refers to a fixed public key in hexadecimal notation, or to an xpub/xprv optionally followed by one\n"
+         "or more path elements separated by \"/\", where \"h\" represents a hardened child key.\n"
+         "For more information on output descriptors, see the documentation in the doc/descriptors.md file.\n"},
+        {
+            {"descriptor", RPCArg::Type::STR, RPCArg::Optional::NO, "The descriptor."},
+            {"range", RPCArg::Type::RANGE, RPCArg::Optional::OMITTED_NAMED_ARG, "If a ranged descriptor is used, this specifies the end or the range (in [begin,end] notation) to derive."},
+        },
+        RPCResult{
+            "[ address ] (json array) the derived addresses\n"},
+        RPCExamples{
+            "First three native segwit receive addresses\n" +
+            HelpExampleCli("deriveaddresses", "\"wpkh([d34db33f/84h/0h/0h]xpub6DJ2dNUysrn5Vt36jH2KLBT2i1auw1tTSSomg8PhqNiUtx8QX2SvC9nrHu81fT41fvDUnhMjEzQgXnQjKEu3oaqMSzhSrHMxyyoEAmUHQbY/0/*)#cjjspncu\" \"[0,2]\"")}}
+        .Check(request);
 
     RPCTypeCheck(request.params, {UniValue::VSTR, UniValueType()}); // Range argument is checked later
     const std::string desc_str = request.params[0].get_str();
@@ -230,7 +225,7 @@ UniValue deriveaddresses(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("Cannot derive script without private keys"));
         }
 
-        for (const CScript &script : scripts) {
+        for (const CScript& script : scripts) {
             CTxDestination dest;
             if (!ExtractDestination(script, dest)) {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("Descriptor does not have a corresponding address"));
@@ -250,40 +245,36 @@ UniValue deriveaddresses(const JSONRPCRequest& request)
 
 static UniValue verifymessage(const JSONRPCRequest& request)
 {
-            RPCHelpMan{"verifymessage",
-                "\nVerify a signed message\n",
-                {
-                    {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address to use for the signature."},
-                    {"signature", RPCArg::Type::STR, RPCArg::Optional::NO, "The signature provided by the signer in base 64 encoding (see signmessage)."},
-                    {"message", RPCArg::Type::STR, RPCArg::Optional::NO, "The message that was signed."},
-                },
-                RPCResult{
-            "true|false   (boolean) If the signature is verified or not.\n"
-                },
-                RPCExamples{
-            "\nUnlock the wallet for 30 seconds\n"
-            + HelpExampleCli("walletpassphrase", "\"mypassphrase\" 30") +
-            "\nCreate the signature\n"
-            + HelpExampleCli("signmessage", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\" \"my message\"") +
-            "\nVerify the signature\n"
-            + HelpExampleCli("verifymessage", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\" \"signature\" \"my message\"") +
-            "\nAs a JSON-RPC call\n"
-            + HelpExampleRpc("verifymessage", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\", \"signature\", \"my message\"")
-                },
-            }.Check(request);
+    RPCHelpMan{
+        "verifymessage",
+        "\nVerify a signed message\n",
+        {
+            {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address to use for the signature."},
+            {"signature", RPCArg::Type::STR, RPCArg::Optional::NO, "The signature provided by the signer in base 64 encoding (see signmessage)."},
+            {"message", RPCArg::Type::STR, RPCArg::Optional::NO, "The message that was signed."},
+        },
+        RPCResult{
+            "true|false   (boolean) If the signature is verified or not.\n"},
+        RPCExamples{
+            "\nUnlock the wallet for 30 seconds\n" + HelpExampleCli("walletpassphrase", "\"mypassphrase\" 30") +
+            "\nCreate the signature\n" + HelpExampleCli("signmessage", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\" \"my message\"") +
+            "\nVerify the signature\n" + HelpExampleCli("verifymessage", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\" \"signature\" \"my message\"") +
+            "\nAs a JSON-RPC call\n" + HelpExampleRpc("verifymessage", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\", \"signature\", \"my message\"")},
+    }
+        .Check(request);
 
     LOCK(cs_main);
 
-    std::string strAddress  = request.params[0].get_str();
-    std::string strSign     = request.params[1].get_str();
-    std::string strMessage  = request.params[2].get_str();
+    std::string strAddress = request.params[0].get_str();
+    std::string strSign = request.params[1].get_str();
+    std::string strMessage = request.params[2].get_str();
 
     CTxDestination destination = DecodeDestination(strAddress);
     if (!IsValidDestination(destination)) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
     }
 
-    const PKHash *pkhash = boost::get<PKHash>(&destination);
+    const PKHash* pkhash = boost::get<PKHash>(&destination);
     if (!pkhash) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to key");
     }
@@ -307,24 +298,21 @@ static UniValue verifymessage(const JSONRPCRequest& request)
 
 static UniValue signmessagewithprivkey(const JSONRPCRequest& request)
 {
-            RPCHelpMan{"signmessagewithprivkey",
-                "\nSign a message with the private key of an address\n",
-                {
-                    {"privkey", RPCArg::Type::STR, RPCArg::Optional::NO, "The private key to sign the message with."},
-                    {"message", RPCArg::Type::STR, RPCArg::Optional::NO, "The message to create a signature of."},
-                },
-                RPCResult{
-            "\"signature\"          (string) The signature of the message encoded in base 64\n"
-                },
-                RPCExamples{
-            "\nCreate the signature\n"
-            + HelpExampleCli("signmessagewithprivkey", "\"privkey\" \"my message\"") +
-            "\nVerify the signature\n"
-            + HelpExampleCli("verifymessage", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\" \"signature\" \"my message\"") +
-            "\nAs a JSON-RPC call\n"
-            + HelpExampleRpc("signmessagewithprivkey", "\"privkey\", \"my message\"")
-                },
-            }.Check(request);
+    RPCHelpMan{
+        "signmessagewithprivkey",
+        "\nSign a message with the private key of an address\n",
+        {
+            {"privkey", RPCArg::Type::STR, RPCArg::Optional::NO, "The private key to sign the message with."},
+            {"message", RPCArg::Type::STR, RPCArg::Optional::NO, "The message to create a signature of."},
+        },
+        RPCResult{
+            "\"signature\"          (string) The signature of the message encoded in base 64\n"},
+        RPCExamples{
+            "\nCreate the signature\n" + HelpExampleCli("signmessagewithprivkey", "\"privkey\" \"my message\"") +
+            "\nVerify the signature\n" + HelpExampleCli("verifymessage", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\" \"signature\" \"my message\"") +
+            "\nAs a JSON-RPC call\n" + HelpExampleRpc("signmessagewithprivkey", "\"privkey\", \"my message\"")},
+    }
+        .Check(request);
 
     std::string strPrivkey = request.params[0].get_str();
     std::string strMessage = request.params[1].get_str();
@@ -347,15 +335,17 @@ static UniValue signmessagewithprivkey(const JSONRPCRequest& request)
 
 static UniValue setmocktime(const JSONRPCRequest& request)
 {
-            RPCHelpMan{"setmocktime",
-                "\nSet the local time to given timestamp (-regtest only)\n",
-                {
-                    {"timestamp", RPCArg::Type::NUM, RPCArg::Optional::NO, UNIX_EPOCH_TIME + "\n"
-            "   Pass 0 to go back to using the system time."},
-                },
-                RPCResults{},
-                RPCExamples{""},
-            }.Check(request);
+    RPCHelpMan{
+        "setmocktime",
+        "\nSet the local time to given timestamp (-regtest only)\n",
+        {
+            {"timestamp", RPCArg::Type::NUM, RPCArg::Optional::NO, UNIX_EPOCH_TIME + "\n"
+                                                                                     "   Pass 0 to go back to using the system time."},
+        },
+        RPCResults{},
+        RPCExamples{""},
+    }
+        .Check(request);
 
     if (!Params().MineBlocksOnDemand())
         throw std::runtime_error("setmocktime for regression testing (-regtest mode) only");
@@ -375,14 +365,16 @@ static UniValue setmocktime(const JSONRPCRequest& request)
 
 static UniValue mockscheduler(const JSONRPCRequest& request)
 {
-    RPCHelpMan{"mockscheduler",
+    RPCHelpMan{
+        "mockscheduler",
         "\nBump the scheduler into the future (-regtest only)\n",
         {
-            {"delta_time", RPCArg::Type::NUM, RPCArg::Optional::NO, "Number of seconds to forward the scheduler into the future." },
+            {"delta_time", RPCArg::Type::NUM, RPCArg::Optional::NO, "Number of seconds to forward the scheduler into the future."},
         },
         RPCResults{},
         RPCExamples{""},
-    }.Check(request);
+    }
+        .Check(request);
 
     if (!Params().IsMockableChain()) {
         throw std::runtime_error("mockscheduler is for regression testing (-regtest mode) only");
@@ -419,9 +411,9 @@ static UniValue RPCLockedMemoryInfo()
 #ifdef HAVE_MALLOC_INFO
 static std::string RPCMallocInfo()
 {
-    char *ptr = nullptr;
+    char* ptr = nullptr;
     size_t size = 0;
-    FILE *f = open_memstream(&ptr, &size);
+    FILE* f = open_memstream(&ptr, &size);
     if (f) {
         malloc_info(0, f);
         fclose(f);
@@ -440,35 +432,33 @@ static UniValue getmemoryinfo(const JSONRPCRequest& request)
     /* Please, avoid using the word "pool" here in the RPC interface or help,
      * as users will undoubtedly confuse it with the other "memory pool"
      */
-            RPCHelpMan{"getmemoryinfo",
-                "Returns an object containing information about memory usage.\n",
-                {
-                    {"mode", RPCArg::Type::STR, /* default */ "\"stats\"", "determines what kind of information is returned.\n"
-            "  - \"stats\" returns general statistics about memory usage in the daemon.\n"
-            "  - \"mallocinfo\" returns an XML string describing low-level heap state (only available if compiled with glibc 2.10+)."},
-                },
-                {
-                    RPCResult{"mode \"stats\"",
-            "{\n"
-            "  \"locked\" : {               (json object) Information about locked memory manager\n"
-            "    \"used\" : xxxxx,          (numeric) Number of bytes used\n"
-            "    \"free\" : xxxxx,          (numeric) Number of bytes available in current arenas\n"
-            "    \"total\" : xxxxxxx,       (numeric) Total number of bytes managed\n"
-            "    \"locked\" : xxxxxx,       (numeric) Amount of bytes that succeeded locking. If this number is smaller than total, locking pages failed at some point and key data could be swapped to disk.\n"
-            "    \"chunks_used\" : xxxxx,   (numeric) Number allocated chunks\n"
-            "    \"chunks_free\" : xxxxx,   (numeric) Number unused chunks\n"
-            "  }\n"
-            "}\n"
-                    },
-                    RPCResult{"mode \"mallocinfo\"",
-            "\"<malloc version=\"1\">...\"\n"
-                    },
-                },
-                RPCExamples{
-                    HelpExampleCli("getmemoryinfo", "")
-            + HelpExampleRpc("getmemoryinfo", "")
-                },
-            }.Check(request);
+    RPCHelpMan{
+        "getmemoryinfo",
+        "Returns an object containing information about memory usage.\n",
+        {
+            {"mode", RPCArg::Type::STR, /* default */ "\"stats\"", "determines what kind of information is returned.\n"
+                                                                   "  - \"stats\" returns general statistics about memory usage in the daemon.\n"
+                                                                   "  - \"mallocinfo\" returns an XML string describing low-level heap state (only available if compiled with glibc 2.10+)."},
+        },
+        {
+            RPCResult{"mode \"stats\"",
+                "{\n"
+                "  \"locked\" : {               (json object) Information about locked memory manager\n"
+                "    \"used\" : xxxxx,          (numeric) Number of bytes used\n"
+                "    \"free\" : xxxxx,          (numeric) Number of bytes available in current arenas\n"
+                "    \"total\" : xxxxxxx,       (numeric) Total number of bytes managed\n"
+                "    \"locked\" : xxxxxx,       (numeric) Amount of bytes that succeeded locking. If this number is smaller than total, locking pages failed at some point and key data could be swapped to disk.\n"
+                "    \"chunks_used\" : xxxxx,   (numeric) Number allocated chunks\n"
+                "    \"chunks_free\" : xxxxx,   (numeric) Number unused chunks\n"
+                "  }\n"
+                "}\n"},
+            RPCResult{"mode \"mallocinfo\"",
+                "\"<malloc version=\"1\">...\"\n"},
+        },
+        RPCExamples{
+            HelpExampleCli("getmemoryinfo", "") + HelpExampleRpc("getmemoryinfo", "")},
+    }
+        .Check(request);
 
     std::string mode = request.params[0].isNull() ? "stats" : request.params[0].get_str();
     if (mode == "stats") {
@@ -486,7 +476,8 @@ static UniValue getmemoryinfo(const JSONRPCRequest& request)
     }
 }
 
-static void EnableOrDisableLogCategories(UniValue cats, bool enable) {
+static void EnableOrDisableLogCategories(UniValue cats, bool enable)
+{
     cats = cats.get_array();
     for (unsigned int i = 0; i < cats.size(); ++i) {
         std::string cat = cats[i].get_str();
@@ -506,38 +497,37 @@ static void EnableOrDisableLogCategories(UniValue cats, bool enable) {
 
 UniValue logging(const JSONRPCRequest& request)
 {
-            RPCHelpMan{"logging",
-            "Gets and sets the logging configuration.\n"
-            "When called without an argument, returns the list of categories with status that are currently being debug logged or not.\n"
-            "When called with arguments, adds or removes categories from debug logging and return the lists above.\n"
-            "The arguments are evaluated in order \"include\", \"exclude\".\n"
-            "If an item is both included and excluded, it will thus end up being excluded.\n"
-            "The valid logging categories are: " + ListLogCategories() + "\n"
-            "In addition, the following are available as category names with special meanings:\n"
-            "  - \"all\",  \"1\" : represent all logging categories.\n"
-            "  - \"none\", \"0\" : even if other logging categories are specified, ignore all of them.\n"
-            ,
+    RPCHelpMan{
+        "logging",
+        "Gets and sets the logging configuration.\n"
+        "When called without an argument, returns the list of categories with status that are currently being debug logged or not.\n"
+        "When called with arguments, adds or removes categories from debug logging and return the lists above.\n"
+        "The arguments are evaluated in order \"include\", \"exclude\".\n"
+        "If an item is both included and excluded, it will thus end up being excluded.\n"
+        "The valid logging categories are: " +
+            ListLogCategories() + "\n"
+                                  "In addition, the following are available as category names with special meanings:\n"
+                                  "  - \"all\",  \"1\" : represent all logging categories.\n"
+                                  "  - \"none\", \"0\" : even if other logging categories are specified, ignore all of them.\n",
+        {
+            {"include", RPCArg::Type::ARR, RPCArg::Optional::OMITTED_NAMED_ARG, "A json array of categories to add debug logging",
                 {
-                    {"include", RPCArg::Type::ARR, RPCArg::Optional::OMITTED_NAMED_ARG, "A json array of categories to add debug logging",
-                        {
-                            {"include_category", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "the valid logging category"},
-                        }},
-                    {"exclude", RPCArg::Type::ARR, RPCArg::Optional::OMITTED_NAMED_ARG, "A json array of categories to remove debug logging",
-                        {
-                            {"exclude_category", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "the valid logging category"},
-                        }},
-                },
-                RPCResult{
+                    {"include_category", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "the valid logging category"},
+                }},
+            {"exclude", RPCArg::Type::ARR, RPCArg::Optional::OMITTED_NAMED_ARG, "A json array of categories to remove debug logging",
+                {
+                    {"exclude_category", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "the valid logging category"},
+                }},
+        },
+        RPCResult{
             "{                   (json object where keys are the logging categories, and values indicates its status\n"
             "  \"category\" : true|false,  (boolean) if being debug logged or not. false:inactive, true:active\n"
             "  ...\n"
-            "}\n"
-                },
-                RPCExamples{
-                    HelpExampleCli("logging", "\"[\\\"all\\\"]\" \"[\\\"http\\\"]\"")
-            + HelpExampleRpc("logging", "[\"all\"], [\"libevent\"]")
-                },
-            }.Check(request);
+            "}\n"},
+        RPCExamples{
+            HelpExampleCli("logging", "\"[\\\"all\\\"]\" \"[\\\"http\\\"]\"") + HelpExampleRpc("logging", "[\"all\"], [\"libevent\"]")},
+    }
+        .Check(request);
 
     uint32_t original_log_categories = LogInstance().GetCategoryMask();
     if (request.params[0].isArray()) {
@@ -558,7 +548,7 @@ UniValue logging(const JSONRPCRequest& request)
         if (!UpdateHTTPServerLogging(LogInstance().WillLogCategory(BCLog::LIBEVENT))) {
             LogInstance().DisableCategory(BCLog::LIBEVENT);
             if (changed_log_categories == BCLog::LIBEVENT) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "libevent logging cannot be updated when using libevent before v2.1.1.");
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "libevent logging cannot be updated when using libevent before v2.1.1.");
             }
         }
     }
@@ -576,7 +566,8 @@ static UniValue echo(const JSONRPCRequest& request)
 {
     if (request.fHelp)
         throw std::runtime_error(
-            RPCHelpMan{"echo|echojson ...",
+            RPCHelpMan{
+                "echo|echojson ...",
                 "\nSimply echo back the input arguments. This command is for testing.\n"
                 "\nIt will return an internal bug report when exactly 100 arguments are passed.\n"
                 "\nThe difference between echo and echojson is that echojson has argument conversion enabled in the client-side table in "
@@ -584,8 +575,8 @@ static UniValue echo(const JSONRPCRequest& request)
                 {},
                 RPCResults{},
                 RPCExamples{""},
-            }.ToString()
-        );
+            }
+                .ToString());
 
     CHECK_NONFATAL(request.params.size() != 100);
 
@@ -613,7 +604,7 @@ static const CRPCCommand commands[] =
 };
 // clang-format on
 
-void RegisterMiscRPCCommands(CRPCTable &t)
+void RegisterMiscRPCCommands(CRPCTable& t)
 {
     for (unsigned int vcidx = 0; vcidx < ARRAYLEN(commands); vcidx++)
         t.appendCommand(commands[vcidx].name, &commands[vcidx]);

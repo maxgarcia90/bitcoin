@@ -13,26 +13,25 @@
 #include <qt/guiutil.h>
 
 #include <interfaces/node.h>
-#include <validation.h> // For DEFAULT_SCRIPTCHECK_THREADS
 #include <net.h>
 #include <netbase.h>
-#include <txdb.h> // for -dbcache defaults
+#include <txdb.h>       // for -dbcache defaults
+#include <validation.h> // For DEFAULT_SCRIPTCHECK_THREADS
 
 #include <QDebug>
 #include <QSettings>
 #include <QStringList>
 
-const char *DEFAULT_GUI_PROXY_HOST = "127.0.0.1";
+const char* DEFAULT_GUI_PROXY_HOST = "127.0.0.1";
 
 static const QString GetDefaultProxyAddress();
 
-OptionsModel::OptionsModel(interfaces::Node& node, QObject *parent, bool resetSettings) :
-    QAbstractListModel(parent), m_node(node)
+OptionsModel::OptionsModel(interfaces::Node& node, QObject* parent, bool resetSettings) : QAbstractListModel(parent), m_node(node)
 {
     Init(resetSettings);
 }
 
-void OptionsModel::addOverriddenOption(const std::string &option)
+void OptionsModel::addOverriddenOption(const std::string& option)
 {
     strOverriddenByCommandLine += QString::fromStdString(option) + "=" + QString::fromStdString(gArgs.GetArg(option, "")) + " ";
 }
@@ -107,7 +106,7 @@ void OptionsModel::Init(bool resetSettings)
     if (!settings.contains("strDataDir"))
         settings.setValue("strDataDir", GUIUtil::getDefaultDataDirectory());
 
-    // Wallet
+        // Wallet
 #ifdef ENABLE_WALLET
     if (!settings.contains("bSpendZeroConfChange"))
         settings.setValue("bSpendZeroConfChange", true);
@@ -133,7 +132,7 @@ void OptionsModel::Init(bool resetSettings)
     // Only try to set -proxy, if user has enabled fUseProxy
     if (settings.value("fUseProxy").toBool() && !m_node.softSetArg("-proxy", settings.value("addrProxy").toString().toStdString()))
         addOverriddenOption("-proxy");
-    else if(!settings.value("fUseProxy").toBool() && !gArgs.GetArg("-proxy", "").empty())
+    else if (!settings.value("fUseProxy").toBool() && !gArgs.GetArg("-proxy", "").empty())
         addOverriddenOption("-proxy");
 
     if (!settings.contains("fUseSeparateProxyTor"))
@@ -143,7 +142,7 @@ void OptionsModel::Init(bool resetSettings)
     // Only try to set -onion, if user has enabled fUseSeparateProxyTor
     if (settings.value("fUseSeparateProxyTor").toBool() && !m_node.softSetArg("-onion", settings.value("addrSeparateProxyTor").toString().toStdString()))
         addOverriddenOption("-onion");
-    else if(!settings.value("fUseSeparateProxyTor").toBool() && !gArgs.GetArg("-onion", "").empty())
+    else if (!settings.value("fUseSeparateProxyTor").toBool() && !gArgs.GetArg("-onion", "").empty())
         addOverriddenOption("-onion");
 
     // Display
@@ -199,7 +198,7 @@ void OptionsModel::Reset()
         GUIUtil::SetStartOnSystemStartup(false);
 }
 
-int OptionsModel::rowCount(const QModelIndex & parent) const
+int OptionsModel::rowCount(const QModelIndex& parent) const
 {
     return OptionIDRowCount;
 }
@@ -210,7 +209,7 @@ struct ProxySetting {
     QString port;
 };
 
-static ProxySetting GetProxySetting(QSettings &settings, const QString &name)
+static ProxySetting GetProxySetting(QSettings& settings, const QString& name)
 {
     static const ProxySetting default_val = {false, DEFAULT_GUI_PROXY_HOST, QString("%1").arg(DEFAULT_GUI_PROXY_PORT)};
     // Handle the case that the setting is not set at all
@@ -226,7 +225,7 @@ static ProxySetting GetProxySetting(QSettings &settings, const QString &name)
     }
 }
 
-static void SetProxySetting(QSettings &settings, const QString &name, const ProxySetting &ip_port)
+static void SetProxySetting(QSettings& settings, const QString& name, const ProxySetting& ip_port)
 {
     settings.setValue(name, ip_port.ip + ":" + ip_port.port);
 }
@@ -262,13 +261,11 @@ void OptionsModel::SetPruneTargetGB(int prune_target_gb, bool force)
 }
 
 // read QSettings values and return them
-QVariant OptionsModel::data(const QModelIndex & index, int role) const
+QVariant OptionsModel::data(const QModelIndex& index, int role) const
 {
-    if(role == Qt::EditRole)
-    {
+    if (role == Qt::EditRole) {
         QSettings settings;
-        switch(index.row())
-        {
+        switch (index.row()) {
         case StartAtStartup:
             return GUIUtil::GetStartOnSystemStartup();
         case HideTrayIcon:
@@ -330,21 +327,19 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
 }
 
 // write QSettings values
-bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, int role)
+bool OptionsModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
     bool successful = true; /* set to false on parse error */
-    if(role == Qt::EditRole)
-    {
+    if (role == Qt::EditRole) {
         QSettings settings;
-        switch(index.row())
-        {
+        switch (index.row()) {
         case StartAtStartup:
             successful = GUIUtil::SetStartOnSystemStartup(value.toBool());
             break;
         case HideTrayIcon:
             fHideTrayIcon = value.toBool();
             settings.setValue("fHideTrayIcon", fHideTrayIcon);
-    		Q_EMIT hideTrayIconChanged(fHideTrayIcon);
+            Q_EMIT hideTrayIconChanged(fHideTrayIcon);
             break;
         case MinimizeToTray:
             fMinimizeToTray = value.toBool();
@@ -373,8 +368,7 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
                 SetProxySetting(settings, "addrProxy", ip_port);
                 setRestartRequired(true);
             }
-        }
-        break;
+        } break;
         case ProxyPort: {
             auto ip_port = GetProxySetting(settings, "addrProxy");
             if (!ip_port.is_set || ip_port.port != value.toString()) {
@@ -382,8 +376,7 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
                 SetProxySetting(settings, "addrProxy", ip_port);
                 setRestartRequired(true);
             }
-        }
-        break;
+        } break;
 
         // separate Tor proxy
         case ProxyUseTor:
@@ -399,8 +392,7 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
                 SetProxySetting(settings, "addrSeparateProxyTor", ip_port);
                 setRestartRequired(true);
             }
-        }
-        break;
+        } break;
         case ProxyPortTor: {
             auto ip_port = GetProxySetting(settings, "addrSeparateProxyTor");
             if (!ip_port.is_set || ip_port.port != value.toString()) {
@@ -408,8 +400,7 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
                 SetProxySetting(settings, "addrSeparateProxyTor", ip_port);
                 setRestartRequired(true);
             }
-        }
-        break;
+        } break;
 
 #ifdef ENABLE_WALLET
         case SpendZeroConfChange:
@@ -481,10 +472,9 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
 }
 
 /** Updates current unit in memory, settings and emits displayUnitChanged(newUnit) signal */
-void OptionsModel::setDisplayUnit(const QVariant &value)
+void OptionsModel::setDisplayUnit(const QVariant& value)
 {
-    if (!value.isNull())
-    {
+    if (!value.isNull()) {
         QSettings settings;
         nDisplayUnit = value.toInt();
         settings.setValue("nDisplayUnit", nDisplayUnit);
@@ -511,8 +501,7 @@ void OptionsModel::checkAndMigrate()
     QSettings settings;
     static const char strSettingsVersionKey[] = "nSettingsVersion";
     int settingsVersion = settings.contains(strSettingsVersionKey) ? settings.value(strSettingsVersionKey).toInt() : 0;
-    if (settingsVersion < CLIENT_VERSION)
-    {
+    if (settingsVersion < CLIENT_VERSION) {
         // -dbcache was bumped from 100 to 300 in 0.13
         // see https://github.com/bitcoin/bitcoin/pull/8273
         // force people to upgrade to the new value if they are using 100MB

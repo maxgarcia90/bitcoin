@@ -33,8 +33,8 @@ BOOST_AUTO_TEST_CASE(base58_EncodeBase58)
         std::vector<unsigned char> sourcedata = ParseHex(test[0].get_str());
         std::string base58string = test[1].get_str();
         BOOST_CHECK_MESSAGE(
-                    EncodeBase58(sourcedata.data(), sourcedata.data() + sourcedata.size()) == base58string,
-                    strTest);
+            EncodeBase58(sourcedata.data(), sourcedata.data() + sourcedata.size()) == base58string,
+            strTest);
     }
 }
 
@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(base58_DecodeBase58)
 
     // check that DecodeBase58 skips whitespace, but still fails with unexpected non-whitespace at the end.
     BOOST_CHECK(!DecodeBase58(" \t\n\v\f\r skip \r\f\v\n\t a", result, 3));
-    BOOST_CHECK( DecodeBase58(" \t\n\v\f\r skip \r\f\v\n\t ", result, 3));
+    BOOST_CHECK(DecodeBase58(" \t\n\v\f\r skip \r\f\v\n\t ", result, 3));
     std::vector<unsigned char> expected = ParseHex("971a55");
     BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(), expected.begin(), expected.end());
 

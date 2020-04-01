@@ -16,7 +16,9 @@ void static inline GetCPUID(uint32_t leaf, uint32_t subleaf, uint32_t& a, uint32
 #ifdef __GNUC__
     __cpuid_count(leaf, subleaf, a, b, c, d);
 #else
-  __asm__ ("cpuid" : "=a"(a), "=b"(b), "=c"(c), "=d"(d) : "0"(leaf), "2"(subleaf));
+    __asm__("cpuid"
+            : "=a"(a), "=b"(b), "=c"(c), "=d"(d)
+            : "0"(leaf), "2"(subleaf));
 #endif
 }
 

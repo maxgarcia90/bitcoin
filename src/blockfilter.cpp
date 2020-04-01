@@ -3,8 +3,8 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mutex>
-#include <sstream>
 #include <set>
+#include <sstream>
 
 #include <blockfilter.h>
 #include <crypto/siphash.h>
@@ -88,8 +88,8 @@ static uint64_t MapIntoRange(uint64_t x, uint64_t n)
 uint64_t GCSFilter::HashToRange(const Element& element) const
 {
     uint64_t hash = CSipHasher(m_params.m_siphash_k0, m_params.m_siphash_k1)
-        .Write(element.data(), element.size())
-        .Finalize();
+                        .Write(element.data(), element.size())
+                        .Finalize();
     return MapIntoRange(hash, m_F);
 }
 
@@ -106,7 +106,8 @@ std::vector<uint64_t> GCSFilter::BuildHashedSet(const ElementSet& elements) cons
 
 GCSFilter::GCSFilter(const Params& params)
     : m_params(params), m_N(0), m_F(0), m_encoded{0}
-{}
+{
+}
 
 GCSFilter::GCSFilter(const Params& params, std::vector<unsigned char> encoded_filter)
     : m_params(params), m_encoded(std::move(encoded_filter))
@@ -212,7 +213,8 @@ const std::string& BlockFilterTypeName(BlockFilterType filter_type)
     return it != g_filter_types.end() ? it->second : unknown_retval;
 }
 
-bool BlockFilterTypeByName(const std::string& name, BlockFilterType& filter_type) {
+bool BlockFilterTypeByName(const std::string& name, BlockFilterType& filter_type)
+{
     for (const auto& entry : g_filter_types) {
         if (entry.second == name) {
             filter_type = entry.first;
@@ -228,10 +230,10 @@ const std::set<BlockFilterType>& AllBlockFilterTypes()
 
     static std::once_flag flag;
     std::call_once(flag, []() {
-            for (auto entry : g_filter_types) {
-                types.insert(entry.first);
-            }
-        });
+        for (auto entry : g_filter_types) {
+            types.insert(entry.first);
+        }
+    });
 
     return types;
 }
@@ -242,21 +244,21 @@ const std::string& ListBlockFilterTypes()
 
     static std::once_flag flag;
     std::call_once(flag, []() {
-            std::stringstream ret;
-            bool first = true;
-            for (auto entry : g_filter_types) {
-                if (!first) ret << ", ";
-                ret << entry.second;
-                first = false;
-            }
-            type_list = ret.str();
-        });
+        std::stringstream ret;
+        bool first = true;
+        for (auto entry : g_filter_types) {
+            if (!first) ret << ", ";
+            ret << entry.second;
+            first = false;
+        }
+        type_list = ret.str();
+    });
 
     return type_list;
 }
 
 static GCSFilter::ElementSet BasicFilterElements(const CBlock& block,
-                                                 const CBlockUndo& block_undo)
+    const CBlockUndo& block_undo)
 {
     GCSFilter::ElementSet elements;
 
@@ -279,8 +281,7 @@ static GCSFilter::ElementSet BasicFilterElements(const CBlock& block,
     return elements;
 }
 
-BlockFilter::BlockFilter(BlockFilterType filter_type, const uint256& block_hash,
-                         std::vector<unsigned char> filter)
+BlockFilter::BlockFilter(BlockFilterType filter_type, const uint256& block_hash, std::vector<unsigned char> filter)
     : m_filter_type(filter_type), m_block_hash(block_hash)
 {
     GCSFilter::Params params;

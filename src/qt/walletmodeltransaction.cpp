@@ -10,9 +10,8 @@
 
 #include <policy/policy.h>
 
-WalletModelTransaction::WalletModelTransaction(const QList<SendCoinsRecipient> &_recipients) :
-    recipients(_recipients),
-    fee(0)
+WalletModelTransaction::WalletModelTransaction(const QList<SendCoinsRecipient>& _recipients) : recipients(_recipients),
+                                                                                               fee(0)
 {
 }
 
@@ -45,8 +44,7 @@ void WalletModelTransaction::reassignAmounts(int nChangePosRet)
 {
     const CTransaction* walletTransaction = wtx.get();
     int i = 0;
-    for (QList<SendCoinsRecipient>::iterator it = recipients.begin(); it != recipients.end(); ++it)
-    {
+    for (QList<SendCoinsRecipient>::iterator it = recipients.begin(); it != recipients.end(); ++it) {
         SendCoinsRecipient& rcp = (*it);
         {
             if (i == nChangePosRet)
@@ -60,8 +58,7 @@ void WalletModelTransaction::reassignAmounts(int nChangePosRet)
 CAmount WalletModelTransaction::getTotalTransactionAmount() const
 {
     CAmount totalTransactionAmount = 0;
-    for (const SendCoinsRecipient &rcp : recipients)
-    {
+    for (const SendCoinsRecipient& rcp : recipients) {
         totalTransactionAmount += rcp.amount;
     }
     return totalTransactionAmount;

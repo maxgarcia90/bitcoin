@@ -2,18 +2,18 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <vector>
 #include <assert.h>
 #include <crypto/common.h>
+#include <vector>
 
 namespace {
 
-uint32_t DecodeBits(std::vector<bool>::const_iterator& bitpos, const std::vector<bool>::const_iterator& endpos, uint8_t minval, const std::vector<uint8_t> &bit_sizes)
+uint32_t DecodeBits(std::vector<bool>::const_iterator& bitpos, const std::vector<bool>::const_iterator& endpos, uint8_t minval, const std::vector<uint8_t>& bit_sizes)
 {
     uint32_t val = minval;
     bool bit;
     for (std::vector<uint8_t>::const_iterator bit_sizes_it = bit_sizes.begin();
-        bit_sizes_it != bit_sizes.end(); ++bit_sizes_it) {
+         bit_sizes_it != bit_sizes.end(); ++bit_sizes_it) {
         if (bit_sizes_it + 1 != bit_sizes.end()) {
             if (bitpos == endpos) break;
             bit = *bitpos;
@@ -62,9 +62,9 @@ uint32_t DecodeJump(std::vector<bool>::const_iterator& bitpos, const std::vector
     return DecodeBits(bitpos, endpos, 17, JUMP_BIT_SIZES);
 }
 
-}
+} // namespace
 
-uint32_t Interpret(const std::vector<bool> &asmap, const std::vector<bool> &ip)
+uint32_t Interpret(const std::vector<bool>& asmap, const std::vector<bool>& ip)
 {
     std::vector<bool>::const_iterator pos = asmap.begin();
     const std::vector<bool>::const_iterator endpos = asmap.end();

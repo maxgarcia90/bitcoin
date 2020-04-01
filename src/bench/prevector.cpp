@@ -19,17 +19,20 @@
 
 struct nontrivial_t {
     int x;
-    nontrivial_t() :x(-1) {}
+    nontrivial_t() : x(-1) {}
     ADD_SERIALIZE_METHODS
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {READWRITE(x);}
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(x);
+    }
 };
 static_assert(!IS_TRIVIALLY_CONSTRUCTIBLE<nontrivial_t>::value,
-              "expected nontrivial_t to not be trivially constructible");
+    "expected nontrivial_t to not be trivially constructible");
 
 typedef unsigned char trivial_t;
 static_assert(IS_TRIVIALLY_CONSTRUCTIBLE<trivial_t>::value,
-              "expected trivial_t to be trivially constructible");
+    "expected trivial_t to be trivially constructible");
 
 template <typename T>
 static void PrevectorDestructor(benchmark::State& state)
@@ -47,7 +50,6 @@ static void PrevectorDestructor(benchmark::State& state)
 template <typename T>
 static void PrevectorClear(benchmark::State& state)
 {
-
     while (state.KeepRunning()) {
         for (auto x = 0; x < 1000; ++x) {
             prevector<28, T> t0;
@@ -97,15 +99,17 @@ static void PrevectorDeserialize(benchmark::State& state)
     }
 }
 
-#define PREVECTOR_TEST(name, nontrivops, trivops)                       \
-    static void Prevector ## name ## Nontrivial(benchmark::State& state) { \
-        Prevector ## name<nontrivial_t>(state);                         \
-    }                                                                   \
-    BENCHMARK(Prevector ## name ## Nontrivial, nontrivops);             \
-    static void Prevector ## name ## Trivial(benchmark::State& state) { \
-        Prevector ## name<trivial_t>(state);                            \
-    }                                                                   \
-    BENCHMARK(Prevector ## name ## Trivial, trivops);
+#define PREVECTOR_TEST(name, nontrivops, trivops)                    \
+    static void Prevector##name##Nontrivial(benchmark::State& state) \
+    {                                                                \
+        Prevector##name<nontrivial_t>(state);                        \
+    }                                                                \
+    BENCHMARK(Prevector##name##Nontrivial, nontrivops);              \
+    static void Prevector##name##Trivial(benchmark::State& state)    \
+    {                                                                \
+        Prevector##name<trivial_t>(state);                           \
+    }                                                                \
+    BENCHMARK(Prevector##name##Trivial, trivops);
 
 PREVECTOR_TEST(Clear, 28300, 88600)
 PREVECTOR_TEST(Destructor, 28800, 88900)

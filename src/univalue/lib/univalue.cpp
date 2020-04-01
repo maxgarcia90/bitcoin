@@ -3,9 +3,9 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <stdint.h>
 #include <iomanip>
 #include <sstream>
+#include <stdint.h>
 #include <stdlib.h>
 
 #include "univalue.h"
@@ -154,7 +154,7 @@ bool UniValue::pushKVs(const UniValue& obj)
     return true;
 }
 
-void UniValue::getObjMap(std::map<std::string,UniValue>& kv) const
+void UniValue::getObjMap(std::map<std::string, UniValue>& kv) const
 {
     if (typ != VOBJ)
         return;
@@ -176,12 +176,12 @@ bool UniValue::findKey(const std::string& key, size_t& retIdx) const
     return false;
 }
 
-bool UniValue::checkObject(const std::map<std::string,UniValue::VType>& t) const
+bool UniValue::checkObject(const std::map<std::string, UniValue::VType>& t) const
 {
     if (typ != VOBJ)
         return false;
 
-    for (std::map<std::string,UniValue::VType>::const_iterator it = t.begin();
+    for (std::map<std::string, UniValue::VType>::const_iterator it = t.begin();
          it != t.end(); ++it) {
         size_t idx = 0;
         if (!findKey(it->first, idx))
@@ -216,7 +216,7 @@ const UniValue& UniValue::operator[](size_t index) const
     return values.at(index);
 }
 
-const char *uvTypeName(UniValue::VType t)
+const char* uvTypeName(UniValue::VType t)
 {
     switch (t) {
     case UniValue::VNULL: return "null";
@@ -239,4 +239,3 @@ const UniValue& find_value(const UniValue& obj, const std::string& name)
 
     return NullUniValue;
 }
-

@@ -4,8 +4,7 @@
 
 #include <qt/qvaluecombobox.h>
 
-QValueComboBox::QValueComboBox(QWidget *parent) :
-        QComboBox(parent), role(Qt::UserRole)
+QValueComboBox::QValueComboBox(QWidget* parent) : QComboBox(parent), role(Qt::UserRole)
 {
     connect(this, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &QValueComboBox::handleSelectionChanged);
 }
@@ -15,7 +14,7 @@ QVariant QValueComboBox::value() const
     return itemData(currentIndex(), role);
 }
 
-void QValueComboBox::setValue(const QVariant &value)
+void QValueComboBox::setValue(const QVariant& value)
 {
     setCurrentIndex(findData(value, role));
 }

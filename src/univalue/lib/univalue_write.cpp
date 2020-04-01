@@ -2,11 +2,11 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "univalue.h"
+#include "univalue_escapes.h"
 #include <iomanip>
 #include <sstream>
 #include <stdio.h>
-#include "univalue.h"
-#include "univalue_escapes.h"
 
 static std::string json_escape(const std::string& inS)
 {
@@ -15,7 +15,7 @@ static std::string json_escape(const std::string& inS)
 
     for (unsigned int i = 0; i < inS.size(); i++) {
         unsigned char ch = inS[i];
-        const char *escStr = escapes[ch];
+        const char* escStr = escapes[ch];
 
         if (escStr)
             outS += escStr;
@@ -27,7 +27,7 @@ static std::string json_escape(const std::string& inS)
 }
 
 std::string UniValue::write(unsigned int prettyIndent,
-                            unsigned int indentLevel) const
+    unsigned int indentLevel) const
 {
     std::string s;
     s.reserve(1024);
@@ -110,4 +110,3 @@ void UniValue::writeObject(unsigned int prettyIndent, unsigned int indentLevel, 
         indentStr(prettyIndent, indentLevel - 1, s);
     s += "}";
 }
-

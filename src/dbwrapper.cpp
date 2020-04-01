@@ -7,72 +7,73 @@
 #include <memory>
 #include <random.h>
 
+#include <algorithm>
 #include <leveldb/cache.h>
 #include <leveldb/env.h>
 #include <leveldb/filter_policy.h>
 #include <memenv.h>
 #include <stdint.h>
-#include <algorithm>
 
-class CBitcoinLevelDBLogger : public leveldb::Logger {
+class CBitcoinLevelDBLogger : public leveldb::Logger
+{
 public:
     // This code is adapted from posix_logger.h, which is why it is using vsprintf.
     // Please do not do this in normal code
-    void Logv(const char * format, va_list ap) override {
-            if (!LogAcceptCategory(BCLog::LEVELDB)) {
-                return;
+    void Logv(const char* format, va_list ap) override
+    {
+        if (!LogAcceptCategory(BCLog::LEVELDB)) {
+            return;
+        }
+        char buffer[500];
+        for (int iter = 0; iter < 2; iter++) {
+            char* base;
+            int bufsize;
+            if (iter == 0) {
+                bufsize = sizeof(buffer);
+                base = buffer;
+            } else {
+                bufsize = 30000;
+                base = new char[bufsize];
             }
-            char buffer[500];
-            for (int iter = 0; iter < 2; iter++) {
-                char* base;
-                int bufsize;
+            char* p = base;
+            char* limit = base + bufsize;
+
+            // Print the message
+            if (p < limit) {
+                va_list backup_ap;
+                va_copy(backup_ap, ap);
+                // Do not use vsnprintf elsewhere in bitcoin source code, see above.
+                p += vsnprintf(p, limit - p, format, backup_ap);
+                va_end(backup_ap);
+            }
+
+            // Truncate to available space if necessary
+            if (p >= limit) {
                 if (iter == 0) {
-                    bufsize = sizeof(buffer);
-                    base = buffer;
+                    continue; // Try again with larger buffer
+                } else {
+                    p = limit - 1;
                 }
-                else {
-                    bufsize = 30000;
-                    base = new char[bufsize];
-                }
-                char* p = base;
-                char* limit = base + bufsize;
-
-                // Print the message
-                if (p < limit) {
-                    va_list backup_ap;
-                    va_copy(backup_ap, ap);
-                    // Do not use vsnprintf elsewhere in bitcoin source code, see above.
-                    p += vsnprintf(p, limit - p, format, backup_ap);
-                    va_end(backup_ap);
-                }
-
-                // Truncate to available space if necessary
-                if (p >= limit) {
-                    if (iter == 0) {
-                        continue;       // Try again with larger buffer
-                    }
-                    else {
-                        p = limit - 1;
-                    }
-                }
-
-                // Add newline if necessary
-                if (p == base || p[-1] != '\n') {
-                    *p++ = '\n';
-                }
-
-                assert(p <= limit);
-                base[std::min(bufsize - 1, (int)(p - base))] = '\0';
-                LogPrintf("leveldb: %s", base);  /* Continued */
-                if (base != buffer) {
-                    delete[] base;
-                }
-                break;
             }
+
+            // Add newline if necessary
+            if (p == base || p[-1] != '\n') {
+                *p++ = '\n';
+            }
+
+            assert(p <= limit);
+            base[std::min(bufsize - 1, (int)(p - base))] = '\0';
+            LogPrintf("leveldb: %s", base); /* Continued */
+            if (base != buffer) {
+                delete[] base;
+            }
+            break;
+        }
     }
 };
 
-static void SetMaxOpenFiles(leveldb::Options *options) {
+static void SetMaxOpenFiles(leveldb::Options* options)
+{
     // On most platforms the default setting of max_open_files (which is 1000)
     // is optimal. On Windows using a large file count is OK because the handles
     // do not interfere with select() loops. On 64-bit Unix hosts this value is
@@ -94,7 +95,7 @@ static void SetMaxOpenFiles(leveldb::Options *options) {
     }
 #endif
     LogPrint(BCLog::LEVELDB, "LevelDB using max_open_files=%d (default=%d)\n",
-             options->max_open_files, default_open_files);
+        options->max_open_files, default_open_files);
 }
 
 static leveldb::Options GetOptions(size_t nCacheSize)
@@ -192,12 +193,13 @@ bool CDBWrapper::WriteBatch(CDBBatch& batch, bool fSync)
     if (log_memory) {
         double mem_after = DynamicMemoryUsage() / 1024.0 / 1024;
         LogPrint(BCLog::LEVELDB, "WriteBatch memory usage: db=%s, before=%.1fMiB, after=%.1fMiB\n",
-                 m_name, mem_before, mem_after);
+            m_name, mem_before, mem_after);
     }
     return true;
 }
 
-size_t CDBWrapper::DynamicMemoryUsage() const {
+size_t CDBWrapper::DynamicMemoryUsage() const
+{
     std::string memory;
     if (!pdb->GetProperty("leveldb.approximate-memory-usage", &memory)) {
         LogPrint(BCLog::LEVELDB, "Failed to get approximate-memory-usage property\n");
@@ -223,7 +225,6 @@ std::vector<unsigned char> CDBWrapper::CreateObfuscateKey() const
     unsigned char buff[OBFUSCATE_KEY_NUM_BYTES];
     GetRandBytes(buff, OBFUSCATE_KEY_NUM_BYTES);
     return std::vector<unsigned char>(&buff[0], &buff[OBFUSCATE_KEY_NUM_BYTES]);
-
 }
 
 bool CDBWrapper::IsEmpty()
@@ -250,7 +251,7 @@ void HandleError(const leveldb::Status& status)
     throw dbwrapper_error(errmsg);
 }
 
-const std::vector<unsigned char>& GetObfuscateKey(const CDBWrapper &w)
+const std::vector<unsigned char>& GetObfuscateKey(const CDBWrapper& w)
 {
     return w.obfuscate_key;
 }

@@ -5,8 +5,8 @@
 #include <wallet/coinselection.h>
 
 #include <optional.h>
-#include <util/system.h>
 #include <util/moneystr.h>
+#include <util/system.h>
 
 // Descending order comparator
 struct {
@@ -92,8 +92,8 @@ bool SelectCoinsBnB(std::vector<OutputGroup>& utxo_pool, const CAmount& target_v
     for (size_t i = 0; i < TOTAL_TRIES; ++i) {
         // Conditions for starting a backtrack
         bool backtrack = false;
-        if (curr_value + curr_available_value < actual_target ||                // Cannot possibly reach target with the amount remaining in the curr_available_value.
-            curr_value > actual_target + cost_of_change ||    // Selected value is out of range, go back and try other branch
+        if (curr_value + curr_available_value < actual_target ||                                      // Cannot possibly reach target with the amount remaining in the curr_available_value.
+            curr_value > actual_target + cost_of_change ||                                            // Selected value is out of range, go back and try other branch
             (curr_waste > best_waste && (utxo_pool.at(0).fee - utxo_pool.at(0).long_term_fee) > 0)) { // Don't select things which we know will be more wasteful if the waste is increasing
             backtrack = true;
         } else if (curr_value >= actual_target) {       // Selected value is within range
@@ -166,8 +166,7 @@ bool SelectCoinsBnB(std::vector<OutputGroup>& utxo_pool, const CAmount& target_v
     return true;
 }
 
-static void ApproximateBestSubset(const std::vector<OutputGroup>& groups, const CAmount& nTotalLower, const CAmount& nTargetValue,
-                                  std::vector<char>& vfBest, CAmount& nBest, int iterations = 1000)
+static void ApproximateBestSubset(const std::vector<OutputGroup>& groups, const CAmount& nTotalLower, const CAmount& nTargetValue, std::vector<char>& vfBest, CAmount& nBest, int iterations = 1000)
 {
     std::vector<char> vfIncluded;
 
@@ -176,30 +175,24 @@ static void ApproximateBestSubset(const std::vector<OutputGroup>& groups, const 
 
     FastRandomContext insecure_rand;
 
-    for (int nRep = 0; nRep < iterations && nBest != nTargetValue; nRep++)
-    {
+    for (int nRep = 0; nRep < iterations && nBest != nTargetValue; nRep++) {
         vfIncluded.assign(groups.size(), false);
         CAmount nTotal = 0;
         bool fReachedTarget = false;
-        for (int nPass = 0; nPass < 2 && !fReachedTarget; nPass++)
-        {
-            for (unsigned int i = 0; i < groups.size(); i++)
-            {
+        for (int nPass = 0; nPass < 2 && !fReachedTarget; nPass++) {
+            for (unsigned int i = 0; i < groups.size(); i++) {
                 //The solver here uses a randomized algorithm,
                 //the randomness serves no real security purpose but is just
                 //needed to prevent degenerate behavior and it is important
                 //that the rng is fast. We do not use a constant random sequence,
                 //because there may be some privacy improvement by making
                 //the selection random.
-                if (nPass == 0 ? insecure_rand.randbool() : !vfIncluded[i])
-                {
+                if (nPass == 0 ? insecure_rand.randbool() : !vfIncluded[i]) {
                     nTotal += groups[i].m_value;
                     vfIncluded[i] = true;
-                    if (nTotal >= nTargetValue)
-                    {
+                    if (nTotal >= nTargetValue) {
                         fReachedTarget = true;
-                        if (nTotal < nBest)
-                        {
+                        if (nTotal < nBest) {
                             nBest = nTotal;
                             vfBest = vfIncluded;
                         }
@@ -296,7 +289,8 @@ bool KnapsackSolver(const CAmount& nTargetValue, std::vector<OutputGroup>& group
 
  ******************************************************************************/
 
-void OutputGroup::Insert(const CInputCoin& output, int depth, bool from_me, size_t ancestors, size_t descendants) {
+void OutputGroup::Insert(const CInputCoin& output, int depth, bool from_me, size_t ancestors, size_t descendants)
+{
     m_outputs.push_back(output);
     m_from_me &= from_me;
     m_value += output.effective_value;
@@ -311,9 +305,11 @@ void OutputGroup::Insert(const CInputCoin& output, int depth, bool from_me, size
     effective_value = m_value;
 }
 
-std::vector<CInputCoin>::iterator OutputGroup::Discard(const CInputCoin& output) {
+std::vector<CInputCoin>::iterator OutputGroup::Discard(const CInputCoin& output)
+{
     auto it = m_outputs.begin();
-    while (it != m_outputs.end() && it->outpoint != output.outpoint) ++it;
+    while (it != m_outputs.end() && it->outpoint != output.outpoint)
+        ++it;
     if (it == m_outputs.end()) return it;
     m_value -= output.effective_value;
     effective_value -= output.effective_value;
@@ -322,7 +318,5 @@ std::vector<CInputCoin>::iterator OutputGroup::Discard(const CInputCoin& output)
 
 bool OutputGroup::EligibleForSpending(const CoinEligibilityFilter& eligibility_filter) const
 {
-    return m_depth >= (m_from_me ? eligibility_filter.conf_mine : eligibility_filter.conf_theirs)
-        && m_ancestors <= eligibility_filter.max_ancestors
-        && m_descendants <= eligibility_filter.max_descendants;
+    return m_depth >= (m_from_me ? eligibility_filter.conf_mine : eligibility_filter.conf_theirs) && m_ancestors <= eligibility_filter.max_ancestors && m_descendants <= eligibility_filter.max_descendants;
 }

@@ -41,8 +41,8 @@ BOOST_AUTO_TEST_CASE(block_subsidy_test)
 {
     const auto chainParams = CreateChainParams(CBaseChainParams::MAIN);
     TestBlockSubsidyHalvings(chainParams->GetConsensus()); // As in main
-    TestBlockSubsidyHalvings(150); // As in regtest
-    TestBlockSubsidyHalvings(1000); // Just another interval
+    TestBlockSubsidyHalvings(150);                         // As in regtest
+    TestBlockSubsidyHalvings(1000);                        // Just another interval
 }
 
 BOOST_AUTO_TEST_CASE(subsidy_limit_test)
@@ -63,7 +63,7 @@ static bool ReturnTrue() { return true; }
 
 BOOST_AUTO_TEST_CASE(test_combiner_all)
 {
-    boost::signals2::signal<bool (), CombinerAll> Test;
+    boost::signals2::signal<bool(), CombinerAll> Test;
     BOOST_CHECK(Test());
     Test.connect(&ReturnFalse);
     BOOST_CHECK(!Test());

@@ -2,8 +2,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <crypto/sha256.h>
 #include <crypto/common.h>
+#include <crypto/sha256.h>
 
 #include <assert.h>
 #include <string.h>
@@ -12,39 +12,32 @@
 
 #if defined(__x86_64__) || defined(__amd64__) || defined(__i386__)
 #if defined(USE_ASM)
-namespace sha256_sse4
-{
+namespace sha256_sse4 {
 void Transform(uint32_t* s, const unsigned char* chunk, size_t blocks);
 }
 #endif
 #endif
 
-namespace sha256d64_sse41
-{
+namespace sha256d64_sse41 {
 void Transform_4way(unsigned char* out, const unsigned char* in);
 }
 
-namespace sha256d64_avx2
-{
+namespace sha256d64_avx2 {
 void Transform_8way(unsigned char* out, const unsigned char* in);
 }
 
-namespace sha256d64_shani
-{
+namespace sha256d64_shani {
 void Transform_2way(unsigned char* out, const unsigned char* in);
 }
 
-namespace sha256_shani
-{
+namespace sha256_shani {
 void Transform(uint32_t* s, const unsigned char* chunk, size_t blocks);
 }
 
 // Internal implementation code.
-namespace
-{
+namespace {
 /// Internal SHA-256 implementation.
-namespace sha256
-{
+namespace sha256 {
 uint32_t inline Ch(uint32_t x, uint32_t y, uint32_t z) { return z ^ (x & (y ^ z)); }
 uint32_t inline Maj(uint32_t x, uint32_t y, uint32_t z) { return (x & y) | (z & (x | y)); }
 uint32_t inline Sigma0(uint32_t x) { return (x >> 2 | x << 30) ^ (x >> 13 | x << 19) ^ (x >> 22 | x << 10); }
@@ -417,22 +410,20 @@ void TransformD64(unsigned char* out, const unsigned char* in)
 typedef void (*TransformType)(uint32_t*, const unsigned char*, size_t);
 typedef void (*TransformD64Type)(unsigned char*, const unsigned char*);
 
-template<TransformType tr>
+template <TransformType tr>
 void TransformD64Wrapper(unsigned char* out, const unsigned char* in)
 {
     uint32_t s[8];
     static const unsigned char padding1[64] = {
         0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0
-    };
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0};
     unsigned char buffer2[64] = {
-        0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0
-    };
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0};
     sha256::Initialize(s);
     tr(s, in, 1);
     tr(s, padding1, 1);
@@ -462,21 +453,21 @@ TransformD64Type TransformD64_2way = nullptr;
 TransformD64Type TransformD64_4way = nullptr;
 TransformD64Type TransformD64_8way = nullptr;
 
-bool SelfTest() {
+bool SelfTest()
+{
     // Input state (equal to the initial SHA256 state)
     static const uint32_t init[8] = {
-        0x6a09e667ul, 0xbb67ae85ul, 0x3c6ef372ul, 0xa54ff53aul, 0x510e527ful, 0x9b05688cul, 0x1f83d9abul, 0x5be0cd19ul
-    };
+        0x6a09e667ul, 0xbb67ae85ul, 0x3c6ef372ul, 0xa54ff53aul, 0x510e527ful, 0x9b05688cul, 0x1f83d9abul, 0x5be0cd19ul};
     // Some random input data to test with
     static const unsigned char data[641] = "-" // Intentionally not aligned
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do "
-        "eiusmod tempor incididunt ut labore et dolore magna aliqua. Et m"
-        "olestie ac feugiat sed lectus vestibulum mattis ullamcorper. Mor"
-        "bi blandit cursus risus at ultrices mi tempus imperdiet nulla. N"
-        "unc congue nisi vita suscipit tellus mauris. Imperdiet proin fer"
-        "mentum leo vel orci. Massa tempor nec feugiat nisl pretium fusce"
-        " id velit. Telus in metus vulputate eu scelerisque felis. Mi tem"
-        "pus imperdiet nulla malesuada pellentesque. Tristique magna sit.";
+                                           "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do "
+                                           "eiusmod tempor incididunt ut labore et dolore magna aliqua. Et m"
+                                           "olestie ac feugiat sed lectus vestibulum mattis ullamcorper. Mor"
+                                           "bi blandit cursus risus at ultrices mi tempus imperdiet nulla. N"
+                                           "unc congue nisi vita suscipit tellus mauris. Imperdiet proin fer"
+                                           "mentum leo vel orci. Massa tempor nec feugiat nisl pretium fusce"
+                                           " id velit. Telus in metus vulputate eu scelerisque felis. Mi tem"
+                                           "pus imperdiet nulla malesuada pellentesque. Tristique magna sit.";
     // Expected output state for hashing the i*64 first input bytes above (excluding SHA256 padding).
     static const uint32_t result[9][8] = {
         {0x6a09e667ul, 0xbb67ae85ul, 0x3c6ef372ul, 0xa54ff53aul, 0x510e527ful, 0x9b05688cul, 0x1f83d9abul, 0x5be0cd19ul},
@@ -506,8 +497,7 @@ bool SelfTest() {
         0xb6, 0x53, 0x9e, 0x1c, 0x95, 0xb7, 0xca, 0xdc, 0x7f, 0x7d, 0x74, 0x27, 0x5c, 0x8e, 0xa6, 0x84,
         0xb5, 0xac, 0x87, 0xa9, 0xf3, 0xff, 0x75, 0xf2, 0x34, 0xcd, 0x1a, 0x3b, 0x82, 0x2c, 0x2b, 0x4e,
         0x6a, 0x46, 0x30, 0xa6, 0x89, 0x86, 0x23, 0xac, 0xf8, 0xa5, 0x15, 0xe9, 0x0a, 0xaa, 0x1e, 0x9a,
-        0xd7, 0x93, 0x6b, 0x28, 0xe4, 0x3b, 0xfd, 0x59, 0xc6, 0xed, 0x7c, 0x5f, 0xa5, 0x41, 0xcb, 0x51
-    };
+        0xd7, 0x93, 0x6b, 0x28, 0xe4, 0x3b, 0xfd, 0x59, 0xc6, 0xed, 0x7c, 0x5f, 0xa5, 0x41, 0xcb, 0x51};
 
 
     // Test Transform() for 0 through 8 transformations.
@@ -552,7 +542,9 @@ bool SelfTest() {
 bool AVXEnabled()
 {
     uint32_t a, d;
-    __asm__("xgetbv" : "=a"(a), "=d"(d) : "c"(0));
+    __asm__("xgetbv"
+            : "=a"(a), "=d"(d)
+            : "c"(0));
     return (a & 6) == 6;
 }
 #endif

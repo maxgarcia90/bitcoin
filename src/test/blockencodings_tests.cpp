@@ -16,7 +16,8 @@ std::vector<std::pair<uint256, CTransactionRef>> extra_txn;
 
 BOOST_FIXTURE_TEST_SUITE(blockencodings_tests, RegTestingSetup)
 
-static CBlock BuildBlockTestCase() {
+static CBlock BuildBlockTestCase()
+{
     CBlock block;
     CMutableTransaction tx;
     tx.vin.resize(1);
@@ -44,7 +45,8 @@ static CBlock BuildBlockTestCase() {
     bool mutated;
     block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
     assert(!mutated);
-    while (!CheckProofOfWork(block.GetHash(), block.nBits, Params().GetConsensus())) ++block.nNonce;
+    while (!CheckProofOfWork(block.GetHash(), block.nBits, Params().GetConsensus()))
+        ++block.nNonce;
     return block;
 }
 
@@ -74,9 +76,9 @@ BOOST_AUTO_TEST_CASE(SimpleRoundTripTest)
 
         PartiallyDownloadedBlock partialBlock(&pool);
         BOOST_CHECK(partialBlock.InitData(shortIDs2, extra_txn) == READ_STATUS_OK);
-        BOOST_CHECK( partialBlock.IsTxAvailable(0));
+        BOOST_CHECK(partialBlock.IsTxAvailable(0));
         BOOST_CHECK(!partialBlock.IsTxAvailable(1));
-        BOOST_CHECK( partialBlock.IsTxAvailable(2));
+        BOOST_CHECK(partialBlock.IsTxAvailable(2));
 
         BOOST_CHECK_EQUAL(pool.mapTx.find(block.vtx[2]->GetHash())->GetSharedTx().use_count(), SHARED_TX_OFFSET + 1);
 
@@ -108,7 +110,8 @@ BOOST_AUTO_TEST_CASE(SimpleRoundTripTest)
     }
 }
 
-class TestHeaderAndShortIDs {
+class TestHeaderAndShortIDs
+{
     // Utility to encode custom CBlockHeaderAndShortTxIDs
 public:
     CBlockHeader header;
@@ -116,15 +119,16 @@ public:
     std::vector<uint64_t> shorttxids;
     std::vector<PrefilledTransaction> prefilledtxn;
 
-    explicit TestHeaderAndShortIDs(const CBlockHeaderAndShortTxIDs& orig) {
+    explicit TestHeaderAndShortIDs(const CBlockHeaderAndShortTxIDs& orig)
+    {
         CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
         stream << orig;
         stream >> *this;
     }
-    explicit TestHeaderAndShortIDs(const CBlock& block) :
-        TestHeaderAndShortIDs(CBlockHeaderAndShortTxIDs(block, true)) {}
+    explicit TestHeaderAndShortIDs(const CBlock& block) : TestHeaderAndShortIDs(CBlockHeaderAndShortTxIDs(block, true)) {}
 
-    uint64_t GetShortID(const uint256& txhash) const {
+    uint64_t GetShortID(const uint256& txhash) const
+    {
         CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
         stream << *this;
         CBlockHeaderAndShortTxIDs base;
@@ -135,7 +139,8 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
         READWRITE(header);
         READWRITE(nonce);
         size_t shorttxids_size = shorttxids.size();
@@ -182,8 +187,8 @@ BOOST_AUTO_TEST_CASE(NonCoinbasePreforwardRTTest)
         PartiallyDownloadedBlock partialBlock(&pool);
         BOOST_CHECK(partialBlock.InitData(shortIDs2, extra_txn) == READ_STATUS_OK);
         BOOST_CHECK(!partialBlock.IsTxAvailable(0));
-        BOOST_CHECK( partialBlock.IsTxAvailable(1));
-        BOOST_CHECK( partialBlock.IsTxAvailable(2));
+        BOOST_CHECK(partialBlock.IsTxAvailable(1));
+        BOOST_CHECK(partialBlock.IsTxAvailable(2));
 
         BOOST_CHECK_EQUAL(pool.mapTx.find(block.vtx[2]->GetHash())->GetSharedTx().use_count(), SHARED_TX_OFFSET + 1); // +1 because of partialBlock
 
@@ -251,9 +256,9 @@ BOOST_AUTO_TEST_CASE(SufficientPreforwardRTTest)
 
         PartiallyDownloadedBlock partialBlock(&pool);
         BOOST_CHECK(partialBlock.InitData(shortIDs2, extra_txn) == READ_STATUS_OK);
-        BOOST_CHECK( partialBlock.IsTxAvailable(0));
-        BOOST_CHECK( partialBlock.IsTxAvailable(1));
-        BOOST_CHECK( partialBlock.IsTxAvailable(2));
+        BOOST_CHECK(partialBlock.IsTxAvailable(0));
+        BOOST_CHECK(partialBlock.IsTxAvailable(1));
+        BOOST_CHECK(partialBlock.IsTxAvailable(2));
 
         BOOST_CHECK_EQUAL(pool.mapTx.find(block.vtx[1]->GetHash())->GetSharedTx().use_count(), SHARED_TX_OFFSET + 1);
 
@@ -292,7 +297,8 @@ BOOST_AUTO_TEST_CASE(EmptyBlockRoundTripTest)
     bool mutated;
     block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
     assert(!mutated);
-    while (!CheckProofOfWork(block.GetHash(), block.nBits, Params().GetConsensus())) ++block.nNonce;
+    while (!CheckProofOfWork(block.GetHash(), block.nBits, Params().GetConsensus()))
+        ++block.nNonce;
 
     // Test simple header round-trip with only coinbase
     {
@@ -317,7 +323,8 @@ BOOST_AUTO_TEST_CASE(EmptyBlockRoundTripTest)
     }
 }
 
-BOOST_AUTO_TEST_CASE(TransactionsRequestSerializationTest) {
+BOOST_AUTO_TEST_CASE(TransactionsRequestSerializationTest)
+{
     BlockTransactionsRequest req1;
     req1.blockhash = InsecureRand256();
     req1.indexes.resize(4);
@@ -340,7 +347,8 @@ BOOST_AUTO_TEST_CASE(TransactionsRequestSerializationTest) {
     BOOST_CHECK_EQUAL(req1.indexes[3], req2.indexes[3]);
 }
 
-BOOST_AUTO_TEST_CASE(TransactionsRequestDeserializationMaxTest) {
+BOOST_AUTO_TEST_CASE(TransactionsRequestDeserializationMaxTest)
+{
     // Check that the highest legal index is decoded correctly
     BlockTransactionsRequest req0;
     req0.blockhash = InsecureRand256();
@@ -355,7 +363,8 @@ BOOST_AUTO_TEST_CASE(TransactionsRequestDeserializationMaxTest) {
     BOOST_CHECK_EQUAL(req0.indexes[0], req1.indexes[0]);
 }
 
-BOOST_AUTO_TEST_CASE(TransactionsRequestDeserializationOverflowTest) {
+BOOST_AUTO_TEST_CASE(TransactionsRequestDeserializationOverflowTest)
+{
     // Any set of index deltas that starts with N values that sum to (0x10000 - N)
     // causes the edge-case overflow that was originally not checked for. Such
     // a request cannot be created by serializing a real BlockTransactionsRequest
@@ -380,7 +389,7 @@ BOOST_AUTO_TEST_CASE(TransactionsRequestDeserializationOverflowTest) {
         BOOST_CHECK(req1.indexes[1] < req1.indexes[2]);
         // this shouldn't be reachable before or after patch
         BOOST_CHECK(0);
-    } catch(std::ios_base::failure &) {
+    } catch (std::ios_base::failure&) {
         // deserialize should fail
         BOOST_CHECK(true); // Needed to suppress "Test case [...] did not check any assertions"
     }

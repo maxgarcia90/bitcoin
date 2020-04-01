@@ -5,8 +5,8 @@
 #include <test/fuzz/fuzz.h>
 
 #include <base58.h>
-#include <util/string.h>
 #include <util/strencodings.h>
+#include <util/string.h>
 
 #include <cassert>
 #include <cstdint>

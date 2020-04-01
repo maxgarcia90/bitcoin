@@ -5,10 +5,10 @@
 
 #include <key.h>
 
-#include <rapidcheck/gen/Arbitrary.h>
 #include <rapidcheck/Gen.h>
-#include <rapidcheck/gen/Predicate.h>
+#include <rapidcheck/gen/Arbitrary.h>
 #include <rapidcheck/gen/Container.h>
+#include <rapidcheck/gen/Predicate.h>
 
 /** Generates 1 to 20 keys for OP_CHECKMULTISIG */
 rc::Gen<std::vector<CKey>> MultisigKeys()

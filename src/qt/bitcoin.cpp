@@ -71,7 +71,7 @@ static QString GetLangTerritory()
     QString lang_territory = QLocale::system().name();
     // 2) Language from QSettings
     QString lang_territory_qsettings = settings.value("language", "").toString();
-    if(!lang_territory_qsettings.isEmpty())
+    if (!lang_territory_qsettings.isEmpty())
         lang_territory = lang_territory_qsettings;
     // 3) -lang command line argument
     lang_territory = QString::fromStdString(gArgs.GetArg("-lang", lang_territory.toStdString()));
@@ -79,7 +79,7 @@ static QString GetLangTerritory()
 }
 
 /** Set up translations */
-static void initTranslations(QTranslator &qtTranslatorBase, QTranslator &qtTranslator, QTranslator &translatorBase, QTranslator &translator)
+static void initTranslations(QTranslator& qtTranslatorBase, QTranslator& qtTranslator, QTranslator& translatorBase, QTranslator& translator)
 {
     // Remove old translators
     QApplication::removeTranslator(&qtTranslatorBase);
@@ -117,7 +117,7 @@ static void initTranslations(QTranslator &qtTranslatorBase, QTranslator &qtTrans
 }
 
 /* qDebug() message handler --> debug.log */
-void DebugMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString &msg)
+void DebugMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
     Q_UNUSED(context);
     if (type == QtDebugMsg) {
@@ -127,12 +127,11 @@ void DebugMessageHandler(QtMsgType type, const QMessageLogContext& context, cons
     }
 }
 
-BitcoinCore::BitcoinCore(interfaces::Node& node) :
-    QObject(), m_node(node)
+BitcoinCore::BitcoinCore(interfaces::Node& node) : QObject(), m_node(node)
 {
 }
 
-void BitcoinCore::handleRunawayException(const std::exception *e)
+void BitcoinCore::handleRunawayException(const std::exception* e)
 {
     PrintExceptionContinue(e, "Runaway exception");
     Q_EMIT runawayException(QString::fromStdString(m_node.getWarnings()));
@@ -140,8 +139,7 @@ void BitcoinCore::handleRunawayException(const std::exception *e)
 
 void BitcoinCore::initialize()
 {
-    try
-    {
+    try {
         qDebug() << __func__ << ": Running initialization in thread";
         util::ThreadRename("qt-init");
         bool rv = m_node.appInitMain();
@@ -155,8 +153,7 @@ void BitcoinCore::initialize()
 
 void BitcoinCore::shutdown()
 {
-    try
-    {
+    try {
         qDebug() << __func__ << ": Running Shutdown in thread";
         m_node.appShutdown();
         qDebug() << __func__ << ": Shutdown finished";
@@ -171,16 +168,15 @@ void BitcoinCore::shutdown()
 static int qt_argc = 1;
 static const char* qt_argv = "bitcoin-qt";
 
-BitcoinApplication::BitcoinApplication(interfaces::Node& node):
-    QApplication(qt_argc, const_cast<char **>(&qt_argv)),
-    coreThread(nullptr),
-    m_node(node),
-    optionsModel(nullptr),
-    clientModel(nullptr),
-    window(nullptr),
-    pollShutdownTimer(nullptr),
-    returnValue(0),
-    platformStyle(nullptr)
+BitcoinApplication::BitcoinApplication(interfaces::Node& node) : QApplication(qt_argc, const_cast<char**>(&qt_argv)),
+                                                                 coreThread(nullptr),
+                                                                 m_node(node),
+                                                                 optionsModel(nullptr),
+                                                                 clientModel(nullptr),
+                                                                 window(nullptr),
+                                                                 pollShutdownTimer(nullptr),
+                                                                 returnValue(0),
+                                                                 platformStyle(nullptr)
 {
     setQuitOnLastWindowClosed(false);
 }
@@ -200,8 +196,7 @@ void BitcoinApplication::setupPlatformStyle()
 
 BitcoinApplication::~BitcoinApplication()
 {
-    if(coreThread)
-    {
+    if (coreThread) {
         qDebug() << __func__ << ": Stopping thread";
         coreThread->quit();
         coreThread->wait();
@@ -228,7 +223,7 @@ void BitcoinApplication::createOptionsModel(bool resetSettings)
     optionsModel = new OptionsModel(m_node, nullptr, resetSettings);
 }
 
-void BitcoinApplication::createWindow(const NetworkStyle *networkStyle)
+void BitcoinApplication::createWindow(const NetworkStyle* networkStyle)
 {
     window = new BitcoinGUI(m_node, platformStyle, networkStyle, nullptr);
 
@@ -236,9 +231,9 @@ void BitcoinApplication::createWindow(const NetworkStyle *networkStyle)
     connect(pollShutdownTimer, &QTimer::timeout, window, &BitcoinGUI::detectShutdown);
 }
 
-void BitcoinApplication::createSplashScreen(const NetworkStyle *networkStyle)
+void BitcoinApplication::createSplashScreen(const NetworkStyle* networkStyle)
 {
-    SplashScreen *splash = new SplashScreen(m_node, nullptr, networkStyle);
+    SplashScreen* splash = new SplashScreen(m_node, nullptr, networkStyle);
     // We don't hold a direct pointer to the splash screen after creation, but the splash
     // screen will take care of deleting itself when finish() happens.
     splash->show();
@@ -253,10 +248,10 @@ bool BitcoinApplication::baseInitialize()
 
 void BitcoinApplication::startThread()
 {
-    if(coreThread)
+    if (coreThread)
         return;
     coreThread = new QThread(this);
-    BitcoinCore *executor = new BitcoinCore(m_node);
+    BitcoinCore* executor = new BitcoinCore(m_node);
     executor->moveToThread(coreThread);
 
     /*  communication to and from thread */
@@ -328,8 +323,7 @@ void BitcoinApplication::initializeResult(bool success)
     qDebug() << __func__ << ": Initialization result: " << success;
     // Set exit result.
     returnValue = success ? EXIT_SUCCESS : EXIT_FAILURE;
-    if(success)
-    {
+    if (success) {
         // Log this only after AppInitMain finishes, as then logging setup is guaranteed complete
         qInfo() << "Platform customization:" << platformStyle->getName();
         clientModel = new ClientModel(m_node, optionsModel);
@@ -370,7 +364,7 @@ void BitcoinApplication::initializeResult(bool success)
         pollShutdownTimer->start(200);
     } else {
         Q_EMIT splashFinished(); // Make sure splash screen doesn't stick around during shutdown
-        quit(); // Exit first main loop invocation
+        quit();                  // Exit first main loop invocation
     }
 }
 
@@ -379,7 +373,7 @@ void BitcoinApplication::shutdownResult()
     quit(); // Exit second main loop invocation after shutdown finished
 }
 
-void BitcoinApplication::handleRunawayException(const QString &message)
+void BitcoinApplication::handleRunawayException(const QString& message)
 {
     QMessageBox::critical(nullptr, "Runaway exception", BitcoinGUI::tr("A fatal error occurred. Bitcoin can no longer continue safely and will quit.") + QString("\n\n") + message);
     ::exit(EXIT_FAILURE);
@@ -514,7 +508,7 @@ int GuiMain(int argc, char* argv[])
     // Check for -chain, -testnet or -regtest parameter (Params() calls are only valid after this clause)
     try {
         node->selectParams(gArgs.GetChainName());
-    } catch(std::exception &e) {
+    } catch (std::exception& e) {
         node->initError(strprintf("%s\n", e.what()));
         QMessageBox::critical(nullptr, PACKAGE_NAME, QObject::tr("Error: %1").arg(e.what()));
         return EXIT_FAILURE;
@@ -572,8 +566,7 @@ int GuiMain(int argc, char* argv[])
         app.createSplashScreen(networkStyle.data());
 
     int rv = EXIT_SUCCESS;
-    try
-    {
+    try {
         app.createWindow(networkStyle.data());
         // Perform base initialization before spinning up initialization/shutdown thread
         // This is acceptable because this function only contains steps that are quick to execute,

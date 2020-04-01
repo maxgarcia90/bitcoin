@@ -8,7 +8,7 @@
 
 const struct VBDeploymentInfo VersionBitsDeploymentInfo[Consensus::MAX_VERSION_BITS_DEPLOYMENTS] = {
     {
-        /*.name =*/ "testdummy",
-        /*.gbt_force =*/ true,
+        /*.name =*/"testdummy",
+        /*.gbt_force =*/true,
     },
 };

@@ -29,21 +29,20 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-WalletView::WalletView(const PlatformStyle *_platformStyle, QWidget *parent):
-    QStackedWidget(parent),
-    clientModel(nullptr),
-    walletModel(nullptr),
-    platformStyle(_platformStyle)
+WalletView::WalletView(const PlatformStyle* _platformStyle, QWidget* parent) : QStackedWidget(parent),
+                                                                               clientModel(nullptr),
+                                                                               walletModel(nullptr),
+                                                                               platformStyle(_platformStyle)
 {
     // Create tabs
     overviewPage = new OverviewPage(platformStyle);
 
     transactionsPage = new QWidget(this);
-    QVBoxLayout *vbox = new QVBoxLayout();
-    QHBoxLayout *hbox_buttons = new QHBoxLayout();
+    QVBoxLayout* vbox = new QVBoxLayout();
+    QHBoxLayout* hbox_buttons = new QHBoxLayout();
     transactionView = new TransactionView(platformStyle, this);
     vbox->addWidget(transactionView);
-    QPushButton *exportButton = new QPushButton(tr("&Export"), this);
+    QPushButton* exportButton = new QPushButton(tr("&Export"), this);
     exportButton->setToolTip(tr("Export the data in the current tab to a file"));
     if (platformStyle->getImagesOnButtons()) {
         exportButton->setIcon(platformStyle->SingleColorIcon(":/icons/export"));
@@ -87,7 +86,7 @@ WalletView::~WalletView()
 {
 }
 
-void WalletView::setClientModel(ClientModel *_clientModel)
+void WalletView::setClientModel(ClientModel* _clientModel)
 {
     this->clientModel = _clientModel;
 
@@ -95,7 +94,7 @@ void WalletView::setClientModel(ClientModel *_clientModel)
     sendCoinsPage->setClientModel(_clientModel);
 }
 
-void WalletView::setWalletModel(WalletModel *_walletModel)
+void WalletView::setWalletModel(WalletModel* _walletModel)
 {
     this->walletModel = _walletModel;
 
@@ -107,8 +106,7 @@ void WalletView::setWalletModel(WalletModel *_walletModel)
     usedReceivingAddressesPage->setModel(_walletModel ? _walletModel->getAddressTableModel() : nullptr);
     usedSendingAddressesPage->setModel(_walletModel ? _walletModel->getAddressTableModel() : nullptr);
 
-    if (_walletModel)
-    {
+    if (_walletModel) {
         // Receive and pass through messages from wallet model
         connect(_walletModel, &WalletModel::message, this, &WalletView::message);
 
@@ -136,7 +134,7 @@ void WalletView::processNewTransaction(const QModelIndex& parent, int start, int
     if (!walletModel || !clientModel || clientModel->node().isInitialBlockDownload())
         return;
 
-    TransactionTableModel *ttm = walletModel->getTransactionTableModel();
+    TransactionTableModel* ttm = walletModel->getTransactionTableModel();
     if (!ttm || ttm->processingQueuedTransactions())
         return;
 
@@ -176,7 +174,7 @@ void WalletView::gotoSendCoinsPage(QString addr)
 void WalletView::gotoSignMessageTab(QString addr)
 {
     // calls show() in showTab_SM()
-    SignVerifyMessageDialog *signVerifyMessageDialog = new SignVerifyMessageDialog(platformStyle, this);
+    SignVerifyMessageDialog* signVerifyMessageDialog = new SignVerifyMessageDialog(platformStyle, this);
     signVerifyMessageDialog->setAttribute(Qt::WA_DeleteOnClose);
     signVerifyMessageDialog->setModel(walletModel);
     signVerifyMessageDialog->showTab_SM(true);
@@ -188,7 +186,7 @@ void WalletView::gotoSignMessageTab(QString addr)
 void WalletView::gotoVerifyMessageTab(QString addr)
 {
     // calls show() in showTab_VM()
-    SignVerifyMessageDialog *signVerifyMessageDialog = new SignVerifyMessageDialog(platformStyle, this);
+    SignVerifyMessageDialog* signVerifyMessageDialog = new SignVerifyMessageDialog(platformStyle, this);
     signVerifyMessageDialog->setAttribute(Qt::WA_DeleteOnClose);
     signVerifyMessageDialog->setModel(walletModel);
     signVerifyMessageDialog->showTab_VM(true);
@@ -214,7 +212,7 @@ void WalletView::updateEncryptionStatus()
 
 void WalletView::encryptWallet(bool status)
 {
-    if(!walletModel)
+    if (!walletModel)
         return;
     AskPassphraseDialog dlg(status ? AskPassphraseDialog::Encrypt : AskPassphraseDialog::Decrypt, this);
     dlg.setModel(walletModel);
@@ -235,8 +233,7 @@ void WalletView::backupWallet()
     if (!walletModel->wallet().backupWallet(filename.toLocal8Bit().data())) {
         Q_EMIT message(tr("Backup Failed"), tr("There was an error trying to save the wallet data to %1.").arg(filename),
             CClientUIInterface::MSG_ERROR);
-        }
-    else {
+    } else {
         Q_EMIT message(tr("Backup Successful"), tr("The wallet data was successfully saved to %1.").arg(filename),
             CClientUIInterface::MSG_INFORMATION);
     }
@@ -251,11 +248,10 @@ void WalletView::changePassphrase()
 
 void WalletView::unlockWallet()
 {
-    if(!walletModel)
+    if (!walletModel)
         return;
     // Unlock wallet when requested by wallet model
-    if (walletModel->getEncryptionStatus() == WalletModel::Locked)
-    {
+    if (walletModel->getEncryptionStatus() == WalletModel::Locked) {
         AskPassphraseDialog dlg(AskPassphraseDialog::Unlock, this);
         dlg.setModel(walletModel);
         dlg.exec();
@@ -264,7 +260,7 @@ void WalletView::unlockWallet()
 
 void WalletView::usedSendingAddresses()
 {
-    if(!walletModel)
+    if (!walletModel)
         return;
 
     GUIUtil::bringToFront(usedSendingAddressesPage);
@@ -272,13 +268,13 @@ void WalletView::usedSendingAddresses()
 
 void WalletView::usedReceivingAddresses()
 {
-    if(!walletModel)
+    if (!walletModel)
         return;
 
     GUIUtil::bringToFront(usedReceivingAddressesPage);
 }
 
-void WalletView::showProgress(const QString &title, int nProgress)
+void WalletView::showProgress(const QString& title, int nProgress)
 {
     if (nProgress == 0) {
         progressDialog = new QProgressDialog(title, tr("Cancel"), 0, 100);

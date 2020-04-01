@@ -26,8 +26,8 @@
 #include <QTest>
 #include <QTextEdit>
 #include <QtGlobal>
-#include <QtTest/QtTestWidgets>
 #include <QtTest/QtTestGui>
+#include <QtTest/QtTestWidgets>
 
 namespace {
 //! Call getblockchaininfo RPC and check first field of JSON output.
@@ -63,7 +63,7 @@ void AppTests::appTests()
 #endif
 
     BasicTestingSetup test{CBaseChainParams::REGTEST}; // Create a temp data directory to backup the gui settings to
-    ECC_Stop(); // Already started by the common test setup, so stop it to avoid interference
+    ECC_Stop();                                        // Already started by the common test setup, so stop it to avoid interference
     LogInstance().DisconnectTestLogger();
 
     m_app.parameterSetup();

@@ -7,7 +7,7 @@
 
 #include <wallet/test/init_test_fixture.h>
 
-InitWalletDirTestingSetup::InitWalletDirTestingSetup(const std::string& chainName): BasicTestingSetup(chainName)
+InitWalletDirTestingSetup::InitWalletDirTestingSetup(const std::string& chainName) : BasicTestingSetup(chainName)
 {
     m_chain_client = MakeWalletClient(*m_chain, {});
 

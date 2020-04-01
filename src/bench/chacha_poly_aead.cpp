@@ -8,8 +8,8 @@
 #include <crypto/poly1305.h> // for the POLY1305_TAGLEN constant
 #include <hash.h>
 
-#include <limits>
 #include <assert.h>
+#include <limits>
 
 /* Number of bytes to process per iteration */
 static constexpr uint64_t BUFFER_SIZE_TINY = 64;
@@ -91,7 +91,7 @@ static void CHACHA20_POLY1305_AEAD_1MB_ENCRYPT_DECRYPT(benchmark::State& state)
 static void HASH(benchmark::State& state, size_t buffersize)
 {
     uint8_t hash[CHash256::OUTPUT_SIZE];
-    std::vector<uint8_t> in(buffersize,0);
+    std::vector<uint8_t> in(buffersize, 0);
     while (state.KeepRunning())
         CHash256().Write(in.data(), in.size()).Finalize(hash);
 }

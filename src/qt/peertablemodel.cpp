@@ -15,16 +15,15 @@
 #include <QList>
 #include <QTimer>
 
-bool NodeLessThan::operator()(const CNodeCombinedStats &left, const CNodeCombinedStats &right) const
+bool NodeLessThan::operator()(const CNodeCombinedStats& left, const CNodeCombinedStats& right) const
 {
-    const CNodeStats *pLeft = &(left.nodeStats);
-    const CNodeStats *pRight = &(right.nodeStats);
+    const CNodeStats* pLeft = &(left.nodeStats);
+    const CNodeStats* pRight = &(right.nodeStats);
 
     if (order == Qt::DescendingOrder)
         std::swap(pLeft, pRight);
 
-    switch(column)
-    {
+    switch (column) {
     case PeerTableModel::NetNodeId:
         return pLeft->nodeid < pRight->nodeid;
     case PeerTableModel::Address:
@@ -64,8 +63,7 @@ public:
             interfaces::Node::NodesStats nodes_stats;
             node.getNodesStats(nodes_stats);
             cachedNodeStats.reserve(nodes_stats.size());
-            for (const auto& node_stats : nodes_stats)
-            {
+            for (const auto& node_stats : nodes_stats) {
                 CNodeCombinedStats stats;
                 stats.nodeStats = std::get<0>(node_stats);
                 stats.fNodeStateStatsAvailable = std::get<1>(node_stats);
@@ -90,7 +88,7 @@ public:
         return cachedNodeStats.size();
     }
 
-    CNodeCombinedStats *index(int idx)
+    CNodeCombinedStats* index(int idx)
     {
         if (idx >= 0 && idx < cachedNodeStats.size())
             return &cachedNodeStats[idx];
@@ -99,10 +97,9 @@ public:
     }
 };
 
-PeerTableModel::PeerTableModel(interfaces::Node& node, QObject* parent) :
-    QAbstractTableModel(parent),
-    m_node(node),
-    timer(nullptr)
+PeerTableModel::PeerTableModel(interfaces::Node& node, QObject* parent) : QAbstractTableModel(parent),
+                                                                          m_node(node),
+                                                                          timer(nullptr)
 {
     columns << tr("NodeId") << tr("Node/Service") << tr("Ping") << tr("Sent") << tr("Received") << tr("User Agent");
     priv.reset(new PeerTablePriv());
@@ -131,28 +128,27 @@ void PeerTableModel::stopAutoRefresh()
     timer->stop();
 }
 
-int PeerTableModel::rowCount(const QModelIndex &parent) const
+int PeerTableModel::rowCount(const QModelIndex& parent) const
 {
     Q_UNUSED(parent);
     return priv->size();
 }
 
-int PeerTableModel::columnCount(const QModelIndex &parent) const
+int PeerTableModel::columnCount(const QModelIndex& parent) const
 {
     Q_UNUSED(parent);
     return columns.length();
 }
 
-QVariant PeerTableModel::data(const QModelIndex &index, int role) const
+QVariant PeerTableModel::data(const QModelIndex& index, int role) const
 {
-    if(!index.isValid())
+    if (!index.isValid())
         return QVariant();
 
-    CNodeCombinedStats *rec = static_cast<CNodeCombinedStats*>(index.internalPointer());
+    CNodeCombinedStats* rec = static_cast<CNodeCombinedStats*>(index.internalPointer());
 
     if (role == Qt::DisplayRole) {
-        switch(index.column())
-        {
+        switch (index.column()) {
         case NetNodeId:
             return (qint64)rec->nodeStats.nodeid;
         case Address:
@@ -169,12 +165,12 @@ QVariant PeerTableModel::data(const QModelIndex &index, int role) const
         }
     } else if (role == Qt::TextAlignmentRole) {
         switch (index.column()) {
-            case Ping:
-            case Sent:
-            case Received:
-                return QVariant(Qt::AlignRight | Qt::AlignVCenter);
-            default:
-                return QVariant();
+        case Ping:
+        case Sent:
+        case Received:
+            return QVariant(Qt::AlignRight | Qt::AlignVCenter);
+        default:
+            return QVariant();
         }
     }
 
@@ -183,17 +179,15 @@ QVariant PeerTableModel::data(const QModelIndex &index, int role) const
 
 QVariant PeerTableModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if(orientation == Qt::Horizontal)
-    {
-        if(role == Qt::DisplayRole && section < columns.size())
-        {
+    if (orientation == Qt::Horizontal) {
+        if (role == Qt::DisplayRole && section < columns.size()) {
             return columns[section];
         }
     }
     return QVariant();
 }
 
-Qt::ItemFlags PeerTableModel::flags(const QModelIndex &index) const
+Qt::ItemFlags PeerTableModel::flags(const QModelIndex& index) const
 {
     if (!index.isValid()) return Qt::NoItemFlags;
 
@@ -201,17 +195,17 @@ Qt::ItemFlags PeerTableModel::flags(const QModelIndex &index) const
     return retval;
 }
 
-QModelIndex PeerTableModel::index(int row, int column, const QModelIndex &parent) const
+QModelIndex PeerTableModel::index(int row, int column, const QModelIndex& parent) const
 {
     Q_UNUSED(parent);
-    CNodeCombinedStats *data = priv->index(row);
+    CNodeCombinedStats* data = priv->index(row);
 
     if (data)
         return createIndex(row, column, data);
     return QModelIndex();
 }
 
-const CNodeCombinedStats *PeerTableModel::getNodeStats(int idx)
+const CNodeCombinedStats* PeerTableModel::getNodeStats(int idx)
 {
     return priv->index(idx);
 }

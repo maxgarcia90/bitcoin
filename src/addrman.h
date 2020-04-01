@@ -6,22 +6,22 @@
 #ifndef BITCOIN_ADDRMAN_H
 #define BITCOIN_ADDRMAN_H
 
+#include <clientversion.h>
 #include <netaddress.h>
 #include <protocol.h>
 #include <random.h>
 #include <sync.h>
 #include <timedata.h>
 #include <util/system.h>
-#include <clientversion.h>
 
+#include <fs.h>
+#include <hash.h>
+#include <iostream>
 #include <map>
 #include <set>
 #include <stdint.h>
-#include <vector>
-#include <iostream>
 #include <streams.h>
-#include <fs.h>
-#include <hash.h>
+#include <vector>
 
 
 /**
@@ -58,14 +58,13 @@ private:
     friend class CAddrMan;
 
 public:
-
     SERIALIZE_METHODS(CAddrInfo, obj)
     {
         READWRITEAS(CAddress, obj);
         READWRITE(obj.source, obj.nLastSuccess, obj.nAttempts);
     }
 
-    CAddrInfo(const CAddress &addrIn, const CNetAddr &addrSource) : CAddress(addrIn), source(addrSource)
+    CAddrInfo(const CAddress& addrIn, const CNetAddr& addrSource) : CAddress(addrIn), source(addrSource)
     {
     }
 
@@ -74,19 +73,19 @@ public:
     }
 
     //! Calculate in which "tried" bucket this entry belongs
-    int GetTriedBucket(const uint256 &nKey, const std::vector<bool> &asmap) const;
+    int GetTriedBucket(const uint256& nKey, const std::vector<bool>& asmap) const;
 
     //! Calculate in which "new" bucket this entry belongs, given a certain source
-    int GetNewBucket(const uint256 &nKey, const CNetAddr& src, const std::vector<bool> &asmap) const;
+    int GetNewBucket(const uint256& nKey, const CNetAddr& src, const std::vector<bool>& asmap) const;
 
     //! Calculate in which "new" bucket this entry belongs, using its default source
-    int GetNewBucket(const uint256 &nKey, const std::vector<bool> &asmap) const
+    int GetNewBucket(const uint256& nKey, const std::vector<bool>& asmap) const
     {
         return GetNewBucket(nKey, source, asmap);
     }
 
     //! Calculate in which position of a bucket to store this entry.
-    int GetBucketPosition(const uint256 &nKey, bool fNew, int nBucket) const;
+    int GetBucketPosition(const uint256& nKey, bool fNew, int nBucket) const;
 
     //! Determine whether the statistics about this entry are bad enough so that it can just be deleted
     bool IsTerrible(int64_t nNow = GetAdjustedTime()) const;
@@ -169,14 +168,15 @@ public:
 #define ADDRMAN_SET_TRIED_COLLISION_SIZE 10
 
 //! the maximum time we'll spend trying to resolve a tried table collision, in seconds
-static const int64_t ADDRMAN_TEST_WINDOW = 40*60; // 40 minutes
+static const int64_t ADDRMAN_TEST_WINDOW = 40 * 60; // 40 minutes
 
 /**
  * Stochastical (IP) address manager
  */
 class CAddrMan
 {
-friend class CAddrManTest;
+    friend class CAddrManTest;
+
 protected:
     //! critical section to protect the inner data structures
     mutable RecursiveMutex cs;
@@ -220,11 +220,11 @@ protected:
     FastRandomContext insecure_rand;
 
     //! Find an entry.
-    CAddrInfo* Find(const CNetAddr& addr, int *pnId = nullptr) EXCLUSIVE_LOCKS_REQUIRED(cs);
+    CAddrInfo* Find(const CNetAddr& addr, int* pnId = nullptr) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
     //! find an entry, creating it if necessary.
     //! nTime and nServices of the found node are updated, if necessary.
-    CAddrInfo* Create(const CAddress &addr, const CNetAddr &addrSource, int *pnId = nullptr) EXCLUSIVE_LOCKS_REQUIRED(cs);
+    CAddrInfo* Create(const CAddress& addr, const CNetAddr& addrSource, int* pnId = nullptr) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
     //! Swap two elements in vRandom.
     void SwapRandom(unsigned int nRandomPos1, unsigned int nRandomPos2) EXCLUSIVE_LOCKS_REQUIRED(cs);
@@ -239,13 +239,13 @@ protected:
     void ClearNew(int nUBucket, int nUBucketPos) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
     //! Mark an entry "good", possibly moving it from "new" to "tried".
-    void Good_(const CService &addr, bool test_before_evict, int64_t time) EXCLUSIVE_LOCKS_REQUIRED(cs);
+    void Good_(const CService& addr, bool test_before_evict, int64_t time) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
     //! Add an entry to the "new" table.
-    bool Add_(const CAddress &addr, const CNetAddr& source, int64_t nTimePenalty) EXCLUSIVE_LOCKS_REQUIRED(cs);
+    bool Add_(const CAddress& addr, const CNetAddr& source, int64_t nTimePenalty) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
     //! Mark an entry as attempted to connect.
-    void Attempt_(const CService &addr, bool fCountFailure, int64_t nTime) EXCLUSIVE_LOCKS_REQUIRED(cs);
+    void Attempt_(const CService& addr, bool fCountFailure, int64_t nTime) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
     //! Select an address to connect to, if newOnly is set to true, only the new table is selected from.
     CAddrInfo Select_(bool newOnly) EXCLUSIVE_LOCKS_REQUIRED(cs);
@@ -262,13 +262,13 @@ protected:
 #endif
 
     //! Select several addresses at once.
-    void GetAddr_(std::vector<CAddress> &vAddr) EXCLUSIVE_LOCKS_REQUIRED(cs);
+    void GetAddr_(std::vector<CAddress>& vAddr) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
     //! Mark an entry as currently-connected-to.
-    void Connected_(const CService &addr, int64_t nTime) EXCLUSIVE_LOCKS_REQUIRED(cs);
+    void Connected_(const CService& addr, int64_t nTime) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
     //! Update an entry's service bits.
-    void SetServices_(const CService &addr, ServiceFlags nServices) EXCLUSIVE_LOCKS_REQUIRED(cs);
+    void SetServices_(const CService& addr, ServiceFlags nServices) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
 public:
     // Compressed IP->ASN mapping, loaded from a file when a node starts.
@@ -320,8 +320,8 @@ public:
      * We don't use SERIALIZE_METHODS since the serialization and deserialization code has
      * very little in common.
      */
-    template<typename Stream>
-    void Serialize(Stream &s) const
+    template <typename Stream>
+    void Serialize(Stream& s) const
     {
         LOCK(cs);
 
@@ -338,7 +338,7 @@ public:
         int nIds = 0;
         for (const auto& entry : mapInfo) {
             mapUnkIds[entry.first] = nIds;
-            const CAddrInfo &info = entry.second;
+            const CAddrInfo& info = entry.second;
             if (info.nRefCount) {
                 assert(nIds != nNew); // this means nNew was wrong, oh ow
                 s << info;
@@ -347,7 +347,7 @@ public:
         }
         nIds = 0;
         for (const auto& entry : mapInfo) {
-            const CAddrInfo &info = entry.second;
+            const CAddrInfo& info = entry.second;
             if (info.fInTried) {
                 assert(nIds != nTried); // this means nTried was wrong, oh ow
                 s << info;
@@ -377,7 +377,7 @@ public:
         s << asmap_version;
     }
 
-    template<typename Stream>
+    template <typename Stream>
     void Unserialize(Stream& s)
     {
         LOCK(cs);
@@ -407,7 +407,7 @@ public:
 
         // Deserialize entries from the new table.
         for (int n = 0; n < nNew; n++) {
-            CAddrInfo &info = mapInfo[n];
+            CAddrInfo& info = mapInfo[n];
             s >> info;
             mapAddr[info] = n;
             info.nRandomPos = vRandom.size();
@@ -461,7 +461,7 @@ public:
         }
 
         for (int n = 0; n < nNew; n++) {
-            CAddrInfo &info = mapInfo[n];
+            CAddrInfo& info = mapInfo[n];
             int bucket = entryToBucket[n];
             int nUBucketPos = info.GetBucketPosition(nKey, true, bucket);
             if (nVersion == 2 && nUBuckets == ADDRMAN_NEW_BUCKET_COUNT && vvNew[bucket][nUBucketPos] == -1 &&
@@ -484,7 +484,7 @@ public:
 
         // Prune new entries with refcount 0 (as a result of collisions).
         int nLostUnk = 0;
-        for (std::map<int, CAddrInfo>::const_iterator it = mapInfo.begin(); it != mapInfo.end(); ) {
+        for (std::map<int, CAddrInfo>::const_iterator it = mapInfo.begin(); it != mapInfo.end();) {
             if (it->second.fInTried == false && it->second.nRefCount == 0) {
                 std::map<int, CAddrInfo>::const_iterator itCopy = it++;
                 Delete(itCopy->first);
@@ -548,14 +548,14 @@ public:
         {
             LOCK(cs);
             int err;
-            if ((err=Check_()))
+            if ((err = Check_()))
                 LogPrintf("ADDRMAN CONSISTENCY CHECK FAILED!!! err=%i\n", err);
         }
 #endif
     }
 
     //! Add a single address.
-    bool Add(const CAddress &addr, const CNetAddr& source, int64_t nTimePenalty = 0)
+    bool Add(const CAddress& addr, const CNetAddr& source, int64_t nTimePenalty = 0)
     {
         LOCK(cs);
         bool fRet = false;
@@ -569,7 +569,7 @@ public:
     }
 
     //! Add multiple addresses.
-    bool Add(const std::vector<CAddress> &vAddr, const CNetAddr& source, int64_t nTimePenalty = 0)
+    bool Add(const std::vector<CAddress>& vAddr, const CNetAddr& source, int64_t nTimePenalty = 0)
     {
         LOCK(cs);
         int nAdd = 0;
@@ -584,7 +584,7 @@ public:
     }
 
     //! Mark an entry as accessible.
-    void Good(const CService &addr, bool test_before_evict = true, int64_t nTime = GetAdjustedTime())
+    void Good(const CService& addr, bool test_before_evict = true, int64_t nTime = GetAdjustedTime())
     {
         LOCK(cs);
         Check();
@@ -593,7 +593,7 @@ public:
     }
 
     //! Mark an entry as connection attempted to.
-    void Attempt(const CService &addr, bool fCountFailure, int64_t nTime = GetAdjustedTime())
+    void Attempt(const CService& addr, bool fCountFailure, int64_t nTime = GetAdjustedTime())
     {
         LOCK(cs);
         Check();
@@ -652,7 +652,7 @@ public:
     }
 
     //! Mark an entry as currently-connected-to.
-    void Connected(const CService &addr, int64_t nTime = GetAdjustedTime())
+    void Connected(const CService& addr, int64_t nTime = GetAdjustedTime())
     {
         LOCK(cs);
         Check();
@@ -660,14 +660,13 @@ public:
         Check();
     }
 
-    void SetServices(const CService &addr, ServiceFlags nServices)
+    void SetServices(const CService& addr, ServiceFlags nServices)
     {
         LOCK(cs);
         Check();
         SetServices_(addr, nServices);
         Check();
     }
-
 };
 
 #endif // BITCOIN_ADDRMAN_H

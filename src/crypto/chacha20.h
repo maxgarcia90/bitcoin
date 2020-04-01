@@ -19,8 +19,8 @@ public:
     ChaCha20();
     ChaCha20(const unsigned char* key, size_t keylen);
     void SetKey(const unsigned char* key, size_t keylen); //!< set key with flexible keylength; 256bit recommended */
-    void SetIV(uint64_t iv); // set the 64bit nonce
-    void Seek(uint64_t pos); // set the 64bit block counter
+    void SetIV(uint64_t iv);                              // set the 64bit nonce
+    void Seek(uint64_t pos);                              // set the 64bit block counter
 
     /** outputs the keystream of size <bytes> into <c> */
     void Keystream(unsigned char* c, size_t bytes);

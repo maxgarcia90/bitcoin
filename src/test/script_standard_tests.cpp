@@ -23,7 +23,7 @@ BOOST_AUTO_TEST_CASE(script_standard_Solver_success)
     }
 
     CScript s;
-    std::vector<std::vector<unsigned char> > solutions;
+    std::vector<std::vector<unsigned char>> solutions;
 
     // TX_PUBKEY
     s.clear();
@@ -49,10 +49,7 @@ BOOST_AUTO_TEST_CASE(script_standard_Solver_success)
 
     // TX_MULTISIG
     s.clear();
-    s << OP_1 <<
-        ToByteVector(pubkeys[0]) <<
-        ToByteVector(pubkeys[1]) <<
-        OP_2 << OP_CHECKMULTISIG;
+    s << OP_1 << ToByteVector(pubkeys[0]) << ToByteVector(pubkeys[1]) << OP_2 << OP_CHECKMULTISIG;
     BOOST_CHECK_EQUAL(Solver(s, solutions), TX_MULTISIG);
     BOOST_CHECK_EQUAL(solutions.size(), 4U);
     BOOST_CHECK(solutions[0] == std::vector<unsigned char>({1}));
@@ -61,11 +58,7 @@ BOOST_AUTO_TEST_CASE(script_standard_Solver_success)
     BOOST_CHECK(solutions[3] == std::vector<unsigned char>({2}));
 
     s.clear();
-    s << OP_2 <<
-        ToByteVector(pubkeys[0]) <<
-        ToByteVector(pubkeys[1]) <<
-        ToByteVector(pubkeys[2]) <<
-        OP_3 << OP_CHECKMULTISIG;
+    s << OP_2 << ToByteVector(pubkeys[0]) << ToByteVector(pubkeys[1]) << ToByteVector(pubkeys[2]) << OP_3 << OP_CHECKMULTISIG;
     BOOST_CHECK_EQUAL(Solver(s, solutions), TX_MULTISIG);
     BOOST_CHECK_EQUAL(solutions.size(), 5U);
     BOOST_CHECK(solutions[0] == std::vector<unsigned char>({2}));
@@ -76,10 +69,7 @@ BOOST_AUTO_TEST_CASE(script_standard_Solver_success)
 
     // TX_NULL_DATA
     s.clear();
-    s << OP_RETURN <<
-        std::vector<unsigned char>({0}) <<
-        std::vector<unsigned char>({75}) <<
-        std::vector<unsigned char>({255});
+    s << OP_RETURN << std::vector<unsigned char>({0}) << std::vector<unsigned char>({75}) << std::vector<unsigned char>({255});
     BOOST_CHECK_EQUAL(Solver(s, solutions), TX_NULL_DATA);
     BOOST_CHECK_EQUAL(solutions.size(), 0U);
 
@@ -92,8 +82,7 @@ BOOST_AUTO_TEST_CASE(script_standard_Solver_success)
 
     // TX_WITNESS_V0_SCRIPTHASH
     uint256 scriptHash;
-    CSHA256().Write(&redeemScript[0], redeemScript.size())
-        .Finalize(scriptHash.begin());
+    CSHA256().Write(&redeemScript[0], redeemScript.size()).Finalize(scriptHash.begin());
 
     s.clear();
     s << OP_0 << ToByteVector(scriptHash);
@@ -115,7 +104,7 @@ BOOST_AUTO_TEST_CASE(script_standard_Solver_failure)
     pubkey = key.GetPubKey();
 
     CScript s;
-    std::vector<std::vector<unsigned char> > solutions;
+    std::vector<std::vector<unsigned char>> solutions;
 
     // TX_PUBKEY with incorrectly sized pubkey
     s.clear();
@@ -279,10 +268,7 @@ BOOST_AUTO_TEST_CASE(script_standard_ExtractDestinations)
 
     // TX_MULTISIG
     s.clear();
-    s << OP_2 <<
-        ToByteVector(pubkeys[0]) <<
-        ToByteVector(pubkeys[1]) <<
-        OP_2 << OP_CHECKMULTISIG;
+    s << OP_2 << ToByteVector(pubkeys[0]) << ToByteVector(pubkeys[1]) << OP_2 << OP_CHECKMULTISIG;
     BOOST_CHECK(ExtractDestinations(s, whichType, addresses, nRequired));
     BOOST_CHECK_EQUAL(whichType, TX_MULTISIG);
     BOOST_CHECK_EQUAL(addresses.size(), 2U);
@@ -335,11 +321,7 @@ BOOST_AUTO_TEST_CASE(script_standard_GetScriptFor_)
 
     // GetScriptForMultisig
     expected.clear();
-    expected << OP_2 <<
-        ToByteVector(pubkeys[0]) <<
-        ToByteVector(pubkeys[1]) <<
-        ToByteVector(pubkeys[2]) <<
-        OP_3 << OP_CHECKMULTISIG;
+    expected << OP_2 << ToByteVector(pubkeys[0]) << ToByteVector(pubkeys[1]) << ToByteVector(pubkeys[2]) << OP_3 << OP_CHECKMULTISIG;
     result = GetScriptForMultisig(2, std::vector<CPubKey>(pubkeys, pubkeys + 3));
     BOOST_CHECK(result == expected);
 
@@ -361,8 +343,7 @@ BOOST_AUTO_TEST_CASE(script_standard_GetScriptFor_)
     witnessScript << OP_1 << ToByteVector(pubkeys[0]) << OP_1 << OP_CHECKMULTISIG;
 
     uint256 scriptHash;
-    CSHA256().Write(&witnessScript[0], witnessScript.size())
-        .Finalize(scriptHash.begin());
+    CSHA256().Write(&witnessScript[0], witnessScript.size()).Finalize(scriptHash.begin());
 
     expected.clear();
     expected << OP_0 << ToByteVector(scriptHash);

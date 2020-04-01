@@ -2,9 +2,9 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <hash.h>
 #include <crypto/common.h>
 #include <crypto/hmac_sha512.h>
+#include <hash.h>
 
 
 inline uint32_t ROTL32(uint32_t x, int8_t r)
@@ -26,7 +26,7 @@ unsigned int MurmurHash3(unsigned int nHashSeed, const std::vector<unsigned char
     const uint8_t* blocks = vDataToHash.data();
 
     for (int i = 0; i < nblocks; ++i) {
-        uint32_t k1 = ReadLE32(blocks + i*4);
+        uint32_t k1 = ReadLE32(blocks + i * 4);
 
         k1 *= c1;
         k1 = ROTL32(k1, 15);
@@ -44,16 +44,16 @@ unsigned int MurmurHash3(unsigned int nHashSeed, const std::vector<unsigned char
     uint32_t k1 = 0;
 
     switch (vDataToHash.size() & 3) {
-        case 3:
-            k1 ^= tail[2] << 16;
-        case 2:
-            k1 ^= tail[1] << 8;
-        case 1:
-            k1 ^= tail[0];
-            k1 *= c1;
-            k1 = ROTL32(k1, 15);
-            k1 *= c2;
-            h1 ^= k1;
+    case 3:
+        k1 ^= tail[2] << 16;
+    case 2:
+        k1 ^= tail[1] << 8;
+    case 1:
+        k1 ^= tail[0];
+        k1 *= c1;
+        k1 = ROTL32(k1, 15);
+        k1 *= c2;
+        h1 ^= k1;
     }
 
     //----------
@@ -68,12 +68,12 @@ unsigned int MurmurHash3(unsigned int nHashSeed, const std::vector<unsigned char
     return h1;
 }
 
-void BIP32Hash(const ChainCode &chainCode, unsigned int nChild, unsigned char header, const unsigned char data[32], unsigned char output[64])
+void BIP32Hash(const ChainCode& chainCode, unsigned int nChild, unsigned char header, const unsigned char data[32], unsigned char output[64])
 {
     unsigned char num[4];
     num[0] = (nChild >> 24) & 0xFF;
     num[1] = (nChild >> 16) & 0xFF;
-    num[2] = (nChild >>  8) & 0xFF;
-    num[3] = (nChild >>  0) & 0xFF;
+    num[2] = (nChild >> 8) & 0xFF;
+    num[3] = (nChild >> 0) & 0xFF;
     CHMAC_SHA512(chainCode.begin(), chainCode.size()).Write(&header, 1).Write(data, 32).Write(num, 4).Finalize(output);
 }

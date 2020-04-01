@@ -19,19 +19,20 @@
 #include <wallet/wallet.h>
 
 #include <QApplication>
-#include <QTimer>
 #include <QMessageBox>
+#include <QTimer>
 
-namespace
-{
+namespace {
 
 /**
  * Fill the edit address dialog box with data, submit it, and ensure that
  * the resulting message meets expectations.
  */
 void EditAddressAndSubmit(
-        EditAddressDialog* dialog,
-        const QString& label, const QString& address, QString expected_msg)
+    EditAddressDialog* dialog,
+    const QString& label,
+    const QString& address,
+    QString expected_msg)
 {
     QString warning_text;
 
@@ -116,8 +117,9 @@ void TestAddAddressesToSendBook(interfaces::Node& node)
         &editAddressDialog, QString("uhoh"), preexisting_r_address,
         QString(
             "Address \"%1\" already exists as a receiving address with label "
-            "\"%2\" and so cannot be added as a sending address."
-            ).arg(preexisting_r_address).arg(r_label));
+            "\"%2\" and so cannot be added as a sending address.")
+            .arg(preexisting_r_address)
+            .arg(r_label));
 
     check_addbook_size(2);
 
@@ -125,8 +127,9 @@ void TestAddAddressesToSendBook(interfaces::Node& node)
         &editAddressDialog, QString("uhoh, different"), preexisting_s_address,
         QString(
             "The entered address \"%1\" is already in the address book with "
-            "label \"%2\"."
-            ).arg(preexisting_s_address).arg(s_label));
+            "label \"%2\".")
+            .arg(preexisting_s_address)
+            .arg(s_label));
 
     check_addbook_size(2);
 

@@ -11,7 +11,7 @@
 #include <Windows.h> // For SecureZeroMemory.
 #endif
 
-void memory_cleanse(void *ptr, size_t len)
+void memory_cleanse(void* ptr, size_t len)
 {
 #if defined(_MSC_VER)
     /* SecureZeroMemory is guaranteed not to be optimized out by MSVC. */
@@ -30,6 +30,9 @@ void memory_cleanse(void *ptr, size_t len)
      * just not remove it entirely. See "Dead Store Elimination (Still) Considered Harmful" by
      * Yang et al. (USENIX Security 2017) for more background.
      */
-    __asm__ __volatile__("" : : "r"(ptr) : "memory");
+    __asm__ __volatile__(""
+                         :
+                         : "r"(ptr)
+                         : "memory");
 #endif
 }

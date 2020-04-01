@@ -2,9 +2,9 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <hash.h>
 #include <serialize.h>
 #include <streams.h>
-#include <hash.h>
 #include <test/util/setup_common.h>
 #include <util/strencodings.h>
 
@@ -22,6 +22,7 @@ protected:
     std::string stringval;
     char charstrval[16];
     CTransactionRef txval;
+
 public:
     CSerializeMethodsTestSingle() = default;
     CSerializeMethodsTestSingle(int intvalin, bool boolvalin, std::string stringvalin, const char* charstrvalin, const CTransactionRef& txvalin) : intval(intvalin), boolval(boolvalin), stringval(std::move(stringvalin)), txval(txvalin)
@@ -32,7 +33,8 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
         READWRITE(intval);
         READWRITE(boolval);
         READWRITE(stringval);
@@ -42,11 +44,11 @@ public:
 
     bool operator==(const CSerializeMethodsTestSingle& rhs)
     {
-        return  intval == rhs.intval && \
-                boolval == rhs.boolval && \
-                stringval == rhs.stringval && \
-                strcmp(charstrval, rhs.charstrval) == 0 && \
-                *txval == *rhs.txval;
+        return intval == rhs.intval &&
+               boolval == rhs.boolval &&
+               stringval == rhs.stringval &&
+               strcmp(charstrval, rhs.charstrval) == 0 &&
+               *txval == *rhs.txval;
     }
 };
 
@@ -57,7 +59,8 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
         READWRITE(intval, boolval, stringval, charstrval, txval);
     }
 };
@@ -187,7 +190,7 @@ BOOST_AUTO_TEST_CASE(varints)
         BOOST_CHECK(size == ss.size());
     }
 
-    for (uint64_t i = 0;  i < 100000000000ULL; i += 999999937) {
+    for (uint64_t i = 0; i < 100000000000ULL; i += 999999937) {
         ss << VARINT(i);
         size += ::GetSerializeSize(VARINT(i), 0);
         BOOST_CHECK(size == ss.size());
@@ -200,7 +203,7 @@ BOOST_AUTO_TEST_CASE(varints)
         BOOST_CHECK_MESSAGE(i == j, "decoded:" << j << " expected:" << i);
     }
 
-    for (uint64_t i = 0;  i < 100000000000ULL; i += 999999937) {
+    for (uint64_t i = 0; i < 100000000000ULL; i += 999999937) {
         uint64_t j = std::numeric_limits<uint64_t>::max();
         ss >> VARINT(j);
         BOOST_CHECK_MESSAGE(i == j, "decoded:" << j << " expected:" << i);
@@ -210,22 +213,54 @@ BOOST_AUTO_TEST_CASE(varints)
 BOOST_AUTO_TEST_CASE(varints_bitpatterns)
 {
     CDataStream ss(SER_DISK, 0);
-    ss << VARINT_MODE(0, VarIntMode::NONNEGATIVE_SIGNED); BOOST_CHECK_EQUAL(HexStr(ss), "00"); ss.clear();
-    ss << VARINT_MODE(0x7f, VarIntMode::NONNEGATIVE_SIGNED); BOOST_CHECK_EQUAL(HexStr(ss), "7f"); ss.clear();
-    ss << VARINT_MODE((int8_t)0x7f, VarIntMode::NONNEGATIVE_SIGNED); BOOST_CHECK_EQUAL(HexStr(ss), "7f"); ss.clear();
-    ss << VARINT_MODE(0x80, VarIntMode::NONNEGATIVE_SIGNED); BOOST_CHECK_EQUAL(HexStr(ss), "8000"); ss.clear();
-    ss << VARINT((uint8_t)0x80); BOOST_CHECK_EQUAL(HexStr(ss), "8000"); ss.clear();
-    ss << VARINT_MODE(0x1234, VarIntMode::NONNEGATIVE_SIGNED); BOOST_CHECK_EQUAL(HexStr(ss), "a334"); ss.clear();
-    ss << VARINT_MODE((int16_t)0x1234, VarIntMode::NONNEGATIVE_SIGNED); BOOST_CHECK_EQUAL(HexStr(ss), "a334"); ss.clear();
-    ss << VARINT_MODE(0xffff, VarIntMode::NONNEGATIVE_SIGNED); BOOST_CHECK_EQUAL(HexStr(ss), "82fe7f"); ss.clear();
-    ss << VARINT((uint16_t)0xffff); BOOST_CHECK_EQUAL(HexStr(ss), "82fe7f"); ss.clear();
-    ss << VARINT_MODE(0x123456, VarIntMode::NONNEGATIVE_SIGNED); BOOST_CHECK_EQUAL(HexStr(ss), "c7e756"); ss.clear();
-    ss << VARINT_MODE((int32_t)0x123456, VarIntMode::NONNEGATIVE_SIGNED); BOOST_CHECK_EQUAL(HexStr(ss), "c7e756"); ss.clear();
-    ss << VARINT(0x80123456U); BOOST_CHECK_EQUAL(HexStr(ss), "86ffc7e756"); ss.clear();
-    ss << VARINT((uint32_t)0x80123456U); BOOST_CHECK_EQUAL(HexStr(ss), "86ffc7e756"); ss.clear();
-    ss << VARINT(0xffffffff); BOOST_CHECK_EQUAL(HexStr(ss), "8efefefe7f"); ss.clear();
-    ss << VARINT_MODE(0x7fffffffffffffffLL, VarIntMode::NONNEGATIVE_SIGNED); BOOST_CHECK_EQUAL(HexStr(ss), "fefefefefefefefe7f"); ss.clear();
-    ss << VARINT(0xffffffffffffffffULL); BOOST_CHECK_EQUAL(HexStr(ss), "80fefefefefefefefe7f"); ss.clear();
+    ss << VARINT_MODE(0, VarIntMode::NONNEGATIVE_SIGNED);
+    BOOST_CHECK_EQUAL(HexStr(ss), "00");
+    ss.clear();
+    ss << VARINT_MODE(0x7f, VarIntMode::NONNEGATIVE_SIGNED);
+    BOOST_CHECK_EQUAL(HexStr(ss), "7f");
+    ss.clear();
+    ss << VARINT_MODE((int8_t)0x7f, VarIntMode::NONNEGATIVE_SIGNED);
+    BOOST_CHECK_EQUAL(HexStr(ss), "7f");
+    ss.clear();
+    ss << VARINT_MODE(0x80, VarIntMode::NONNEGATIVE_SIGNED);
+    BOOST_CHECK_EQUAL(HexStr(ss), "8000");
+    ss.clear();
+    ss << VARINT((uint8_t)0x80);
+    BOOST_CHECK_EQUAL(HexStr(ss), "8000");
+    ss.clear();
+    ss << VARINT_MODE(0x1234, VarIntMode::NONNEGATIVE_SIGNED);
+    BOOST_CHECK_EQUAL(HexStr(ss), "a334");
+    ss.clear();
+    ss << VARINT_MODE((int16_t)0x1234, VarIntMode::NONNEGATIVE_SIGNED);
+    BOOST_CHECK_EQUAL(HexStr(ss), "a334");
+    ss.clear();
+    ss << VARINT_MODE(0xffff, VarIntMode::NONNEGATIVE_SIGNED);
+    BOOST_CHECK_EQUAL(HexStr(ss), "82fe7f");
+    ss.clear();
+    ss << VARINT((uint16_t)0xffff);
+    BOOST_CHECK_EQUAL(HexStr(ss), "82fe7f");
+    ss.clear();
+    ss << VARINT_MODE(0x123456, VarIntMode::NONNEGATIVE_SIGNED);
+    BOOST_CHECK_EQUAL(HexStr(ss), "c7e756");
+    ss.clear();
+    ss << VARINT_MODE((int32_t)0x123456, VarIntMode::NONNEGATIVE_SIGNED);
+    BOOST_CHECK_EQUAL(HexStr(ss), "c7e756");
+    ss.clear();
+    ss << VARINT(0x80123456U);
+    BOOST_CHECK_EQUAL(HexStr(ss), "86ffc7e756");
+    ss.clear();
+    ss << VARINT((uint32_t)0x80123456U);
+    BOOST_CHECK_EQUAL(HexStr(ss), "86ffc7e756");
+    ss.clear();
+    ss << VARINT(0xffffffff);
+    BOOST_CHECK_EQUAL(HexStr(ss), "8efefefe7f");
+    ss.clear();
+    ss << VARINT_MODE(0x7fffffffffffffffLL, VarIntMode::NONNEGATIVE_SIGNED);
+    BOOST_CHECK_EQUAL(HexStr(ss), "fefefefefefefefe7f");
+    ss.clear();
+    ss << VARINT(0xffffffffffffffffULL);
+    BOOST_CHECK_EQUAL(HexStr(ss), "80fefefefefefefefe7f");
+    ss.clear();
 }
 
 BOOST_AUTO_TEST_CASE(compactsize)
@@ -233,15 +268,13 @@ BOOST_AUTO_TEST_CASE(compactsize)
     CDataStream ss(SER_DISK, 0);
     std::vector<char>::size_type i, j;
 
-    for (i = 1; i <= MAX_SIZE; i *= 2)
-    {
-        WriteCompactSize(ss, i-1);
+    for (i = 1; i <= MAX_SIZE; i *= 2) {
+        WriteCompactSize(ss, i - 1);
         WriteCompactSize(ss, i);
     }
-    for (i = 1; i <= MAX_SIZE; i *= 2)
-    {
+    for (i = 1; i <= MAX_SIZE; i *= 2) {
         j = ReadCompactSize(ss);
-        BOOST_CHECK_MESSAGE((i-1) == j, "decoded:" << j << " expected:" << (i-1));
+        BOOST_CHECK_MESSAGE((i - 1) == j, "decoded:" << j << " expected:" << (i - 1));
         j = ReadCompactSize(ss);
         BOOST_CHECK_MESSAGE(i == j, "decoded:" << j << " expected:" << i);
     }
@@ -326,7 +359,7 @@ BOOST_AUTO_TEST_CASE(insert_delete)
     BOOST_CHECK_EQUAL(ss[4], (char)0xff);
     BOOST_CHECK_EQUAL(ss[5], c);
 
-    ss.insert(ss.begin()+2, c);
+    ss.insert(ss.begin() + 2, c);
     BOOST_CHECK_EQUAL(ss.size(), 7U);
     BOOST_CHECK_EQUAL(ss[2], c);
 
@@ -335,11 +368,11 @@ BOOST_AUTO_TEST_CASE(insert_delete)
     BOOST_CHECK_EQUAL(ss.size(), 6U);
     BOOST_CHECK_EQUAL(ss[0], 0);
 
-    ss.erase(ss.begin()+ss.size()-1);
+    ss.erase(ss.begin() + ss.size() - 1);
     BOOST_CHECK_EQUAL(ss.size(), 5U);
     BOOST_CHECK_EQUAL(ss[4], (char)0xff);
 
-    ss.erase(ss.begin()+1);
+    ss.erase(ss.begin() + 1);
     BOOST_CHECK_EQUAL(ss.size(), 4U);
     BOOST_CHECK_EQUAL(ss[0], 0);
     BOOST_CHECK_EQUAL(ss[1], 1);

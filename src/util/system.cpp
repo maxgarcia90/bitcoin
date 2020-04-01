@@ -37,10 +37,10 @@
 #else
 
 #ifdef _MSC_VER
-#pragma warning(disable:4786)
-#pragma warning(disable:4804)
-#pragma warning(disable:4805)
-#pragma warning(disable:4717)
+#pragma warning(disable : 4786)
+#pragma warning(disable : 4804)
+#pragma warning(disable : 4805)
+#pragma warning(disable : 4717)
 #endif
 
 #ifdef _WIN32_IE
@@ -71,7 +71,7 @@
 // Application startup time (used for uptime calculation)
 const int64_t nStartupTime = GetTime();
 
-const char * const BITCOIN_CONF_FILENAME = "bitcoin.conf";
+const char* const BITCOIN_CONF_FILENAME = "bitcoin.conf";
 
 ArgsManager gArgs;
 
@@ -238,10 +238,10 @@ const std::set<std::string> ArgsManager::GetUnsuitableSectionOnlyArgs() const
     LOCK(cs_args);
 
     // if there's no section selected, don't worry
-    if (m_network.empty()) return std::set<std::string> {};
+    if (m_network.empty()) return std::set<std::string>{};
 
     // if it's okay to use the default section for this network, don't worry
-    if (m_network == CBaseChainParams::MAIN) return std::set<std::string> {};
+    if (m_network == CBaseChainParams::MAIN) return std::set<std::string>{};
 
     for (const auto& arg : m_network_only_args) {
         if (OnlyHasDefaultSectionSetting(m_settings, m_network, SettingName(arg))) {
@@ -257,12 +257,11 @@ const std::list<SectionInfo> ArgsManager::GetUnrecognizedSections() const
     static const std::set<std::string> available_sections{
         CBaseChainParams::REGTEST,
         CBaseChainParams::TESTNET,
-        CBaseChainParams::MAIN
-    };
+        CBaseChainParams::MAIN};
 
     LOCK(cs_args);
     std::list<SectionInfo> unrecognized = m_config_sections;
-    unrecognized.remove_if([](const SectionInfo& appeared){ return available_sections.find(appeared.m_name) != available_sections.end(); });
+    unrecognized.remove_if([](const SectionInfo& appeared) { return available_sections.find(appeared.m_name) != available_sections.end(); });
     return unrecognized;
 }
 
@@ -442,48 +441,48 @@ std::string ArgsManager::GetHelpMessage() const
     std::string usage = "";
     LOCK(cs_args);
     for (const auto& arg_map : m_available_args) {
-        switch(arg_map.first) {
-            case OptionsCategory::OPTIONS:
-                usage += HelpMessageGroup("Options:");
-                break;
-            case OptionsCategory::CONNECTION:
-                usage += HelpMessageGroup("Connection options:");
-                break;
-            case OptionsCategory::ZMQ:
-                usage += HelpMessageGroup("ZeroMQ notification options:");
-                break;
-            case OptionsCategory::DEBUG_TEST:
-                usage += HelpMessageGroup("Debugging/Testing options:");
-                break;
-            case OptionsCategory::NODE_RELAY:
-                usage += HelpMessageGroup("Node relay options:");
-                break;
-            case OptionsCategory::BLOCK_CREATION:
-                usage += HelpMessageGroup("Block creation options:");
-                break;
-            case OptionsCategory::RPC:
-                usage += HelpMessageGroup("RPC server options:");
-                break;
-            case OptionsCategory::WALLET:
-                usage += HelpMessageGroup("Wallet options:");
-                break;
-            case OptionsCategory::WALLET_DEBUG_TEST:
-                if (show_debug) usage += HelpMessageGroup("Wallet debugging/testing options:");
-                break;
-            case OptionsCategory::CHAINPARAMS:
-                usage += HelpMessageGroup("Chain selection options:");
-                break;
-            case OptionsCategory::GUI:
-                usage += HelpMessageGroup("UI Options:");
-                break;
-            case OptionsCategory::COMMANDS:
-                usage += HelpMessageGroup("Commands:");
-                break;
-            case OptionsCategory::REGISTER_COMMANDS:
-                usage += HelpMessageGroup("Register Commands:");
-                break;
-            default:
-                break;
+        switch (arg_map.first) {
+        case OptionsCategory::OPTIONS:
+            usage += HelpMessageGroup("Options:");
+            break;
+        case OptionsCategory::CONNECTION:
+            usage += HelpMessageGroup("Connection options:");
+            break;
+        case OptionsCategory::ZMQ:
+            usage += HelpMessageGroup("ZeroMQ notification options:");
+            break;
+        case OptionsCategory::DEBUG_TEST:
+            usage += HelpMessageGroup("Debugging/Testing options:");
+            break;
+        case OptionsCategory::NODE_RELAY:
+            usage += HelpMessageGroup("Node relay options:");
+            break;
+        case OptionsCategory::BLOCK_CREATION:
+            usage += HelpMessageGroup("Block creation options:");
+            break;
+        case OptionsCategory::RPC:
+            usage += HelpMessageGroup("RPC server options:");
+            break;
+        case OptionsCategory::WALLET:
+            usage += HelpMessageGroup("Wallet options:");
+            break;
+        case OptionsCategory::WALLET_DEBUG_TEST:
+            if (show_debug) usage += HelpMessageGroup("Wallet debugging/testing options:");
+            break;
+        case OptionsCategory::CHAINPARAMS:
+            usage += HelpMessageGroup("Chain selection options:");
+            break;
+        case OptionsCategory::GUI:
+            usage += HelpMessageGroup("UI Options:");
+            break;
+        case OptionsCategory::COMMANDS:
+            usage += HelpMessageGroup("Commands:");
+            break;
+        case OptionsCategory::REGISTER_COMMANDS:
+            usage += HelpMessageGroup("Register Commands:");
+            break;
+        default:
+            break;
         }
 
         // When we get to the hidden options, stop
@@ -519,13 +518,15 @@ static const int screenWidth = 79;
 static const int optIndent = 2;
 static const int msgIndent = 7;
 
-std::string HelpMessageGroup(const std::string &message) {
+std::string HelpMessageGroup(const std::string& message)
+{
     return std::string(message) + std::string("\n\n");
 }
 
-std::string HelpMessageOpt(const std::string &option, const std::string &message) {
-    return std::string(optIndent,' ') + std::string(option) +
-           std::string("\n") + std::string(msgIndent,' ') +
+std::string HelpMessageOpt(const std::string& option, const std::string& message)
+{
+    return std::string(optIndent, ' ') + std::string(option) +
+           std::string("\n") + std::string(msgIndent, ' ') +
            FormatParagraph(message, screenWidth - msgIndent, msgIndent) +
            std::string("\n\n");
 }
@@ -584,10 +585,10 @@ static fs::path pathCached;
 static fs::path pathCachedNetSpecific;
 static RecursiveMutex csPathCached;
 
-const fs::path &GetBlocksDir()
+const fs::path& GetBlocksDir()
 {
     LOCK(csPathCached);
-    fs::path &path = g_blocks_path_cache_net_specific;
+    fs::path& path = g_blocks_path_cache_net_specific;
 
     // Cache the path to avoid calling fs::create_directories on every call of
     // this function
@@ -609,10 +610,10 @@ const fs::path &GetBlocksDir()
     return path;
 }
 
-const fs::path &GetDataDir(bool fNetSpecific)
+const fs::path& GetDataDir(bool fNetSpecific)
 {
     LOCK(csPathCached);
-    fs::path &path = fNetSpecific ? pathCachedNetSpecific : pathCached;
+    fs::path& path = fNetSpecific ? pathCachedNetSpecific : pathCached;
 
     // Cache the path to avoid calling fs::create_directories on every call of
     // this function
@@ -892,7 +893,7 @@ bool RenameOver(fs::path src, fs::path dest)
 {
 #ifdef WIN32
     return MoveFileExW(src.wstring().c_str(), dest.wstring().c_str(),
-                       MOVEFILE_REPLACE_EXISTING) != 0;
+               MOVEFILE_REPLACE_EXISTING) != 0;
 #else
     int rc = std::rename(src.string().c_str(), dest.string().c_str());
     return (rc == 0);
@@ -906,8 +907,7 @@ bool RenameOver(fs::path src, fs::path dest)
  */
 bool TryCreateDirectories(const fs::path& p)
 {
-    try
-    {
+    try {
         return fs::create_directories(p);
     } catch (const fs::filesystem_error&) {
         if (!fs::exists(p) || !fs::is_directory(p))
@@ -918,7 +918,7 @@ bool TryCreateDirectories(const fs::path& p)
     return false;
 }
 
-bool FileCommit(FILE *file)
+bool FileCommit(FILE* file)
 {
     if (fflush(file) != 0) { // harmless if redundantly called
         LogPrintf("%s: fflush failed: %d\n", __func__, errno);
@@ -931,27 +931,28 @@ bool FileCommit(FILE *file)
         return false;
     }
 #else
-    #if defined(__linux__) || defined(__NetBSD__)
+#if defined(__linux__) || defined(__NetBSD__)
     if (fdatasync(fileno(file)) != 0 && errno != EINVAL) { // Ignore EINVAL for filesystems that don't support sync
         LogPrintf("%s: fdatasync failed: %d\n", __func__, errno);
         return false;
     }
-    #elif defined(MAC_OSX) && defined(F_FULLFSYNC)
+#elif defined(MAC_OSX) && defined(F_FULLFSYNC)
     if (fcntl(fileno(file), F_FULLFSYNC, 0) == -1) { // Manpage says "value other than -1" is returned on success
         LogPrintf("%s: fcntl F_FULLFSYNC failed: %d\n", __func__, errno);
         return false;
     }
-    #else
+#else
     if (fsync(fileno(file)) != 0 && errno != EINVAL) {
         LogPrintf("%s: fsync failed: %d\n", __func__, errno);
         return false;
     }
-    #endif
+#endif
 #endif
     return true;
 }
 
-bool TruncateFile(FILE *file, unsigned int length) {
+bool TruncateFile(FILE* file, unsigned int length)
+{
 #if defined(WIN32)
     return _chsize(_fileno(file), length) == 0;
 #else
@@ -963,7 +964,8 @@ bool TruncateFile(FILE *file, unsigned int length) {
  * this function tries to raise the file descriptor limit to the requested number.
  * It returns the actual file descriptor limit (which may be more or less than nMinFD)
  */
-int RaiseFileDescriptorLimit(int nMinFD) {
+int RaiseFileDescriptorLimit(int nMinFD)
+{
 #if defined(WIN32)
     return 2048;
 #else
@@ -986,7 +988,8 @@ int RaiseFileDescriptorLimit(int nMinFD) {
  * this function tries to make a particular range of a file allocated (corresponding to disk space)
  * it is advisory, and the range specified in the arguments will never contain live data
  */
-void AllocateFileRange(FILE *file, unsigned int offset, unsigned int length) {
+void AllocateFileRange(FILE* file, unsigned int offset, unsigned int length)
+{
 #if defined(WIN32)
     // Windows-specific version
     HANDLE hFile = (HANDLE)_get_osfhandle(_fileno(file));
@@ -1012,11 +1015,11 @@ void AllocateFileRange(FILE *file, unsigned int offset, unsigned int length) {
     }
     ftruncate(fileno(file), static_cast<off_t>(offset) + length);
 #else
-    #if defined(__linux__)
+#if defined(__linux__)
     // Version using posix_fallocate
     off_t nEndPos = (off_t)offset + length;
     if (0 == posix_fallocate(fileno(file), 0, nEndPos)) return;
-    #endif
+#endif
     // Fallback version
     // TODO: just write one byte per block
     static const char buf[65536] = {};
@@ -1038,8 +1041,7 @@ fs::path GetSpecialFolderPath(int nFolder, bool fCreate)
 {
     WCHAR pszPath[MAX_PATH] = L"";
 
-    if(SHGetSpecialFolderPathW(nullptr, pszPath, nFolder, fCreate))
-    {
+    if (SHGetSpecialFolderPathW(nullptr, pszPath, nFolder, fCreate)) {
         return fs::path(pszPath);
     }
 
@@ -1064,7 +1066,7 @@ void runCommand(const std::string& strCommand)
 #ifndef WIN32
     int nErr = ::system(strCommand.c_str());
 #else
-    int nErr = ::_wsystem(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>,wchar_t>().from_bytes(strCommand).c_str());
+    int nErr = ::_wsystem(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(strCommand).c_str());
 #endif
     if (nErr)
         LogPrintf("runCommand error: system(%s) returned %d\n", strCommand, nErr);
@@ -1113,8 +1115,8 @@ bool SetupNetworking()
 #ifdef WIN32
     // Initialize Windows Sockets
     WSADATA wsadata;
-    int ret = WSAStartup(MAKEWORD(2,2), &wsadata);
-    if (ret != NO_ERROR || LOBYTE(wsadata.wVersion ) != 2 || HIBYTE(wsadata.wVersion) != 2)
+    int ret = WSAStartup(MAKEWORD(2, 2), &wsadata);
+    if (ret != NO_ERROR || LOBYTE(wsadata.wVersion) != 2 || HIBYTE(wsadata.wVersion) != 2)
         return false;
 #endif
     return true;

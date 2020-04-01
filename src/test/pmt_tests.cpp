@@ -2,14 +2,14 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <arith_uint256.h>
 #include <consensus/merkle.h>
 #include <merkleblock.h>
 #include <serialize.h>
 #include <streams.h>
-#include <uint256.h>
-#include <arith_uint256.h>
-#include <version.h>
 #include <test/util/setup_common.h>
+#include <uint256.h>
+#include <version.h>
 
 #include <vector>
 
@@ -19,10 +19,11 @@ class CPartialMerkleTreeTester : public CPartialMerkleTree
 {
 public:
     // flip one bit in one of the hashes - this should break the authentication
-    void Damage() {
+    void Damage()
+    {
         unsigned int n = InsecureRandRange(vHash.size());
         int bit = InsecureRandBits(8);
-        *(vHash[n].begin() + (bit>>3)) ^= 1<<(bit&7);
+        *(vHash[n].begin() + (bit >> 3)) ^= 1 << (bit & 7);
     }
 };
 
@@ -37,7 +38,7 @@ BOOST_AUTO_TEST_CASE(pmt_test1)
 
         // build a block with some dummy transactions
         CBlock block;
-        for (unsigned int j=0; j<nTx; j++) {
+        for (unsigned int j = 0; j < nTx; j++) {
             CMutableTransaction tx;
             tx.nLockTime = j; // actual transaction data doesn't matter; just make the nLockTime's unique
             block.vtx.push_back(MakeTransactionRef(std::move(tx)));
@@ -46,11 +47,11 @@ BOOST_AUTO_TEST_CASE(pmt_test1)
         // calculate actual merkle root and height
         uint256 merkleRoot1 = BlockMerkleRoot(block);
         std::vector<uint256> vTxid(nTx, uint256());
-        for (unsigned int j=0; j<nTx; j++)
+        for (unsigned int j = 0; j < nTx; j++)
             vTxid[j] = block.vtx[j]->GetHash();
         int nHeight = 1, nTx_ = nTx;
         while (nTx_ > 1) {
-            nTx_ = (nTx_+1)/2;
+            nTx_ = (nTx_ + 1) / 2;
             nHeight++;
         }
 
@@ -59,7 +60,7 @@ BOOST_AUTO_TEST_CASE(pmt_test1)
             // build random subset of txid's
             std::vector<bool> vMatch(nTx, false);
             std::vector<uint256> vMatchTxid1;
-            for (unsigned int j=0; j<nTx; j++) {
+            for (unsigned int j = 0; j < nTx; j++) {
                 bool fInclude = InsecureRandBits(att / 2) == 0;
                 vMatch[j] = fInclude;
                 if (fInclude)
@@ -74,8 +75,8 @@ BOOST_AUTO_TEST_CASE(pmt_test1)
             ss << pmt1;
 
             // verify CPartialMerkleTree's size guarantees
-            unsigned int n = std::min<unsigned int>(nTx, 1 + vMatchTxid1.size()*nHeight);
-            BOOST_CHECK(ss.size() <= 10 + (258*n+7)/8);
+            unsigned int n = std::min<unsigned int>(nTx, 1 + vMatchTxid1.size() * nHeight);
+            BOOST_CHECK(ss.size() <= 10 + (258 * n + 7) / 8);
 
             // deserialize into a tester copy
             CPartialMerkleTreeTester pmt2;
@@ -94,7 +95,7 @@ BOOST_AUTO_TEST_CASE(pmt_test1)
             BOOST_CHECK(vMatchTxid1 == vMatchTxid2);
 
             // check that random bit flips break the authentication
-            for (int j=0; j<4; j++) {
+            for (int j = 0; j < 4; j++) {
                 CPartialMerkleTreeTester pmt3(pmt2);
                 pmt3.Damage();
                 std::vector<uint256> vMatchTxid3;
@@ -108,12 +109,18 @@ BOOST_AUTO_TEST_CASE(pmt_test1)
 BOOST_AUTO_TEST_CASE(pmt_malleability)
 {
     std::vector<uint256> vTxid = {
-        ArithToUint256(1), ArithToUint256(2),
-        ArithToUint256(3), ArithToUint256(4),
-        ArithToUint256(5), ArithToUint256(6),
-        ArithToUint256(7), ArithToUint256(8),
-        ArithToUint256(9), ArithToUint256(10),
-        ArithToUint256(9), ArithToUint256(10),
+        ArithToUint256(1),
+        ArithToUint256(2),
+        ArithToUint256(3),
+        ArithToUint256(4),
+        ArithToUint256(5),
+        ArithToUint256(6),
+        ArithToUint256(7),
+        ArithToUint256(8),
+        ArithToUint256(9),
+        ArithToUint256(10),
+        ArithToUint256(9),
+        ArithToUint256(10),
     };
     std::vector<bool> vMatch = {false, false, false, false, false, false, false, false, false, true, true, false};
 

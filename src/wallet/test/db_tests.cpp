@@ -58,8 +58,8 @@ BOOST_AUTO_TEST_CASE(getwalletenv_g_dbenvs_free_instance)
     fs::path datadir_2 = GetDataDir() / "2";
     std::string filename;
 
-    std::shared_ptr <BerkeleyEnvironment> env_1_a = GetWalletEnv(datadir, filename);
-    std::shared_ptr <BerkeleyEnvironment> env_2_a = GetWalletEnv(datadir_2, filename);
+    std::shared_ptr<BerkeleyEnvironment> env_1_a = GetWalletEnv(datadir, filename);
+    std::shared_ptr<BerkeleyEnvironment> env_2_a = GetWalletEnv(datadir_2, filename);
     env_1_a.reset();
 
     std::shared_ptr<BerkeleyEnvironment> env_1_b = GetWalletEnv(datadir, filename);

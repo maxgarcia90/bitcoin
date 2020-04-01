@@ -81,7 +81,7 @@ PSBTAnalysis AnalyzePSBT(PartiallySignedTransaction psbtx)
                 only_missing_final = true;
                 input_analysis.next = PSBTRole::FINALIZER;
             }
-        } else if (!utxo.IsNull()){
+        } else if (!utxo.IsNull()) {
             input_analysis.is_final = true;
         }
     }
@@ -98,8 +98,7 @@ PSBTAnalysis AnalyzePSBT(PartiallySignedTransaction psbtx)
                     return CAmount(-1);
                 }
                 return a += b.nValue;
-            }
-        );
+            });
         if (!MoneyRange(out_amt)) {
             result.SetInvalid(strprintf("PSBT is not valid. Output amount invalid"));
             return result;

@@ -4,17 +4,17 @@
 // It reads JSON input from stdin and exits with code 0 if it can be parsed
 // successfully. It also pretty prints the parsed JSON value to stdout.
 
+#include "univalue.h"
 #include <iostream>
 #include <string>
-#include "univalue.h"
 
 using namespace std;
 
-int main (int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     UniValue val;
     if (val.read(string(istreambuf_iterator<char>(cin),
-                        istreambuf_iterator<char>()))) {
+            istreambuf_iterator<char>()))) {
         cout << val.write(1 /* prettyIndent */, 4 /* indentLevel */) << endl;
         return 0;
     } else {

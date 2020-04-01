@@ -44,7 +44,7 @@ struct CConnmanTest : public CConnman {
 extern bool AddOrphanTx(const CTransactionRef& tx, NodeId peer);
 extern void EraseOrphansFor(NodeId peer);
 extern unsigned int LimitOrphanTxSize(unsigned int nMaxOrphans);
-extern void Misbehaving(NodeId nodeid, int howmuch, const std::string& message="");
+extern void Misbehaving(NodeId nodeid, int howmuch, const std::string& message = "");
 
 struct COrphanTx {
     CTransactionRef tx;
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(outbound_slow_chain_eviction)
 
     // Mock an outbound peer
     CAddress addr1(ip(0xa0b0c001), NODE_NONE);
-    CNode dummyNode1(id++, ServiceFlags(NODE_NETWORK|NODE_WITNESS), 0, INVALID_SOCKET, addr1, 0, 0, CAddress(), "", /*fInboundIn=*/ false);
+    CNode dummyNode1(id++, ServiceFlags(NODE_NETWORK | NODE_WITNESS), 0, INVALID_SOCKET, addr1, 0, 0, CAddress(), "", /*fInboundIn=*/false);
     dummyNode1.SetSendVersion(PROTOCOL_VERSION);
 
     peerLogic->InitializeNode(&dummyNode1);
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(outbound_slow_chain_eviction)
 
     int64_t nStartTime = GetTime();
     // Wait 21 minutes
-    SetMockTime(nStartTime+21*60);
+    SetMockTime(nStartTime + 21 * 60);
     {
         LOCK2(cs_main, dummyNode1.cs_sendProcessing);
         BOOST_CHECK(peerLogic->SendMessages(&dummyNode1)); // should result in getheaders
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(outbound_slow_chain_eviction)
         BOOST_CHECK(dummyNode1.vSendMsg.size() > 0);
     }
     // Wait 3 more minutes
-    SetMockTime(nStartTime+24*60);
+    SetMockTime(nStartTime + 24 * 60);
     {
         LOCK2(cs_main, dummyNode1.cs_sendProcessing);
         BOOST_CHECK(peerLogic->SendMessages(&dummyNode1)); // should result in disconnect
@@ -131,11 +131,11 @@ BOOST_AUTO_TEST_CASE(outbound_slow_chain_eviction)
     peerLogic->FinalizeNode(dummyNode1.GetId(), dummy);
 }
 
-static void AddRandomOutboundPeer(std::vector<CNode *> &vNodes, PeerLogicValidation &peerLogic, CConnmanTest* connman)
+static void AddRandomOutboundPeer(std::vector<CNode*>& vNodes, PeerLogicValidation& peerLogic, CConnmanTest* connman)
 {
     CAddress addr(ip(g_insecure_rand_ctx.randbits(32)), NODE_NONE);
-    vNodes.emplace_back(new CNode(id++, ServiceFlags(NODE_NETWORK|NODE_WITNESS), 0, INVALID_SOCKET, addr, 0, 0, CAddress(), "", /*fInboundIn=*/ false));
-    CNode &node = *vNodes.back();
+    vNodes.emplace_back(new CNode(id++, ServiceFlags(NODE_NETWORK | NODE_WITNESS), 0, INVALID_SOCKET, addr, 0, 0, CAddress(), "", /*fInboundIn=*/false));
+    CNode& node = *vNodes.back();
     node.SetSendVersion(PROTOCOL_VERSION);
 
     peerLogic.InitializeNode(&node);
@@ -158,21 +158,21 @@ BOOST_AUTO_TEST_CASE(stale_tip_peer_management)
     options.nMaxFeeler = 1;
 
     connman->Init(options);
-    std::vector<CNode *> vNodes;
+    std::vector<CNode*> vNodes;
 
     // Mock some outbound peers
-    for (int i=0; i<max_outbound_full_relay; ++i) {
+    for (int i = 0; i < max_outbound_full_relay; ++i) {
         AddRandomOutboundPeer(vNodes, *peerLogic, connman.get());
     }
 
     peerLogic->CheckForStaleTipAndEvictPeers(consensusParams);
 
     // No nodes should be marked for disconnection while we have no extra peers
-    for (const CNode *node : vNodes) {
+    for (const CNode* node : vNodes) {
         BOOST_CHECK(node->fDisconnect == false);
     }
 
-    SetMockTime(GetTime() + 3*consensusParams.nPowTargetSpacing + 1);
+    SetMockTime(GetTime() + 3 * consensusParams.nPowTargetSpacing + 1);
 
     // Now tip should definitely be stale, and we should look for an extra
     // outbound peer
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE(stale_tip_peer_management)
     BOOST_CHECK(connman->GetTryNewOutboundPeer());
 
     // Still no peers should be marked for disconnection
-    for (const CNode *node : vNodes) {
+    for (const CNode* node : vNodes) {
         BOOST_CHECK(node->fDisconnect == false);
     }
 
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(stale_tip_peer_management)
     AddRandomOutboundPeer(vNodes, *peerLogic, connman.get());
 
     peerLogic->CheckForStaleTipAndEvictPeers(consensusParams);
-    for (int i=0; i<max_outbound_full_relay; ++i) {
+    for (int i = 0; i < max_outbound_full_relay; ++i) {
         BOOST_CHECK(vNodes[i]->fDisconnect == false);
     }
     // Last added node should get marked for eviction
@@ -203,14 +203,14 @@ BOOST_AUTO_TEST_CASE(stale_tip_peer_management)
     UpdateLastBlockAnnounceTime(vNodes.back()->GetId(), GetTime());
 
     peerLogic->CheckForStaleTipAndEvictPeers(consensusParams);
-    for (int i=0; i<max_outbound_full_relay-1; ++i) {
+    for (int i = 0; i < max_outbound_full_relay - 1; ++i) {
         BOOST_CHECK(vNodes[i]->fDisconnect == false);
     }
-    BOOST_CHECK(vNodes[max_outbound_full_relay-1]->fDisconnect == true);
+    BOOST_CHECK(vNodes[max_outbound_full_relay - 1]->fDisconnect == true);
     BOOST_CHECK(vNodes.back()->fDisconnect == false);
 
     bool dummy;
-    for (const CNode *node : vNodes) {
+    for (const CNode* node : vNodes) {
         peerLogic->FinalizeNode(node->GetId(), dummy);
     }
 
@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_CASE(DoS_banning)
         BOOST_CHECK(peerLogic->SendMessages(&dummyNode1));
     }
     BOOST_CHECK(banman->IsBanned(addr1));
-    BOOST_CHECK(!banman->IsBanned(ip(0xa0b0c001|0x0000ff00))); // Different IP, not banned
+    BOOST_CHECK(!banman->IsBanned(ip(0xa0b0c001 | 0x0000ff00))); // Different IP, not banned
 
     CAddress addr2(ip(0xa0b0c002), NODE_NONE);
     CNode dummyNode2(id++, NODE_NETWORK, 0, INVALID_SOCKET, addr2, 1, 1, CAddress(), "", true);
@@ -346,10 +346,10 @@ BOOST_AUTO_TEST_CASE(DoS_bantime)
     }
     BOOST_CHECK(banman->IsBanned(addr));
 
-    SetMockTime(nStartTime+60*60);
+    SetMockTime(nStartTime + 60 * 60);
     BOOST_CHECK(banman->IsBanned(addr));
 
-    SetMockTime(nStartTime+60*60*24+1);
+    SetMockTime(nStartTime + 60 * 60 * 24 + 1);
     BOOST_CHECK(!banman->IsBanned(addr));
 
     bool dummy;
@@ -374,23 +374,21 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
     BOOST_CHECK(keystore.AddKey(key));
 
     // 50 orphan transactions:
-    for (int i = 0; i < 50; i++)
-    {
+    for (int i = 0; i < 50; i++) {
         CMutableTransaction tx;
         tx.vin.resize(1);
         tx.vin[0].prevout.n = 0;
         tx.vin[0].prevout.hash = InsecureRand256();
         tx.vin[0].scriptSig << OP_1;
         tx.vout.resize(1);
-        tx.vout[0].nValue = 1*CENT;
+        tx.vout[0].nValue = 1 * CENT;
         tx.vout[0].scriptPubKey = GetScriptForDestination(PKHash(key.GetPubKey()));
 
         AddOrphanTx(MakeTransactionRef(tx), i);
     }
 
     // ... and 50 that depend on other orphans:
-    for (int i = 0; i < 50; i++)
-    {
+    for (int i = 0; i < 50; i++) {
         CTransactionRef txPrev = RandomOrphan();
 
         CMutableTransaction tx;
@@ -398,7 +396,7 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
         tx.vin[0].prevout.n = 0;
         tx.vin[0].prevout.hash = txPrev->GetHash();
         tx.vout.resize(1);
-        tx.vout[0].nValue = 1*CENT;
+        tx.vout[0].nValue = 1 * CENT;
         tx.vout[0].scriptPubKey = GetScriptForDestination(PKHash(key.GetPubKey()));
         BOOST_CHECK(SignSignature(keystore, *txPrev, tx, 0, SIGHASH_ALL));
 
@@ -406,17 +404,15 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
     }
 
     // This really-big orphan should be ignored:
-    for (int i = 0; i < 10; i++)
-    {
+    for (int i = 0; i < 10; i++) {
         CTransactionRef txPrev = RandomOrphan();
 
         CMutableTransaction tx;
         tx.vout.resize(1);
-        tx.vout[0].nValue = 1*CENT;
+        tx.vout[0].nValue = 1 * CENT;
         tx.vout[0].scriptPubKey = GetScriptForDestination(PKHash(key.GetPubKey()));
         tx.vin.resize(2777);
-        for (unsigned int j = 0; j < tx.vin.size(); j++)
-        {
+        for (unsigned int j = 0; j < tx.vin.size(); j++) {
             tx.vin[j].prevout.n = j;
             tx.vin[j].prevout.hash = txPrev->GetHash();
         }
@@ -431,8 +427,7 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
 
     LOCK2(cs_main, g_cs_orphans);
     // Test EraseOrphansFor:
-    for (NodeId i = 0; i < 3; i++)
-    {
+    for (NodeId i = 0; i < 3; i++) {
         size_t sizeBefore = mapOrphanTransactions.size();
         EraseOrphansFor(i);
         BOOST_CHECK(mapOrphanTransactions.size() < sizeBefore);

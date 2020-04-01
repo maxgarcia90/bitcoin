@@ -17,8 +17,8 @@ const std::string UNIX_EPOCH_TIME = "UNIX epoch time";
 const std::string EXAMPLE_ADDRESS = "\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\"";
 
 void RPCTypeCheck(const UniValue& params,
-                  const std::list<UniValueType>& typesExpected,
-                  bool fAllowNull)
+    const std::list<UniValueType>& typesExpected,
+    bool fAllowNull)
 {
     unsigned int i = 0;
     for (const UniValueType& t : typesExpected) {
@@ -57,12 +57,9 @@ void RPCTypeCheckObj(const UniValue& o,
         }
     }
 
-    if (fStrict)
-    {
-        for (const std::string& k : o.getKeys())
-        {
-            if (typesExpected.count(k) == 0)
-            {
+    if (fStrict) {
+        for (const std::string& k : o.getKeys()) {
+            if (typesExpected.count(k) == 0) {
                 std::string err = strprintf("Unexpected key %s", k);
                 throw JSONRPCError(RPC_TYPE_ERROR, err);
             }
@@ -88,7 +85,7 @@ uint256 ParseHashV(const UniValue& v, std::string strName)
     if (64 != strHex.length())
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("%s must be of length %d (not %d, for '%s')", strName, 64, strHex.length(), strHex));
     if (!IsHex(strHex)) // Note: IsHex("") is false
-        throw JSONRPCError(RPC_INVALID_PARAMETER, strName+" must be hexadecimal string (not '"+strHex+"')");
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strName + " must be hexadecimal string (not '" + strHex + "')");
     return uint256S(strHex);
 }
 uint256 ParseHashO(const UniValue& o, std::string strKey)
@@ -101,7 +98,7 @@ std::vector<unsigned char> ParseHexV(const UniValue& v, std::string strName)
     if (v.isStr())
         strHex = v.get_str();
     if (!IsHex(strHex))
-        throw JSONRPCError(RPC_INVALID_PARAMETER, strName+" must be hexadecimal string (not '"+strHex+"')");
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strName + " must be hexadecimal string (not '" + strHex + "')");
     return ParseHex(strHex);
 }
 std::vector<unsigned char> ParseHexO(const UniValue& o, std::string strKey)
@@ -117,7 +114,8 @@ std::string HelpExampleCli(const std::string& methodname, const std::string& arg
 std::string HelpExampleRpc(const std::string& methodname, const std::string& args)
 {
     return "> curl --user myusername --data-binary '{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", "
-        "\"method\": \"" + methodname + "\", \"params\": [" + args + "] }' -H 'content-type: text/plain;' http://127.0.0.1:8332/\n";
+           "\"method\": \"" +
+           methodname + "\", \"params\": [" + args + "] }' -H 'content-type: text/plain;' http://127.0.0.1:8332/\n";
 }
 
 // Converts a hex string to a public key if possible
@@ -149,7 +147,7 @@ CPubKey AddrToPubKey(const FillableSigningProvider& keystore, const std::string&
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("no full public key for address %s", addr_in));
     }
     if (!vchPubKey.IsFullyValid()) {
-       throw JSONRPCError(RPC_INTERNAL_ERROR, "Wallet contains an invalid public key");
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "Wallet contains an invalid public key");
     }
     return vchPubKey;
 }
@@ -261,18 +259,18 @@ unsigned int ParseConfirmTarget(const UniValue& value, unsigned int max_target)
 RPCErrorCode RPCErrorFromTransactionError(TransactionError terr)
 {
     switch (terr) {
-        case TransactionError::MEMPOOL_REJECTED:
-            return RPC_TRANSACTION_REJECTED;
-        case TransactionError::ALREADY_IN_CHAIN:
-            return RPC_TRANSACTION_ALREADY_IN_CHAIN;
-        case TransactionError::P2P_DISABLED:
-            return RPC_CLIENT_P2P_DISABLED;
-        case TransactionError::INVALID_PSBT:
-        case TransactionError::PSBT_MISMATCH:
-            return RPC_INVALID_PARAMETER;
-        case TransactionError::SIGHASH_MISMATCH:
-            return RPC_DESERIALIZATION_ERROR;
-        default: break;
+    case TransactionError::MEMPOOL_REJECTED:
+        return RPC_TRANSACTION_REJECTED;
+    case TransactionError::ALREADY_IN_CHAIN:
+        return RPC_TRANSACTION_ALREADY_IN_CHAIN;
+    case TransactionError::P2P_DISABLED:
+        return RPC_CLIENT_P2P_DISABLED;
+    case TransactionError::INVALID_PSBT:
+    case TransactionError::PSBT_MISMATCH:
+        return RPC_INVALID_PARAMETER;
+    case TransactionError::SIGHASH_MISMATCH:
+        return RPC_DESERIALIZATION_ERROR;
+    default: break;
     }
     return RPC_TRANSACTION_ERROR;
 }

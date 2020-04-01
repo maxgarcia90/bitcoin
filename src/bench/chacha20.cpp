@@ -7,18 +7,18 @@
 #include <crypto/chacha20.h>
 
 /* Number of bytes to process per iteration */
-static const uint64_t BUFFER_SIZE_TINY  = 64;
+static const uint64_t BUFFER_SIZE_TINY = 64;
 static const uint64_t BUFFER_SIZE_SMALL = 256;
-static const uint64_t BUFFER_SIZE_LARGE = 1024*1024;
+static const uint64_t BUFFER_SIZE_LARGE = 1024 * 1024;
 
 static void CHACHA20(benchmark::State& state, size_t buffersize)
 {
-    std::vector<uint8_t> key(32,0);
+    std::vector<uint8_t> key(32, 0);
     ChaCha20 ctx(key.data(), key.size());
     ctx.SetIV(0);
     ctx.Seek(0);
-    std::vector<uint8_t> in(buffersize,0);
-    std::vector<uint8_t> out(buffersize,0);
+    std::vector<uint8_t> in(buffersize, 0);
+    std::vector<uint8_t> out(buffersize, 0);
     while (state.KeepRunning()) {
         ctx.Crypt(in.data(), out.data(), in.size());
     }

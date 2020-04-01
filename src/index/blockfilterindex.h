@@ -46,7 +46,9 @@ protected:
 public:
     /** Constructs the index, which becomes available to be queried. */
     explicit BlockFilterIndex(BlockFilterType filter_type,
-                              size_t n_cache_size, bool f_memory = false, bool f_wipe = false);
+        size_t n_cache_size,
+        bool f_memory = false,
+        bool f_wipe = false);
 
     BlockFilterType GetFilterType() const { return m_filter_type; }
 
@@ -57,12 +59,10 @@ public:
     bool LookupFilterHeader(const CBlockIndex* block_index, uint256& header_out) const;
 
     /** Get a range of filters between two heights on a chain. */
-    bool LookupFilterRange(int start_height, const CBlockIndex* stop_index,
-                           std::vector<BlockFilter>& filters_out) const;
+    bool LookupFilterRange(int start_height, const CBlockIndex* stop_index, std::vector<BlockFilter>& filters_out) const;
 
     /** Get a range of filter hashes between two heights on a chain. */
-    bool LookupFilterHashRange(int start_height, const CBlockIndex* stop_index,
-                               std::vector<uint256>& hashes_out) const;
+    bool LookupFilterHashRange(int start_height, const CBlockIndex* stop_index, std::vector<uint256>& hashes_out) const;
 };
 
 /**
@@ -72,14 +72,16 @@ public:
 BlockFilterIndex* GetBlockFilterIndex(BlockFilterType filter_type);
 
 /** Iterate over all running block filter indexes, invoking fn on each. */
-void ForEachBlockFilterIndex(std::function<void (BlockFilterIndex&)> fn);
+void ForEachBlockFilterIndex(std::function<void(BlockFilterIndex&)> fn);
 
 /**
  * Initialize a block filter index for the given type if one does not already exist. Returns true if
  * a new index is created and false if one has already been initialized.
  */
 bool InitBlockFilterIndex(BlockFilterType filter_type,
-                          size_t n_cache_size, bool f_memory = false, bool f_wipe = false);
+    size_t n_cache_size,
+    bool f_memory = false,
+    bool f_wipe = false);
 
 /**
  * Destroy the block filter index with the given type. Returns false if no such index exists. This

@@ -25,12 +25,7 @@
 #include <QWindow>
 
 WalletController::WalletController(interfaces::Node& node, const PlatformStyle* platform_style, OptionsModel* options_model, QObject* parent)
-    : QObject(parent)
-    , m_activity_thread(new QThread(this))
-    , m_activity_worker(new QObject)
-    , m_node(node)
-    , m_platform_style(platform_style)
-    , m_options_model(options_model)
+    : QObject(parent), m_activity_thread(new QThread(this)), m_activity_worker(new QObject), m_node(node), m_platform_style(platform_style), m_options_model(options_model)
 {
     m_handler_load_wallet = m_node.handleLoadWallet([this](std::unique_ptr<interfaces::Wallet> wallet) {
         getOrCreateWallet(std::move(wallet));
@@ -79,7 +74,7 @@ void WalletController::closeWallet(WalletModel* wallet_model, QWidget* parent)
     box.setWindowTitle(tr("Close wallet"));
     box.setText(tr("Are you sure you wish to close the wallet <i>%1</i>?").arg(GUIUtil::HtmlEscape(wallet_model->getDisplayName())));
     box.setInformativeText(tr("Closing the wallet for too long can result in having to resync the entire chain if pruning is enabled."));
-    box.setStandardButtons(QMessageBox::Yes|QMessageBox::Cancel);
+    box.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
     box.setDefaultButton(QMessageBox::Yes);
     if (box.exec() != QMessageBox::Yes) return;
 
@@ -120,11 +115,13 @@ WalletModel* WalletController::getOrCreateWallet(std::unique_ptr<interfaces::Wal
         // Defer removeAndDeleteWallet when no modal widget is active.
         // TODO: remove this workaround by removing usage of QDiallog::exec.
         if (QApplication::activeModalWidget()) {
-            connect(qApp, &QApplication::focusWindowChanged, wallet_model, [this, wallet_model]() {
-                if (!QApplication::activeModalWidget()) {
-                    removeAndDeleteWallet(wallet_model);
-                }
-            }, Qt::QueuedConnection);
+            connect(
+                qApp, &QApplication::focusWindowChanged, wallet_model, [this, wallet_model]() {
+                    if (!QApplication::activeModalWidget()) {
+                        removeAndDeleteWallet(wallet_model);
+                    }
+                },
+                Qt::QueuedConnection);
         } else {
             removeAndDeleteWallet(wallet_model);
         }
@@ -153,9 +150,7 @@ void WalletController::removeAndDeleteWallet(WalletModel* wallet_model)
 }
 
 WalletControllerActivity::WalletControllerActivity(WalletController* wallet_controller, QWidget* parent_widget)
-    : QObject(wallet_controller)
-    , m_wallet_controller(wallet_controller)
-    , m_parent_widget(parent_widget)
+    : QObject(wallet_controller), m_wallet_controller(wallet_controller), m_parent_widget(parent_widget)
 {
 }
 
@@ -285,7 +280,7 @@ void OpenWalletActivity::finish()
 
 void OpenWalletActivity::open(const std::string& path)
 {
-    QString name = path.empty() ? QString("["+tr("default wallet")+"]") : QString::fromStdString(path);
+    QString name = path.empty() ? QString("[" + tr("default wallet") + "]") : QString::fromStdString(path);
 
     showProgressDialog(tr("Opening Wallet <b>%1</b>...").arg(name.toHtmlEscaped()));
 

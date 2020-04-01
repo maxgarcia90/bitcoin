@@ -19,8 +19,8 @@
 #include <iterator>
 #include <map>
 #include <memory>
-#include <stdio.h>
 #include <set>
+#include <stdio.h>
 #include <string>
 
 #include <boost/algorithm/string.hpp> // boost::trim
@@ -34,14 +34,14 @@ static const char* WWW_AUTH_HEADER_DATA = "Basic realm=\"jsonrpc\"";
 class HTTPRPCTimer : public RPCTimerBase
 {
 public:
-    HTTPRPCTimer(struct event_base* eventBase, std::function<void()>& func, int64_t millis) :
-        ev(eventBase, false, func)
+    HTTPRPCTimer(struct event_base* eventBase, std::function<void()>& func, int64_t millis) : ev(eventBase, false, func)
     {
         struct timeval tv;
-        tv.tv_sec = millis/1000;
-        tv.tv_usec = (millis%1000)*1000;
+        tv.tv_sec = millis / 1000;
+        tv.tv_usec = (millis % 1000) * 1000;
         ev.trigger(&tv);
     }
+
 private:
     HTTPEvent ev;
 };
@@ -60,6 +60,7 @@ public:
     {
         return new HTTPRPCTimer(base, func, millis);
     }
+
 private:
     struct event_base* base;
 };
@@ -121,7 +122,7 @@ static bool multiUserAuthorized(std::string strUserPass)
         unsigned char out[KEY_SIZE];
 
         CHMAC_SHA256(reinterpret_cast<const unsigned char*>(strSalt.data()), strSalt.size()).Write(reinterpret_cast<const unsigned char*>(strPass.data()), strPass.size()).Finalize(out);
-        std::vector<unsigned char> hexvec(out, out+KEY_SIZE);
+        std::vector<unsigned char> hexvec(out, out + KEY_SIZE);
         std::string strHashFromPass = HexStr(hexvec);
 
         if (TimingResistantEqual(strHashFromPass, strHash)) {
@@ -151,7 +152,7 @@ static bool RPCAuthorized(const std::string& strAuth, std::string& strAuthUserna
     return multiUserAuthorized(strUserPass);
 }
 
-static bool HTTPReq_JSONRPC(HTTPRequest* req, const std::string &)
+static bool HTTPReq_JSONRPC(HTTPRequest* req, const std::string&)
 {
     // JSONRPC handles only POST
     if (req->GetRequestMethod() != HTTPRequest::POST) {
@@ -197,7 +198,7 @@ static bool HTTPReq_JSONRPC(HTTPRequest* req, const std::string &)
             req->WriteReply(HTTP_FORBIDDEN);
             return false;
 
-        // singleton request
+            // singleton request
         } else if (valRequest.isObject()) {
             jreq.parse(valRequest);
             if (user_has_whitelist && !g_rpc_whitelist[jreq.authUser].count(jreq.strMethod)) {
@@ -210,7 +211,7 @@ static bool HTTPReq_JSONRPC(HTTPRequest* req, const std::string &)
             // Send reply
             strReply = JSONRPCReply(result, NullUniValue, jreq.id);
 
-        // array of requests
+            // array of requests
         } else if (valRequest.isArray()) {
             if (user_has_whitelist) {
                 for (unsigned int reqIdx = 0; reqIdx < valRequest.size(); reqIdx++) {
@@ -229,8 +230,7 @@ static bool HTTPReq_JSONRPC(HTTPRequest* req, const std::string &)
                 }
             }
             strReply = JSONRPCExecBatch(jreq, valRequest.get_array());
-        }
-        else
+        } else
             throw JSONRPCError(RPC_PARSE_ERROR, "Top-level object parse error");
 
         req->WriteHeader("Content-Type", "application/json");
@@ -247,8 +247,7 @@ static bool HTTPReq_JSONRPC(HTTPRequest* req, const std::string &)
 
 static bool InitRPCAuthentication()
 {
-    if (gArgs.GetArg("-rpcpassword", "") == "")
-    {
+    if (gArgs.GetArg("-rpcpassword", "") == "") {
         LogPrintf("No rpcpassword set - using random cookie authentication.\n");
         if (!GenerateAuthCookie(&strRPCUserColonPass)) {
             uiInterface.ThreadSafeMessageBox(
@@ -260,8 +259,7 @@ static bool InitRPCAuthentication()
         LogPrintf("Config options rpcuser and rpcpassword will soon be deprecated. Locally-run instances may remove rpcuser to use cookie-based auth, or may be replaced with rpcauth. Please see share/rpcauth for rpcauth auth generation.\n");
         strRPCUserColonPass = gArgs.GetArg("-rpcuser", "") + ":" + gArgs.GetArg("-rpcpassword", "");
     }
-    if (gArgs.GetArg("-rpcauth","") != "")
-    {
+    if (gArgs.GetArg("-rpcauth", "") != "") {
         LogPrintf("Using rpcauth authentication.\n");
     }
 
@@ -278,7 +276,7 @@ static bool InitRPCAuthentication()
             if (intersect) {
                 std::set<std::string> tmp_whitelist;
                 std::set_intersection(new_whitelist.begin(), new_whitelist.end(),
-                       whitelist.begin(), whitelist.end(), std::inserter(tmp_whitelist, tmp_whitelist.end()));
+                    whitelist.begin(), whitelist.end(), std::inserter(tmp_whitelist, tmp_whitelist.end()));
                 new_whitelist = std::move(tmp_whitelist);
             }
             whitelist = std::move(new_whitelist);

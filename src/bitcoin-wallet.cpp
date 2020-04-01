@@ -41,12 +41,12 @@ static bool WalletAppInit(int argc, char* argv[])
     }
     if (argc < 2 || HelpRequested(gArgs)) {
         std::string usage = strprintf("%s bitcoin-wallet version", PACKAGE_NAME) + " " + FormatFullVersion() + "\n\n" +
-                                      "bitcoin-wallet is an offline tool for creating and interacting with " PACKAGE_NAME " wallet files.\n" +
-                                      "By default bitcoin-wallet will act on wallets in the default mainnet wallet directory in the datadir.\n" +
-                                      "To change the target wallet, use the -datadir, -wallet and -testnet/-regtest arguments.\n\n" +
-                                      "Usage:\n" +
-                                     "  bitcoin-wallet [options] <command>\n\n" +
-                                     gArgs.GetHelpMessage();
+                            "bitcoin-wallet is an offline tool for creating and interacting with " PACKAGE_NAME " wallet files.\n" +
+                            "By default bitcoin-wallet will act on wallets in the default mainnet wallet directory in the datadir.\n" +
+                            "To change the target wallet, use the -datadir, -wallet and -testnet/-regtest arguments.\n\n" +
+                            "Usage:\n" +
+                            "  bitcoin-wallet [options] <command>\n\n" +
+                            gArgs.GetHelpMessage();
 
         tfm::format(std::cout, "%s", usage);
         return false;
@@ -83,8 +83,8 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    std::string method {};
-    for(int i = 1; i < argc; ++i) {
+    std::string method{};
+    for (int i = 1; i < argc; ++i) {
         if (!IsSwitchChar(argv[i][0])) {
             if (!method.empty()) {
                 tfm::format(std::cerr, "Error: two methods provided (%s and %s). Only one method should be provided.\n", method, argv[i]);

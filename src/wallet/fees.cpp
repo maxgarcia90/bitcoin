@@ -40,19 +40,19 @@ CFeeRate GetMinimumFeeRate(const CWallet& wallet, const CCoinControl& coin_contr
         if (feeCalc) feeCalc->reason = FeeReason::PAYTXFEE;
         // Allow to override automatic min/max check over coin control instance
         if (coin_control.fOverrideFeeRate) return feerate_needed;
-    }
-    else if (!coin_control.m_confirm_target && wallet.m_pay_tx_fee != CFeeRate(0)) { // 3. TODO: remove magic value of 0 for wallet member m_pay_tx_fee
+    } else if (!coin_control.m_confirm_target && wallet.m_pay_tx_fee != CFeeRate(0)) { // 3. TODO: remove magic value of 0 for wallet member m_pay_tx_fee
         feerate_needed = wallet.m_pay_tx_fee;
         if (feeCalc) feeCalc->reason = FeeReason::PAYTXFEE;
-    }
-    else { // 2. or 4.
+    } else { // 2. or 4.
         // We will use smart fee estimation
         unsigned int target = coin_control.m_confirm_target ? *coin_control.m_confirm_target : wallet.m_confirm_target;
         // By default estimates are economical iff we are signaling opt-in-RBF
         bool conservative_estimate = !coin_control.m_signal_bip125_rbf.get_value_or(wallet.m_signal_rbf);
         // Allow to override the default fee estimate mode over the CoinControl instance
-        if (coin_control.m_fee_mode == FeeEstimateMode::CONSERVATIVE) conservative_estimate = true;
-        else if (coin_control.m_fee_mode == FeeEstimateMode::ECONOMICAL) conservative_estimate = false;
+        if (coin_control.m_fee_mode == FeeEstimateMode::CONSERVATIVE)
+            conservative_estimate = true;
+        else if (coin_control.m_fee_mode == FeeEstimateMode::ECONOMICAL)
+            conservative_estimate = false;
 
         feerate_needed = wallet.chain().estimateSmartFee(target, conservative_estimate, feeCalc);
         if (feerate_needed == CFeeRate(0)) {

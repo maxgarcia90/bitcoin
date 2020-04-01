@@ -3,12 +3,12 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
-#include <util/system.h>
+#include <boost/thread/thread.hpp>
 #include <checkqueue.h>
 #include <prevector.h>
-#include <vector>
-#include <boost/thread/thread.hpp>
 #include <random.h>
+#include <util/system.h>
+#include <vector>
 
 
 static const int MIN_CORES = 2;
@@ -24,21 +24,23 @@ static void CCheckQueueSpeedPrevectorJob(benchmark::State& state)
 {
     struct PrevectorJob {
         prevector<PREVECTOR_SIZE, uint8_t> p;
-        PrevectorJob(){
+        PrevectorJob()
+        {
         }
-        explicit PrevectorJob(FastRandomContext& insecure_rand){
-            p.resize(insecure_rand.randrange(PREVECTOR_SIZE*2));
+        explicit PrevectorJob(FastRandomContext& insecure_rand)
+        {
+            p.resize(insecure_rand.randrange(PREVECTOR_SIZE * 2));
         }
         bool operator()()
         {
             return true;
         }
-        void swap(PrevectorJob& x){p.swap(x.p);};
+        void swap(PrevectorJob& x) { p.swap(x.p); };
     };
-    CCheckQueue<PrevectorJob> queue {QUEUE_BATCH_SIZE};
+    CCheckQueue<PrevectorJob> queue{QUEUE_BATCH_SIZE};
     boost::thread_group tg;
     for (auto x = 0; x < std::max(MIN_CORES, GetNumCores()); ++x) {
-       tg.create_thread([&]{queue.Thread();});
+        tg.create_thread([&] { queue.Thread(); });
     }
     while (state.KeepRunning()) {
         // Make insecure_rand here so that each iteration is identical.

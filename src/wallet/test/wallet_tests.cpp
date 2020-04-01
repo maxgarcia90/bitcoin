@@ -182,7 +182,7 @@ BOOST_FIXTURE_TEST_CASE(importmulti_rescan, TestChain100Setup)
                       "by pruning or data corruption (see bitcoind log for details) and could be dealt with by "
                       "downloading and rescanning the relevant blocks (see -reindex and -rescan "
                       "options).\"}},{\"success\":true}]",
-                              0, oldTip->GetBlockTimeMax(), TIMESTAMP_WINDOW));
+                0, oldTip->GetBlockTimeMax(), TIMESTAMP_WINDOW));
         RemoveWallet(wallet);
     }
 }
@@ -286,7 +286,7 @@ BOOST_FIXTURE_TEST_CASE(coin_mark_dirty_immature_credit, TestChain100Setup)
     // credit amount is calculated.
     wtx.MarkDirty();
     BOOST_CHECK(spk_man->AddKeyPubKey(coinbaseKey, coinbaseKey.GetPubKey()));
-    BOOST_CHECK_EQUAL(wtx.GetImmatureCredit(), 50*COIN);
+    BOOST_CHECK_EQUAL(wtx.GetImmatureCredit(), 50 * COIN);
 }
 
 static int64_t AddTx(CWallet& wallet, uint32_t lockTime, int64_t mockTime, int64_t blockTime)
@@ -406,7 +406,7 @@ static void TestWatchOnlyPubKey(LegacyScriptPubKeyMan* spk_man, const CPubKey& a
 static void PollutePubKey(CPubKey& pubkey)
 {
     std::vector<unsigned char> pubkey_raw(pubkey.begin(), pubkey.end());
-    std::fill(pubkey_raw.begin()+1, pubkey_raw.end(), 0);
+    std::fill(pubkey_raw.begin() + 1, pubkey_raw.end(), 0);
     pubkey = CPubKey(pubkey_raw);
     assert(!pubkey.IsFullyValid());
     assert(pubkey.IsValid());

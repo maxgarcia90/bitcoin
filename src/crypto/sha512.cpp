@@ -9,11 +9,9 @@
 #include <string.h>
 
 // Internal implementation code.
-namespace
-{
+namespace {
 /// Internal SHA-512 implementation.
-namespace sha512
-{
+namespace sha512 {
 uint64_t inline Ch(uint64_t x, uint64_t y, uint64_t z) { return z ^ (x & (y ^ z)); }
 uint64_t inline Maj(uint64_t x, uint64_t y, uint64_t z) { return (x & y) | (z & (x | y)); }
 uint64_t inline Sigma0(uint64_t x) { return (x >> 28 | x << 36) ^ (x >> 34 | x << 30) ^ (x >> 39 | x << 25); }

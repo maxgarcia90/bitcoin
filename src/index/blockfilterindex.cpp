@@ -42,7 +42,8 @@ struct DBVal {
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
         READWRITE(hash);
         READWRITE(header);
         READWRITE(pos);
@@ -55,14 +56,14 @@ struct DBHeightKey {
     DBHeightKey() : height(0) {}
     explicit DBHeightKey(int height_in) : height(height_in) {}
 
-    template<typename Stream>
+    template <typename Stream>
     void Serialize(Stream& s) const
     {
         ser_writedata8(s, DB_BLOCK_HEIGHT);
         ser_writedata32be(s, height);
     }
 
-    template<typename Stream>
+    template <typename Stream>
     void Unserialize(Stream& s)
     {
         char prefix = ser_readdata8(s);
@@ -81,7 +82,8 @@ struct DBHashKey {
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
         char prefix = DB_BLOCK_HASH;
         READWRITE(prefix);
         if (prefix != DB_BLOCK_HASH) {
@@ -97,7 +99,9 @@ struct DBHashKey {
 static std::map<BlockFilterType, BlockFilterIndex> g_filter_indexes;
 
 BlockFilterIndex::BlockFilterIndex(BlockFilterType filter_type,
-                                   size_t n_cache_size, bool f_memory, bool f_wipe)
+    size_t n_cache_size,
+    bool f_memory,
+    bool f_wipe)
     : m_filter_type(filter_type)
 {
     const std::string& filter_name = BlockFilterTypeName(filter_type);
@@ -119,7 +123,7 @@ bool BlockFilterIndex::Init()
         // further corruption.
         if (m_db->Exists(DB_FILTER_POS)) {
             return error("%s: Cannot read current %s state; index may be corrupted",
-                         __func__, GetName());
+                __func__, GetName());
         }
 
         // If the DB_FILTER_POS is not set, then initialize to the first location.
@@ -158,8 +162,7 @@ bool BlockFilterIndex::ReadFilterFromDisk(const FlatFilePos& pos, BlockFilter& f
     try {
         filein >> block_hash >> encoded_filter;
         filter = BlockFilter(GetFilterType(), block_hash, std::move(encoded_filter));
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         return error("%s: Failed to deserialize block filter from disk: %s", __func__, e.what());
     }
 
@@ -230,7 +233,7 @@ bool BlockFilterIndex::WriteBlock(const CBlock& block, const CBlockIndex* pindex
         uint256 expected_block_hash = pindex->pprev->GetBlockHash();
         if (read_out.first != expected_block_hash) {
             return error("%s: previous block header belongs to unexpected block %s; expected %s",
-                         __func__, read_out.first.ToString(), expected_block_hash.ToString());
+                __func__, read_out.first.ToString(), expected_block_hash.ToString());
         }
 
         prev_header = read_out.second.header;
@@ -255,9 +258,7 @@ bool BlockFilterIndex::WriteBlock(const CBlock& block, const CBlockIndex* pindex
     return true;
 }
 
-static bool CopyHeightIndexToHashIndex(CDBIterator& db_it, CDBBatch& batch,
-                                       const std::string& index_name,
-                                       int start_height, int stop_height)
+static bool CopyHeightIndexToHashIndex(CDBIterator& db_it, CDBBatch& batch, const std::string& index_name, int start_height, int stop_height)
 {
     DBHeightKey key(start_height);
     db_it.Seek(key);
@@ -265,13 +266,13 @@ static bool CopyHeightIndexToHashIndex(CDBIterator& db_it, CDBBatch& batch,
     for (int height = start_height; height <= stop_height; ++height) {
         if (!db_it.GetKey(key) || key.height != height) {
             return error("%s: unexpected key in %s: expected (%c, %d)",
-                         __func__, index_name, DB_BLOCK_HEIGHT, height);
+                __func__, index_name, DB_BLOCK_HEIGHT, height);
         }
 
         std::pair<uint256, DBVal> value;
         if (!db_it.GetValue(value)) {
             return error("%s: unable to read value in %s at key (%c, %d)",
-                         __func__, index_name, DB_BLOCK_HEIGHT, height);
+                __func__, index_name, DB_BLOCK_HEIGHT, height);
         }
 
         batch.Write(DBHashKey(value.first), std::move(value.second));
@@ -322,15 +323,14 @@ static bool LookupOne(const CDBWrapper& db, const CBlockIndex* block_index, DBVa
     return db.Read(DBHashKey(block_index->GetBlockHash()), result);
 }
 
-static bool LookupRange(CDBWrapper& db, const std::string& index_name, int start_height,
-                        const CBlockIndex* stop_index, std::vector<DBVal>& results)
+static bool LookupRange(CDBWrapper& db, const std::string& index_name, int start_height, const CBlockIndex* stop_index, std::vector<DBVal>& results)
 {
     if (start_height < 0) {
         return error("%s: start height (%d) is negative", __func__, start_height);
     }
     if (start_height > stop_index->nHeight) {
         return error("%s: start height (%d) is greater than stop height (%d)",
-                     __func__, start_height, stop_index->nHeight);
+            __func__, start_height, stop_index->nHeight);
     }
 
     size_t results_size = static_cast<size_t>(stop_index->nHeight - start_height + 1);
@@ -347,7 +347,7 @@ static bool LookupRange(CDBWrapper& db, const std::string& index_name, int start
         size_t i = static_cast<size_t>(height - start_height);
         if (!db_it->GetValue(values[i])) {
             return error("%s: unable to read value in %s at key (%c, %d)",
-                         __func__, index_name, DB_BLOCK_HEIGHT, height);
+                __func__, index_name, DB_BLOCK_HEIGHT, height);
         }
 
         db_it->Next();
@@ -370,7 +370,7 @@ static bool LookupRange(CDBWrapper& db, const std::string& index_name, int start
 
         if (!db.Read(DBHashKey(block_hash), results[i])) {
             return error("%s: unable to read value in %s at key (%c, %s)",
-                         __func__, index_name, DB_BLOCK_HASH, block_hash.ToString());
+                __func__, index_name, DB_BLOCK_HASH, block_hash.ToString());
         }
     }
 
@@ -398,8 +398,7 @@ bool BlockFilterIndex::LookupFilterHeader(const CBlockIndex* block_index, uint25
     return true;
 }
 
-bool BlockFilterIndex::LookupFilterRange(int start_height, const CBlockIndex* stop_index,
-                                         std::vector<BlockFilter>& filters_out) const
+bool BlockFilterIndex::LookupFilterRange(int start_height, const CBlockIndex* stop_index, std::vector<BlockFilter>& filters_out) const
 {
     std::vector<DBVal> entries;
     if (!LookupRange(*m_db, m_name, start_height, stop_index, entries)) {
@@ -418,8 +417,7 @@ bool BlockFilterIndex::LookupFilterRange(int start_height, const CBlockIndex* st
     return true;
 }
 
-bool BlockFilterIndex::LookupFilterHashRange(int start_height, const CBlockIndex* stop_index,
-                                             std::vector<uint256>& hashes_out) const
+bool BlockFilterIndex::LookupFilterHashRange(int start_height, const CBlockIndex* stop_index, std::vector<uint256>& hashes_out) const
 
 {
     std::vector<DBVal> entries;
@@ -441,18 +439,21 @@ BlockFilterIndex* GetBlockFilterIndex(BlockFilterType filter_type)
     return it != g_filter_indexes.end() ? &it->second : nullptr;
 }
 
-void ForEachBlockFilterIndex(std::function<void (BlockFilterIndex&)> fn)
+void ForEachBlockFilterIndex(std::function<void(BlockFilterIndex&)> fn)
 {
-    for (auto& entry : g_filter_indexes) fn(entry.second);
+    for (auto& entry : g_filter_indexes)
+        fn(entry.second);
 }
 
 bool InitBlockFilterIndex(BlockFilterType filter_type,
-                          size_t n_cache_size, bool f_memory, bool f_wipe)
+    size_t n_cache_size,
+    bool f_memory,
+    bool f_wipe)
 {
     auto result = g_filter_indexes.emplace(std::piecewise_construct,
-                                           std::forward_as_tuple(filter_type),
-                                           std::forward_as_tuple(filter_type,
-                                                                 n_cache_size, f_memory, f_wipe));
+        std::forward_as_tuple(filter_type),
+        std::forward_as_tuple(filter_type,
+            n_cache_size, f_memory, f_wipe));
     return result.second;
 }
 

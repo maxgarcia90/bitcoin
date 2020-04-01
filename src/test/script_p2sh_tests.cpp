@@ -4,14 +4,14 @@
 
 #include <consensus/tx_verify.h>
 #include <key.h>
-#include <validation.h>
 #include <policy/policy.h>
+#include <policy/settings.h>
 #include <script/script.h>
 #include <script/script_error.h>
-#include <policy/settings.h>
 #include <script/sign.h>
 #include <script/signingprovider.h>
 #include <test/util/setup_common.h>
+#include <validation.h>
 
 #include <vector>
 
@@ -57,8 +57,7 @@ BOOST_AUTO_TEST_CASE(sign)
     // Test SignSignature() (and therefore the version of Solver() that signs transactions)
     FillableSigningProvider keystore;
     CKey key[4];
-    for (int i = 0; i < 4; i++)
-    {
+    for (int i = 0; i < 4; i++) {
         key[i].MakeNewKey(true);
         BOOST_CHECK(keystore.AddKey(key[i]));
     }
@@ -71,43 +70,38 @@ BOOST_AUTO_TEST_CASE(sign)
     standardScripts[2] << ToByteVector(key[1].GetPubKey()) << OP_CHECKSIG;
     standardScripts[3] = GetScriptForDestination(PKHash(key[2].GetPubKey()));
     CScript evalScripts[4];
-    for (int i = 0; i < 4; i++)
-    {
+    for (int i = 0; i < 4; i++) {
         BOOST_CHECK(keystore.AddCScript(standardScripts[i]));
         evalScripts[i] = GetScriptForDestination(ScriptHash(standardScripts[i]));
     }
 
-    CMutableTransaction txFrom;  // Funding transaction:
+    CMutableTransaction txFrom; // Funding transaction:
     std::string reason;
     txFrom.vout.resize(8);
-    for (int i = 0; i < 4; i++)
-    {
+    for (int i = 0; i < 4; i++) {
         txFrom.vout[i].scriptPubKey = evalScripts[i];
         txFrom.vout[i].nValue = COIN;
-        txFrom.vout[i+4].scriptPubKey = standardScripts[i];
-        txFrom.vout[i+4].nValue = COIN;
+        txFrom.vout[i + 4].scriptPubKey = standardScripts[i];
+        txFrom.vout[i + 4].nValue = COIN;
     }
     BOOST_CHECK(IsStandardTx(CTransaction(txFrom), reason));
 
     CMutableTransaction txTo[8]; // Spending transactions
-    for (int i = 0; i < 8; i++)
-    {
+    for (int i = 0; i < 8; i++) {
         txTo[i].vin.resize(1);
         txTo[i].vout.resize(1);
         txTo[i].vin[0].prevout.n = i;
         txTo[i].vin[0].prevout.hash = txFrom.GetHash();
         txTo[i].vout[0].nValue = 1;
     }
-    for (int i = 0; i < 8; i++)
-    {
+    for (int i = 0; i < 8; i++) {
         BOOST_CHECK_MESSAGE(SignSignature(keystore, CTransaction(txFrom), txTo[i], 0, SIGHASH_ALL), strprintf("SignSignature %d", i));
     }
     // All of the above should be OK, and the txTos have valid signatures
     // Check to make sure signature verification fails if we use the wrong ScriptSig:
     for (int i = 0; i < 8; i++) {
         PrecomputedTransactionData txdata(txTo[i]);
-        for (int j = 0; j < 8; j++)
-        {
+        for (int j = 0; j < 8; j++) {
             CScript sigSave = txTo[i].vin[0].scriptSig;
             txTo[i].vin[0].scriptSig = txTo[j].vin[0].scriptSig;
             bool sigOK = CScriptCheck(txFrom.vout[txTo[i].vin[0].prevout.n], CTransaction(txTo[i]), 0, SCRIPT_VERIFY_P2SH | SCRIPT_VERIFY_STRICTENC, false, &txdata)();
@@ -154,8 +148,7 @@ BOOST_AUTO_TEST_CASE(set)
     FillableSigningProvider keystore;
     CKey key[4];
     std::vector<CPubKey> keys;
-    for (int i = 0; i < 4; i++)
-    {
+    for (int i = 0; i < 4; i++) {
         key[i].MakeNewKey(true);
         BOOST_CHECK(keystore.AddKey(key[i]));
         keys.push_back(key[i].GetPubKey());
@@ -163,39 +156,35 @@ BOOST_AUTO_TEST_CASE(set)
 
     CScript inner[4];
     inner[0] = GetScriptForDestination(PKHash(key[0].GetPubKey()));
-    inner[1] = GetScriptForMultisig(2, std::vector<CPubKey>(keys.begin(), keys.begin()+2));
-    inner[2] = GetScriptForMultisig(1, std::vector<CPubKey>(keys.begin(), keys.begin()+2));
-    inner[3] = GetScriptForMultisig(2, std::vector<CPubKey>(keys.begin(), keys.begin()+3));
+    inner[1] = GetScriptForMultisig(2, std::vector<CPubKey>(keys.begin(), keys.begin() + 2));
+    inner[2] = GetScriptForMultisig(1, std::vector<CPubKey>(keys.begin(), keys.begin() + 2));
+    inner[3] = GetScriptForMultisig(2, std::vector<CPubKey>(keys.begin(), keys.begin() + 3));
 
     CScript outer[4];
-    for (int i = 0; i < 4; i++)
-    {
+    for (int i = 0; i < 4; i++) {
         outer[i] = GetScriptForDestination(ScriptHash(inner[i]));
         BOOST_CHECK(keystore.AddCScript(inner[i]));
     }
 
-    CMutableTransaction txFrom;  // Funding transaction:
+    CMutableTransaction txFrom; // Funding transaction:
     std::string reason;
     txFrom.vout.resize(4);
-    for (int i = 0; i < 4; i++)
-    {
+    for (int i = 0; i < 4; i++) {
         txFrom.vout[i].scriptPubKey = outer[i];
         txFrom.vout[i].nValue = CENT;
     }
     BOOST_CHECK(IsStandardTx(CTransaction(txFrom), reason));
 
     CMutableTransaction txTo[4]; // Spending transactions
-    for (int i = 0; i < 4; i++)
-    {
+    for (int i = 0; i < 4; i++) {
         txTo[i].vin.resize(1);
         txTo[i].vout.resize(1);
         txTo[i].vin[0].prevout.n = i;
         txTo[i].vin[0].prevout.hash = txFrom.GetHash();
-        txTo[i].vout[0].nValue = 1*CENT;
+        txTo[i].vout[0].nValue = 1 * CENT;
         txTo[i].vout[0].scriptPubKey = inner[i];
     }
-    for (int i = 0; i < 4; i++)
-    {
+    for (int i = 0; i < 4; i++) {
         BOOST_CHECK_MESSAGE(SignSignature(keystore, CTransaction(txFrom), txTo[i], 0, SIGHASH_ALL), strprintf("SignSignature %d", i));
         BOOST_CHECK_MESSAGE(IsStandardTx(CTransaction(txTo[i]), reason), strprintf("txTo[%d].IsStandard", i));
     }
@@ -231,13 +220,16 @@ BOOST_AUTO_TEST_CASE(is)
     CScript not_p2sh;
     BOOST_CHECK(!not_p2sh.IsPayToScriptHash());
 
-    not_p2sh.clear(); not_p2sh << OP_HASH160 << ToByteVector(dummy) << ToByteVector(dummy) << OP_EQUAL;
+    not_p2sh.clear();
+    not_p2sh << OP_HASH160 << ToByteVector(dummy) << ToByteVector(dummy) << OP_EQUAL;
     BOOST_CHECK(!not_p2sh.IsPayToScriptHash());
 
-    not_p2sh.clear(); not_p2sh << OP_NOP << ToByteVector(dummy) << OP_EQUAL;
+    not_p2sh.clear();
+    not_p2sh << OP_NOP << ToByteVector(dummy) << OP_EQUAL;
     BOOST_CHECK(!not_p2sh.IsPayToScriptHash());
 
-    not_p2sh.clear(); not_p2sh << OP_HASH160 << ToByteVector(dummy) << OP_CHECKSIG;
+    not_p2sh.clear();
+    not_p2sh << OP_HASH160 << ToByteVector(dummy) << OP_CHECKSIG;
     BOOST_CHECK(!not_p2sh.IsPayToScriptHash());
 }
 
@@ -269,8 +261,7 @@ BOOST_AUTO_TEST_CASE(AreInputsStandard)
     FillableSigningProvider keystore;
     CKey key[6];
     std::vector<CPubKey> keys;
-    for (int i = 0; i < 6; i++)
-    {
+    for (int i = 0; i < 6; i++) {
         key[i].MakeNewKey(true);
         BOOST_CHECK(keystore.AddKey(key[i]));
     }
@@ -304,20 +295,23 @@ BOOST_AUTO_TEST_CASE(AreInputsStandard)
     txFrom.vout[3].nValue = 4000;
 
     // vout[4] is max sigops:
-    CScript fifteenSigops; fifteenSigops << OP_1;
+    CScript fifteenSigops;
+    fifteenSigops << OP_1;
     for (unsigned i = 0; i < MAX_P2SH_SIGOPS; i++)
-        fifteenSigops << ToByteVector(key[i%3].GetPubKey());
+        fifteenSigops << ToByteVector(key[i % 3].GetPubKey());
     fifteenSigops << OP_15 << OP_CHECKMULTISIG;
     BOOST_CHECK(keystore.AddCScript(fifteenSigops));
     txFrom.vout[4].scriptPubKey = GetScriptForDestination(ScriptHash(fifteenSigops));
     txFrom.vout[4].nValue = 5000;
 
     // vout[5/6] are non-standard because they exceed MAX_P2SH_SIGOPS
-    CScript sixteenSigops; sixteenSigops << OP_16 << OP_CHECKMULTISIG;
+    CScript sixteenSigops;
+    sixteenSigops << OP_16 << OP_CHECKMULTISIG;
     BOOST_CHECK(keystore.AddCScript(sixteenSigops));
     txFrom.vout[5].scriptPubKey = GetScriptForDestination(ScriptHash(sixteenSigops));
     txFrom.vout[5].nValue = 5000;
-    CScript twentySigops; twentySigops << OP_CHECKMULTISIG;
+    CScript twentySigops;
+    twentySigops << OP_CHECKMULTISIG;
     BOOST_CHECK(keystore.AddCScript(twentySigops));
     txFrom.vout[6].scriptPubKey = GetScriptForDestination(ScriptHash(twentySigops));
     txFrom.vout[6].nValue = 6000;
@@ -329,8 +323,7 @@ BOOST_AUTO_TEST_CASE(AreInputsStandard)
     txTo.vout[0].scriptPubKey = GetScriptForDestination(PKHash(key[1].GetPubKey()));
 
     txTo.vin.resize(5);
-    for (int i = 0; i < 5; i++)
-    {
+    for (int i = 0; i < 5; i++) {
         txTo.vin[i].prevout.n = i;
         txTo.vin[i].prevout.hash = txFrom.GetHash();
     }

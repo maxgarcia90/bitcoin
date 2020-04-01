@@ -8,9 +8,8 @@
 
 #ifdef ENABLE_SHANI
 
-#include <stdint.h>
 #include <immintrin.h>
-
+#include <stdint.h>
 
 
 namespace {
@@ -19,26 +18,26 @@ const __m128i MASK = _mm_set_epi64x(0x0c0d0e0f08090a0bULL, 0x0405060700010203ULL
 const __m128i INIT0 = _mm_set_epi64x(0x6a09e667bb67ae85ull, 0x510e527f9b05688cull);
 const __m128i INIT1 = _mm_set_epi64x(0x3c6ef372a54ff53aull, 0x1f83d9ab5be0cd19ull);
 
-void inline  __attribute__((always_inline)) QuadRound(__m128i& state0, __m128i& state1, uint64_t k1, uint64_t k0)
+void inline __attribute__((always_inline)) QuadRound(__m128i& state0, __m128i& state1, uint64_t k1, uint64_t k0)
 {
     const __m128i msg = _mm_set_epi64x(k1, k0);
     state1 = _mm_sha256rnds2_epu32(state1, state0, msg);
     state0 = _mm_sha256rnds2_epu32(state0, state1, _mm_shuffle_epi32(msg, 0x0e));
 }
 
-void inline  __attribute__((always_inline)) QuadRound(__m128i& state0, __m128i& state1, __m128i m, uint64_t k1, uint64_t k0)
+void inline __attribute__((always_inline)) QuadRound(__m128i& state0, __m128i& state1, __m128i m, uint64_t k1, uint64_t k0)
 {
     const __m128i msg = _mm_add_epi32(m, _mm_set_epi64x(k1, k0));
     state1 = _mm_sha256rnds2_epu32(state1, state0, msg);
     state0 = _mm_sha256rnds2_epu32(state0, state1, _mm_shuffle_epi32(msg, 0x0e));
 }
 
-void inline  __attribute__((always_inline)) ShiftMessageA(__m128i& m0, __m128i m1)
+void inline __attribute__((always_inline)) ShiftMessageA(__m128i& m0, __m128i m1)
 {
     m0 = _mm_sha256msg1_epu32(m0, m1);
 }
 
-void inline  __attribute__((always_inline)) ShiftMessageC(__m128i& m0, __m128i m1, __m128i& m2)
+void inline __attribute__((always_inline)) ShiftMessageC(__m128i& m0, __m128i m1, __m128i& m2)
 {
     m2 = _mm_sha256msg2_epu32(_mm_add_epi32(m2, _mm_alignr_epi8(m1, m0, 4)), m1);
 }
@@ -65,16 +64,16 @@ void inline __attribute__((always_inline)) Unshuffle(__m128i& s0, __m128i& s1)
     s1 = _mm_alignr_epi8(t2, t1, 0x08);
 }
 
-__m128i inline  __attribute__((always_inline)) Load(const unsigned char* in)
+__m128i inline __attribute__((always_inline)) Load(const unsigned char* in)
 {
     return _mm_shuffle_epi8(_mm_loadu_si128((const __m128i*)in), MASK);
 }
 
-void inline  __attribute__((always_inline)) Save(unsigned char* out, __m128i s)
+void inline __attribute__((always_inline)) Save(unsigned char* out, __m128i s)
 {
     _mm_storeu_si128((__m128i*)out, _mm_shuffle_epi8(s, MASK));
 }
-}
+} // namespace
 
 namespace sha256_shani {
 void Transform(uint32_t* s, const unsigned char* chunk, size_t blocks)
@@ -139,7 +138,7 @@ void Transform(uint32_t* s, const unsigned char* chunk, size_t blocks)
     _mm_storeu_si128((__m128i*)s, s0);
     _mm_storeu_si128((__m128i*)(s + 4), s1);
 }
-}
+} // namespace sha256_shani
 
 namespace sha256d64_shani {
 
@@ -353,6 +352,6 @@ void Transform_2way(unsigned char* out, const unsigned char* in)
     Save(out + 48, bs1);
 }
 
-}
+} // namespace sha256d64_shani
 
 #endif

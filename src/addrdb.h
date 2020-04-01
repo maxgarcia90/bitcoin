@@ -10,24 +10,23 @@
 #include <net_types.h> // For banmap_t
 #include <serialize.h>
 
-#include <string>
 #include <map>
+#include <string>
 
 class CSubNet;
 class CAddrMan;
 class CDataStream;
 
-typedef enum BanReason
-{
-    BanReasonUnknown          = 0,
-    BanReasonNodeMisbehaving  = 1,
-    BanReasonManuallyAdded    = 2
+typedef enum BanReason {
+    BanReasonUnknown = 0,
+    BanReasonNodeMisbehaving = 1,
+    BanReasonManuallyAdded = 2
 } BanReason;
 
 class CBanEntry
 {
 public:
-    static const int CURRENT_VERSION=1;
+    static const int CURRENT_VERSION = 1;
     int nVersion;
     int64_t nCreateTime;
     int64_t nBanUntil;
@@ -77,6 +76,7 @@ class CAddrDB
 {
 private:
     fs::path pathAddr;
+
 public:
     CAddrDB();
     bool Write(const CAddrMan& addr);
@@ -89,6 +89,7 @@ class CBanDB
 {
 private:
     const fs::path m_ban_list_path;
+
 public:
     explicit CBanDB(fs::path ban_list_path);
     bool Write(const banmap_t& banSet);

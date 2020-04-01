@@ -4,8 +4,8 @@
 
 #include <consensus/tx_check.h>
 
-#include <primitives/transaction.h>
 #include <consensus/validation.h>
+#include <primitives/transaction.h>
 
 bool CheckTransaction(const CTransaction& tx, TxValidationState& state)
 {
@@ -20,8 +20,7 @@ bool CheckTransaction(const CTransaction& tx, TxValidationState& state)
 
     // Check for negative or overflow output values (see CVE-2010-5139)
     CAmount nValueOut = 0;
-    for (const auto& txout : tx.vout)
-    {
+    for (const auto& txout : tx.vout) {
         if (txout.nValue < 0)
             return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-txns-vout-negative");
         if (txout.nValue > MAX_MONEY)
@@ -42,13 +41,10 @@ bool CheckTransaction(const CTransaction& tx, TxValidationState& state)
             return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-txns-inputs-duplicate");
     }
 
-    if (tx.IsCoinBase())
-    {
+    if (tx.IsCoinBase()) {
         if (tx.vin[0].scriptSig.size() < 2 || tx.vin[0].scriptSig.size() > 100)
             return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-cb-length");
-    }
-    else
-    {
+    } else {
         for (const auto& txin : tx.vin)
             if (txin.prevout.IsNull())
                 return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-txns-prevout-null");

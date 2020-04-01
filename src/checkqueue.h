@@ -159,7 +159,6 @@ public:
     ~CCheckQueue()
     {
     }
-
 };
 
 /**
@@ -170,14 +169,14 @@ template <typename T>
 class CCheckQueueControl
 {
 private:
-    CCheckQueue<T> * const pqueue;
+    CCheckQueue<T>* const pqueue;
     bool fDone;
 
 public:
     CCheckQueueControl() = delete;
     CCheckQueueControl(const CCheckQueueControl&) = delete;
     CCheckQueueControl& operator=(const CCheckQueueControl&) = delete;
-    explicit CCheckQueueControl(CCheckQueue<T> * const pqueueIn) : pqueue(pqueueIn), fDone(false)
+    explicit CCheckQueueControl(CCheckQueue<T>* const pqueueIn) : pqueue(pqueueIn), fDone(false)
     {
         // passed queue is supposed to be unused, or nullptr
         if (pqueue != nullptr) {

@@ -10,10 +10,9 @@
 #include <tinyformat.h>
 #include <util/system.h>
 
-FlatFileSeq::FlatFileSeq(fs::path dir, const char* prefix, size_t chunk_size) :
-    m_dir(std::move(dir)),
-    m_prefix(prefix),
-    m_chunk_size(chunk_size)
+FlatFileSeq::FlatFileSeq(fs::path dir, const char* prefix, size_t chunk_size) : m_dir(std::move(dir)),
+                                                                                m_prefix(prefix),
+                                                                                m_chunk_size(chunk_size)
 {
     if (chunk_size == 0) {
         throw std::invalid_argument("chunk_size must be positive");
@@ -37,7 +36,7 @@ FILE* FlatFileSeq::Open(const FlatFilePos& pos, bool read_only)
     }
     fs::path path = FileName(pos);
     fs::create_directories(path.parent_path());
-    FILE* file = fsbridge::fopen(path, read_only ? "rb": "rb+");
+    FILE* file = fsbridge::fopen(path, read_only ? "rb" : "rb+");
     if (!file && !read_only)
         file = fsbridge::fopen(path, "wb+");
     if (!file) {
@@ -64,7 +63,7 @@ size_t FlatFileSeq::Allocate(const FlatFilePos& pos, size_t add_size, bool& out_
         size_t inc_size = new_size - old_size;
 
         if (CheckDiskSpace(m_dir, inc_size)) {
-            FILE *file = Open(pos);
+            FILE* file = Open(pos);
             if (file) {
                 LogPrintf("Pre-allocating up to position 0x%x in %s%05u.dat\n", new_size, m_prefix, pos.nFile);
                 AllocateFileRange(file, pos.nPos, inc_size);

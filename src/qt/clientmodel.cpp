@@ -25,13 +25,12 @@
 static int64_t nLastHeaderTipUpdateNotification = 0;
 static int64_t nLastBlockTipUpdateNotification = 0;
 
-ClientModel::ClientModel(interfaces::Node& node, OptionsModel *_optionsModel, QObject *parent) :
-    QObject(parent),
-    m_node(node),
-    optionsModel(_optionsModel),
-    peerTableModel(nullptr),
-    banTableModel(nullptr),
-    m_thread(new QThread(this))
+ClientModel::ClientModel(interfaces::Node& node, OptionsModel* _optionsModel, QObject* parent) : QObject(parent),
+                                                                                                 m_node(node),
+                                                                                                 optionsModel(_optionsModel),
+                                                                                                 peerTableModel(nullptr),
+                                                                                                 banTableModel(nullptr),
+                                                                                                 m_thread(new QThread(this))
 {
     cachedBestHeaderHeight = -1;
     cachedBestHeaderTime = -1;
@@ -67,7 +66,7 @@ int ClientModel::getNumConnections(unsigned int flags) const
 {
     CConnman::NumConnections connections = CConnman::CONNECTIONS_NONE;
 
-    if(flags == CONNECTIONS_IN)
+    if (flags == CONNECTIONS_IN)
         connections = CConnman::CONNECTIONS_IN;
     else if (flags == CONNECTIONS_OUT)
         connections = CConnman::CONNECTIONS_OUT;
@@ -137,17 +136,17 @@ QString ClientModel::getStatusBarWarnings() const
     return QString::fromStdString(m_node.getWarnings());
 }
 
-OptionsModel *ClientModel::getOptionsModel()
+OptionsModel* ClientModel::getOptionsModel()
 {
     return optionsModel;
 }
 
-PeerTableModel *ClientModel::getPeerTableModel()
+PeerTableModel* ClientModel::getPeerTableModel()
 {
     return peerTableModel;
 }
 
-BanTableModel *ClientModel::getBanTableModel()
+BanTableModel* ClientModel::getBanTableModel()
 {
     return banTableModel;
 }
@@ -188,45 +187,45 @@ void ClientModel::updateBanlist()
 }
 
 // Handlers for core signals
-static void ShowProgress(ClientModel *clientmodel, const std::string &title, int nProgress)
+static void ShowProgress(ClientModel* clientmodel, const std::string& title, int nProgress)
 {
     // emits signal "showProgress"
     bool invoked = QMetaObject::invokeMethod(clientmodel, "showProgress", Qt::QueuedConnection,
-                              Q_ARG(QString, QString::fromStdString(title)),
-                              Q_ARG(int, nProgress));
+        Q_ARG(QString, QString::fromStdString(title)),
+        Q_ARG(int, nProgress));
     assert(invoked);
 }
 
-static void NotifyNumConnectionsChanged(ClientModel *clientmodel, int newNumConnections)
+static void NotifyNumConnectionsChanged(ClientModel* clientmodel, int newNumConnections)
 {
     // Too noisy: qDebug() << "NotifyNumConnectionsChanged: " + QString::number(newNumConnections);
     bool invoked = QMetaObject::invokeMethod(clientmodel, "updateNumConnections", Qt::QueuedConnection,
-                              Q_ARG(int, newNumConnections));
+        Q_ARG(int, newNumConnections));
     assert(invoked);
 }
 
-static void NotifyNetworkActiveChanged(ClientModel *clientmodel, bool networkActive)
+static void NotifyNetworkActiveChanged(ClientModel* clientmodel, bool networkActive)
 {
     bool invoked = QMetaObject::invokeMethod(clientmodel, "updateNetworkActive", Qt::QueuedConnection,
-                              Q_ARG(bool, networkActive));
+        Q_ARG(bool, networkActive));
     assert(invoked);
 }
 
-static void NotifyAlertChanged(ClientModel *clientmodel)
+static void NotifyAlertChanged(ClientModel* clientmodel)
 {
     qDebug() << "NotifyAlertChanged";
     bool invoked = QMetaObject::invokeMethod(clientmodel, "updateAlert", Qt::QueuedConnection);
     assert(invoked);
 }
 
-static void BannedListChanged(ClientModel *clientmodel)
+static void BannedListChanged(ClientModel* clientmodel)
 {
     qDebug() << QString("%1: Requesting update for peer banlist").arg(__func__);
     bool invoked = QMetaObject::invokeMethod(clientmodel, "updateBanlist", Qt::QueuedConnection);
     assert(invoked);
 }
 
-static void BlockTipChanged(ClientModel *clientmodel, bool initialSync, int height, int64_t blockTime, double verificationProgress, bool fHeader)
+static void BlockTipChanged(ClientModel* clientmodel, bool initialSync, int height, int64_t blockTime, double verificationProgress, bool fHeader)
 {
     // lock free async UI updates in case we have a new block tip
     // during initial sync, only update the UI if the last update
@@ -247,10 +246,10 @@ static void BlockTipChanged(ClientModel *clientmodel, bool initialSync, int heig
     if (!initialSync || (fHeader && !clientmodel->node().getReindex()) || now - nLastUpdateNotification > MODEL_UPDATE_DELAY) {
         //pass an async signal to the UI thread
         bool invoked = QMetaObject::invokeMethod(clientmodel, "numBlocksChanged", Qt::QueuedConnection,
-                                  Q_ARG(int, height),
-                                  Q_ARG(QDateTime, QDateTime::fromTime_t(blockTime)),
-                                  Q_ARG(double, verificationProgress),
-                                  Q_ARG(bool, fHeader));
+            Q_ARG(int, height),
+            Q_ARG(QDateTime, QDateTime::fromTime_t(blockTime)),
+            Q_ARG(double, verificationProgress),
+            Q_ARG(bool, fHeader));
         assert(invoked);
         nLastUpdateNotification = now;
     }
@@ -283,9 +282,9 @@ void ClientModel::unsubscribeFromCoreSignals()
 bool ClientModel::getProxyInfo(std::string& ip_port) const
 {
     proxyType ipv4, ipv6;
-    if (m_node.getProxy((Network) 1, ipv4) && m_node.getProxy((Network) 2, ipv6)) {
-      ip_port = ipv4.proxy.ToStringIPPort();
-      return true;
+    if (m_node.getProxy((Network)1, ipv4) && m_node.getProxy((Network)2, ipv6)) {
+        ip_port = ipv4.proxy.ToStringIPPort();
+        return true;
     }
     return false;
 }

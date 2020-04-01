@@ -107,7 +107,7 @@ TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(cha
 
     // We have to run a scheduler thread to prevent ActivateBestChain
     // from blocking due to queue overrun.
-    threadGroup.create_thread([&]{ m_node.scheduler->serviceQueue(); });
+    threadGroup.create_thread([&] { m_node.scheduler->serviceQueue(); });
     GetMainSignals().RegisterBackgroundSignalScheduler(*g_rpc_node->scheduler);
 
     pblocktree.reset(new CBlockTreeDB(1 << 20, true));
@@ -165,9 +165,8 @@ TestChain100Setup::TestChain100Setup()
 
     // Generate a 100-block chain:
     coinbaseKey.MakeNewKey(true);
-    CScript scriptPubKey = CScript() <<  ToByteVector(coinbaseKey.GetPubKey()) << OP_CHECKSIG;
-    for (int i = 0; i < COINBASE_MATURITY; i++)
-    {
+    CScript scriptPubKey = CScript() << ToByteVector(coinbaseKey.GetPubKey()) << OP_CHECKSIG;
+    for (int i = 0; i < COINBASE_MATURITY; i++) {
         std::vector<CMutableTransaction> noTxns;
         CBlock b = CreateAndProcessBlock(noTxns, scriptPubKey);
         m_coinbase_txns.push_back(b.vtx[0]);
@@ -193,7 +192,8 @@ CBlock TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransa
         IncrementExtraNonce(&block, ::ChainActive().Tip(), extraNonce);
     }
 
-    while (!CheckProofOfWork(block.GetHash(), block.nBits, chainparams.GetConsensus())) ++block.nNonce;
+    while (!CheckProofOfWork(block.GetHash(), block.nBits, chainparams.GetConsensus()))
+        ++block.nNonce;
 
     std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(block);
     ProcessNewBlock(chainparams, shared_pblock, true, nullptr);
@@ -208,14 +208,15 @@ TestChain100Setup::~TestChain100Setup()
 }
 
 
-CTxMemPoolEntry TestMemPoolEntryHelper::FromTx(const CMutableTransaction &tx) {
+CTxMemPoolEntry TestMemPoolEntryHelper::FromTx(const CMutableTransaction& tx)
+{
     return FromTx(MakeTransactionRef(tx));
 }
 
 CTxMemPoolEntry TestMemPoolEntryHelper::FromTx(const CTransactionRef& tx)
 {
     return CTxMemPoolEntry(tx, nFee, nTime, nHeight,
-                           spendsCoinbase, sigOpCost, lp);
+        spendsCoinbase, sigOpCost, lp);
 }
 
 /**

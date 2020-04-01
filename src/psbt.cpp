@@ -352,13 +352,15 @@ TransactionError CombinePSBTs(PartiallySignedTransaction& out, const std::vector
     return TransactionError::OK;
 }
 
-std::string PSBTRoleName(PSBTRole role) {
+std::string PSBTRoleName(PSBTRole role)
+{
     switch (role) {
     case PSBTRole::CREATOR: return "creator";
     case PSBTRole::UPDATER: return "updater";
     case PSBTRole::SIGNER: return "signer";
     case PSBTRole::FINALIZER: return "finalizer";
-    case PSBTRole::EXTRACTOR: return "extractor";
+    case PSBTRole::EXTRACTOR:
+        return "extractor";
         // no default case, so the compiler can warn about missing cases
     }
     assert(false);

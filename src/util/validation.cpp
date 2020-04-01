@@ -8,7 +8,7 @@
 #include <consensus/validation.h>
 #include <tinyformat.h>
 
-std::string FormatStateMessage(const ValidationState &state)
+std::string FormatStateMessage(const ValidationState& state)
 {
     if (state.IsValid()) {
         return "Valid";

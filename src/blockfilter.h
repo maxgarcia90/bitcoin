@@ -5,9 +5,9 @@
 #ifndef BITCOIN_BLOCKFILTER_H
 #define BITCOIN_BLOCKFILTER_H
 
+#include <set>
 #include <stdint.h>
 #include <string>
-#include <set>
 #include <unordered_set>
 #include <vector>
 
@@ -27,22 +27,22 @@ public:
     typedef std::vector<unsigned char> Element;
     typedef std::unordered_set<Element, ByteVectorHash> ElementSet;
 
-    struct Params
-    {
+    struct Params {
         uint64_t m_siphash_k0;
         uint64_t m_siphash_k1;
         uint8_t m_P;  //!< Golomb-Rice coding parameter
-        uint32_t m_M;  //!< Inverse false positive rate
+        uint32_t m_M; //!< Inverse false positive rate
 
         Params(uint64_t siphash_k0 = 0, uint64_t siphash_k1 = 0, uint8_t P = 0, uint32_t M = 1)
             : m_siphash_k0(siphash_k0), m_siphash_k1(siphash_k1), m_P(P), m_M(M)
-        {}
+        {
+        }
     };
 
 private:
     Params m_params;
-    uint32_t m_N;  //!< Number of elements in the filter
-    uint64_t m_F;  //!< Range of element hashes, F = N * M
+    uint32_t m_N; //!< Number of elements in the filter
+    uint64_t m_F; //!< Range of element hashes, F = N * M
     std::vector<unsigned char> m_encoded;
 
     /** Hash a data element to an integer in the range [0, N * M). */
@@ -54,7 +54,6 @@ private:
     bool MatchInternal(const uint64_t* sorted_element_hashes, size_t size) const;
 
 public:
-
     /** Constructs an empty filter. */
     explicit GCSFilter(const Params& params = Params());
 
@@ -85,8 +84,7 @@ public:
 constexpr uint8_t BASIC_FILTER_P = 19;
 constexpr uint32_t BASIC_FILTER_M = 784931;
 
-enum class BlockFilterType : uint8_t
-{
+enum class BlockFilterType : uint8_t {
     BASIC = 0,
     INVALID = 255,
 };
@@ -117,12 +115,10 @@ private:
     bool BuildParams(GCSFilter::Params& params) const;
 
 public:
-
     BlockFilter() = default;
 
     //! Reconstruct a BlockFilter from parts.
-    BlockFilter(BlockFilterType filter_type, const uint256& block_hash,
-                std::vector<unsigned char> filter);
+    BlockFilter(BlockFilterType filter_type, const uint256& block_hash, std::vector<unsigned char> filter);
 
     //! Construct a new BlockFilter of the specified type from a block.
     BlockFilter(BlockFilterType filter_type, const CBlock& block, const CBlockUndo& block_undo);
@@ -143,20 +139,20 @@ public:
     uint256 ComputeHeader(const uint256& prev_header) const;
 
     template <typename Stream>
-    void Serialize(Stream& s) const {
+    void Serialize(Stream& s) const
+    {
         s << m_block_hash
           << static_cast<uint8_t>(m_filter_type)
           << m_filter.GetEncoded();
     }
 
     template <typename Stream>
-    void Unserialize(Stream& s) {
+    void Unserialize(Stream& s)
+    {
         std::vector<unsigned char> encoded_filter;
         uint8_t filter_type;
 
-        s >> m_block_hash
-          >> filter_type
-          >> encoded_filter;
+        s >> m_block_hash >> filter_type >> encoded_filter;
 
         m_filter_type = static_cast<BlockFilterType>(filter_type);
 

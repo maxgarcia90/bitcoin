@@ -5,11 +5,11 @@
 #ifndef BITCOIN_BENCH_BENCH_H
 #define BITCOIN_BENCH_BENCH_H
 
+#include <chrono>
 #include <functional>
 #include <map>
 #include <string>
 #include <vector>
-#include <chrono>
 
 #include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/stringize.hpp>
@@ -132,7 +132,7 @@ private:
     int64_t m_width;
     int64_t m_height;
 };
-}
+} // namespace benchmark
 
 
 // BENCHMARK(foo, num_iters_for_one_second) expands to:  benchmark::BenchRunner bench_11foo("foo", num_iterations);

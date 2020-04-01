@@ -7,8 +7,7 @@
 
 #include <assert.h>
 
-namespace
-{
+namespace {
 
 typedef std::vector<uint8_t> data;
 
@@ -20,12 +19,11 @@ const int8_t CHARSET_REV[128] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    15, -1, 10, 17, 21, 20, 26, 30,  7,  5, -1, -1, -1, -1, -1, -1,
-    -1, 29, -1, 24, 13, 25,  9,  8, 23, -1, 18, 22, 31, 27, 19, -1,
-     1,  0,  3, 16, 11, 28, 12, 14,  6,  4,  2, -1, -1, -1, -1, -1,
-    -1, 29, -1, 24, 13, 25,  9,  8, 23, -1, 18, 22, 31, 27, 19, -1,
-     1,  0,  3, 16, 11, 28, 12, 14,  6,  4,  2, -1, -1, -1, -1, -1
-};
+    15, -1, 10, 17, 21, 20, 26, 30, 7, 5, -1, -1, -1, -1, -1, -1,
+    -1, 29, -1, 24, 13, 25, 9, 8, 23, -1, 18, 22, 31, 27, 19, -1,
+    1, 0, 3, 16, 11, 28, 12, 14, 6, 4, 2, -1, -1, -1, -1, -1,
+    -1, 29, -1, 24, 13, 25, 9, 8, 23, -1, 18, 22, 31, 27, 19, -1,
+    1, 0, 3, 16, 11, 28, 12, 14, 6, 4, 2, -1, -1, -1, -1, -1};
 
 /** This function will compute what 6 5-bit values to XOR into the last 6 input values, in order to
  *  make the checksum 0. These 6 values are packed together in a single 30-bit integer. The higher
@@ -80,10 +78,10 @@ uint32_t PolyMod(const data& v)
         c = ((c & 0x1ffffff) << 5) ^ v_i;
 
         // Finally, for each set bit n in c0, conditionally add {2^n}k(x):
-        if (c0 & 1)  c ^= 0x3b6a57b2; //     k(x) = {29}x^5 + {22}x^4 + {20}x^3 + {21}x^2 + {29}x + {18}
-        if (c0 & 2)  c ^= 0x26508e6d; //  {2}k(x) = {19}x^5 +  {5}x^4 +     x^3 +  {3}x^2 + {19}x + {13}
-        if (c0 & 4)  c ^= 0x1ea119fa; //  {4}k(x) = {15}x^5 + {10}x^4 +  {2}x^3 +  {6}x^2 + {15}x + {26}
-        if (c0 & 8)  c ^= 0x3d4233dd; //  {8}k(x) = {30}x^5 + {20}x^4 +  {4}x^3 + {12}x^2 + {30}x + {29}
+        if (c0 & 1) c ^= 0x3b6a57b2;  //     k(x) = {29}x^5 + {22}x^4 + {20}x^3 + {21}x^2 + {29}x + {18}
+        if (c0 & 2) c ^= 0x26508e6d;  //  {2}k(x) = {19}x^5 +  {5}x^4 +     x^3 +  {3}x^2 + {19}x + {13}
+        if (c0 & 4) c ^= 0x1ea119fa;  //  {4}k(x) = {15}x^5 + {10}x^4 +  {2}x^3 +  {6}x^2 + {15}x + {26}
+        if (c0 & 8) c ^= 0x3d4233dd;  //  {8}k(x) = {30}x^5 + {20}x^4 +  {4}x^3 + {12}x^2 + {30}x + {29}
         if (c0 & 16) c ^= 0x2a1462b3; // {16}k(x) = {21}x^5 +     x^4 +  {8}x^3 + {24}x^2 + {21}x + {19}
     }
     return c;
@@ -124,7 +122,7 @@ bool VerifyChecksum(const std::string& hrp, const data& values)
 data CreateChecksum(const std::string& hrp, const data& values)
 {
     data enc = Cat(ExpandHRP(hrp), values);
-    enc.resize(enc.size() + 6); // Append 6 zeroes
+    enc.resize(enc.size() + 6);      // Append 6 zeroes
     uint32_t mod = PolyMod(enc) ^ 1; // Determine what to XOR into those 6 zeroes.
     data ret(6);
     for (size_t i = 0; i < 6; ++i) {
@@ -136,15 +134,16 @@ data CreateChecksum(const std::string& hrp, const data& values)
 
 } // namespace
 
-namespace bech32
-{
+namespace bech32 {
 
 /** Encode a Bech32 string. */
-std::string Encode(const std::string& hrp, const data& values) {
+std::string Encode(const std::string& hrp, const data& values)
+{
     // First ensure that the HRP is all lowercase. BIP-173 requires an encoder
     // to return a lowercase Bech32 string, but if given an uppercase HRP, the
     // result will always be invalid.
-    for (const char& c : hrp) assert(c < 'A' || c > 'Z');
+    for (const char& c : hrp)
+        assert(c < 'A' || c > 'Z');
     data checksum = CreateChecksum(hrp, values);
     data combined = Cat(values, checksum);
     std::string ret = hrp + '1';
@@ -156,13 +155,17 @@ std::string Encode(const std::string& hrp, const data& values) {
 }
 
 /** Decode a Bech32 string. */
-std::pair<std::string, data> Decode(const std::string& str) {
+std::pair<std::string, data> Decode(const std::string& str)
+{
     bool lower = false, upper = false;
     for (size_t i = 0; i < str.size(); ++i) {
         unsigned char c = str[i];
-        if (c >= 'a' && c <= 'z') lower = true;
-        else if (c >= 'A' && c <= 'Z') upper = true;
-        else if (c < 33 || c > 126) return {};
+        if (c >= 'a' && c <= 'z')
+            lower = true;
+        else if (c >= 'A' && c <= 'Z')
+            upper = true;
+        else if (c < 33 || c > 126)
+            return {};
     }
     if (lower && upper) return {};
     size_t pos = str.rfind('1');

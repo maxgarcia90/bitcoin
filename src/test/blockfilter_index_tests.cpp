@@ -23,8 +23,7 @@ struct BuildChainTestingSetup : public TestChain100Setup {
     bool BuildChain(const CBlockIndex* pindex, const CScript& coinbase_script_pub_key, size_t length, std::vector<std::shared_ptr<CBlock>>& chain);
 };
 
-static bool CheckFilterLookups(BlockFilterIndex& filter_index, const CBlockIndex* block_index,
-                               uint256& last_header)
+static bool CheckFilterLookups(BlockFilterIndex& filter_index, const CBlockIndex* block_index, uint256& last_header)
 {
     BlockFilter expected_filter;
     if (!ComputeFilter(filter_index.GetFilterType(), block_index, expected_filter)) {
@@ -41,7 +40,7 @@ static bool CheckFilterLookups(BlockFilterIndex& filter_index, const CBlockIndex
     BOOST_CHECK(filter_index.LookupFilterHeader(block_index, filter_header));
     BOOST_CHECK(filter_index.LookupFilterRange(block_index->nHeight, block_index, filters));
     BOOST_CHECK(filter_index.LookupFilterHashRange(block_index->nHeight, block_index,
-                                                   filter_hashes));
+        filter_hashes));
 
     BOOST_CHECK_EQUAL(filters.size(), 1);
     BOOST_CHECK_EQUAL(filter_hashes.size(), 1);
@@ -76,7 +75,8 @@ CBlock BuildChainTestingSetup::CreateBlock(const CBlockIndex* prev,
     unsigned int extraNonce = 0;
     IncrementExtraNonce(&block, prev, extraNonce);
 
-    while (!CheckProofOfWork(block.GetHash(), block.nBits, chainparams.GetConsensus())) ++block.nNonce;
+    while (!CheckProofOfWork(block.GetHash(), block.nBits, chainparams.GetConsensus()))
+        ++block.nNonce;
 
     return block;
 }
@@ -124,7 +124,7 @@ BOOST_FIXTURE_TEST_CASE(blockfilter_index_initial_sync, BuildChainTestingSetup)
             BOOST_CHECK(!filter_index.LookupFilterHeader(block_index, filter_header));
             BOOST_CHECK(!filter_index.LookupFilterRange(block_index->nHeight, block_index, filters));
             BOOST_CHECK(!filter_index.LookupFilterHashRange(block_index->nHeight, block_index,
-                                                            filter_hashes));
+                filter_hashes));
         }
     }
 
@@ -218,31 +218,31 @@ BOOST_FIXTURE_TEST_CASE(blockfilter_index_initial_sync, BuildChainTestingSetup)
     }
 
     // Reorg back to chain A.
-     for (size_t i = 2; i < 4; i++) {
-         const auto& block = chainA[i];
-         BOOST_REQUIRE(ProcessNewBlock(Params(), block, true, nullptr));
-     }
+    for (size_t i = 2; i < 4; i++) {
+        const auto& block = chainA[i];
+        BOOST_REQUIRE(ProcessNewBlock(Params(), block, true, nullptr));
+    }
 
-     // Check that chain A and B blocks can be retrieved.
-     chainA_last_header = last_header;
-     chainB_last_header = last_header;
-     for (size_t i = 0; i < 3; i++) {
-         const CBlockIndex* block_index;
+    // Check that chain A and B blocks can be retrieved.
+    chainA_last_header = last_header;
+    chainB_last_header = last_header;
+    for (size_t i = 0; i < 3; i++) {
+        const CBlockIndex* block_index;
 
-         {
-             LOCK(cs_main);
-             block_index = LookupBlockIndex(chainA[i]->GetHash());
-         }
-         BOOST_CHECK(filter_index.BlockUntilSyncedToCurrentChain());
-         CheckFilterLookups(filter_index, block_index, chainA_last_header);
+        {
+            LOCK(cs_main);
+            block_index = LookupBlockIndex(chainA[i]->GetHash());
+        }
+        BOOST_CHECK(filter_index.BlockUntilSyncedToCurrentChain());
+        CheckFilterLookups(filter_index, block_index, chainA_last_header);
 
-         {
-             LOCK(cs_main);
-             block_index = LookupBlockIndex(chainB[i]->GetHash());
-         }
-         BOOST_CHECK(filter_index.BlockUntilSyncedToCurrentChain());
-         CheckFilterLookups(filter_index, block_index, chainB_last_header);
-     }
+        {
+            LOCK(cs_main);
+            block_index = LookupBlockIndex(chainB[i]->GetHash());
+        }
+        BOOST_CHECK(filter_index.BlockUntilSyncedToCurrentChain());
+        CheckFilterLookups(filter_index, block_index, chainB_last_header);
+    }
 
     // Test lookups for a range of filters/hashes.
     std::vector<BlockFilter> filters;

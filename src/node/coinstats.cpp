@@ -8,13 +8,13 @@
 #include <coins.h>
 #include <hash.h>
 #include <serialize.h>
-#include <validation.h>
 #include <uint256.h>
 #include <util/system.h>
+#include <validation.h>
 
 #include <map>
 
-static void ApplyStats(CCoinsStats &stats, CHashWriter& ss, const uint256& hash, const std::map<uint32_t, Coin>& outputs)
+static void ApplyStats(CCoinsStats& stats, CHashWriter& ss, const uint256& hash, const std::map<uint32_t, Coin>& outputs)
 {
     assert(!outputs.empty());
     ss << hash;
@@ -33,7 +33,7 @@ static void ApplyStats(CCoinsStats &stats, CHashWriter& ss, const uint256& hash,
 }
 
 //! Calculate statistics about the unspent transaction output set
-bool GetUTXOStats(CCoinsView *view, CCoinsStats &stats)
+bool GetUTXOStats(CCoinsView* view, CCoinsStats& stats)
 {
     stats = CCoinsStats();
     std::unique_ptr<CCoinsViewCursor> pcursor(view->Cursor());

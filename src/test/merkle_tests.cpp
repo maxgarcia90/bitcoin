@@ -9,7 +9,8 @@
 
 BOOST_FIXTURE_TEST_SUITE(merkle_tests, TestingSetup)
 
-static uint256 ComputeMerkleRootFromBranch(const uint256& leaf, const std::vector<uint256>& vMerkleBranch, uint32_t nIndex) {
+static uint256 ComputeMerkleRootFromBranch(const uint256& leaf, const std::vector<uint256>& vMerkleBranch, uint32_t nIndex)
+{
     uint256 hash = leaf;
     for (std::vector<uint256>::const_iterator it = vMerkleBranch.begin(); it != vMerkleBranch.end(); ++it) {
         if (nIndex & 1) {
@@ -23,7 +24,8 @@ static uint256 ComputeMerkleRootFromBranch(const uint256& leaf, const std::vecto
 }
 
 /* This implements a constant-space merkle root/path calculator, limited to 2^32 leaves. */
-static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot, bool* pmutated, uint32_t branchpos, std::vector<uint256>* pbranch) {
+static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot, bool* pmutated, uint32_t branchpos, std::vector<uint256>* pbranch)
+{
     if (pbranch) pbranch->clear();
     if (leaves.size() == 0) {
         if (pmutated) *pmutated = false;
@@ -110,7 +112,8 @@ static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot
     if (proot) *proot = h;
 }
 
-static std::vector<uint256> ComputeMerkleBranch(const std::vector<uint256>& leaves, uint32_t position) {
+static std::vector<uint256> ComputeMerkleBranch(const std::vector<uint256>& leaves, uint32_t position)
+{
     std::vector<uint256> ret;
     MerkleComputation(leaves, nullptr, nullptr, position, &ret);
     return ret;
@@ -135,17 +138,15 @@ static uint256 BlockBuildMerkleTree(const CBlock& block, bool* fMutated, std::ve
         vMerkleTree.push_back((*it)->GetHash());
     int j = 0;
     bool mutated = false;
-    for (int nSize = block.vtx.size(); nSize > 1; nSize = (nSize + 1) / 2)
-    {
-        for (int i = 0; i < nSize; i += 2)
-        {
-            int i2 = std::min(i+1, nSize-1);
-            if (i2 == i + 1 && i2 + 1 == nSize && vMerkleTree[j+i] == vMerkleTree[j+i2]) {
+    for (int nSize = block.vtx.size(); nSize > 1; nSize = (nSize + 1) / 2) {
+        for (int i = 0; i < nSize; i += 2) {
+            int i2 = std::min(i + 1, nSize - 1);
+            if (i2 == i + 1 && i2 + 1 == nSize && vMerkleTree[j + i] == vMerkleTree[j + i2]) {
                 // Two identical hashes at the end of the list at a particular level.
                 mutated = true;
             }
-            vMerkleTree.push_back(Hash(vMerkleTree[j+i].begin(), vMerkleTree[j+i].end(),
-                                       vMerkleTree[j+i2].begin(), vMerkleTree[j+i2].end()));
+            vMerkleTree.push_back(Hash(vMerkleTree[j + i].begin(), vMerkleTree[j + i].end(),
+                vMerkleTree[j + i2].begin(), vMerkleTree[j + i2].end()));
         }
         j += nSize;
     }
@@ -160,17 +161,17 @@ static std::vector<uint256> BlockGetMerkleBranch(const CBlock& block, const std:
 {
     std::vector<uint256> vMerkleBranch;
     int j = 0;
-    for (int nSize = block.vtx.size(); nSize > 1; nSize = (nSize + 1) / 2)
-    {
-        int i = std::min(nIndex^1, nSize-1);
-        vMerkleBranch.push_back(vMerkleTree[j+i]);
+    for (int nSize = block.vtx.size(); nSize > 1; nSize = (nSize + 1) / 2) {
+        int i = std::min(nIndex ^ 1, nSize - 1);
+        vMerkleBranch.push_back(vMerkleTree[j + i]);
         nIndex >>= 1;
         j += nSize;
     }
     return vMerkleBranch;
 }
 
-static inline int ctz(uint32_t i) {
+static inline int ctz(uint32_t i)
+{
     if (i == 0) return 0;
     int j = 0;
     while (!(i & 1)) {
@@ -187,9 +188,9 @@ BOOST_AUTO_TEST_CASE(merkle_test)
         int ntx = (i <= 16) ? i : 17 + (InsecureRandRange(4000));
         // Try up to 3 mutations.
         for (int mutate = 0; mutate <= 3; mutate++) {
-            int duplicate1 = mutate >= 1 ? 1 << ctz(ntx) : 0; // The last how many transactions to duplicate first.
-            if (duplicate1 >= ntx) break; // Duplication of the entire tree results in a different root (it adds a level).
-            int ntx1 = ntx + duplicate1; // The resulting number of transactions after the first duplication.
+            int duplicate1 = mutate >= 1 ? 1 << ctz(ntx) : 0;  // The last how many transactions to duplicate first.
+            if (duplicate1 >= ntx) break;                      // Duplication of the entire tree results in a different root (it adds a level).
+            int ntx1 = ntx + duplicate1;                       // The resulting number of transactions after the first duplication.
             int duplicate2 = mutate >= 2 ? 1 << ctz(ntx1) : 0; // Likewise for the second mutation.
             if (duplicate2 >= ntx1) break;
             int ntx2 = ntx1 + duplicate2;
