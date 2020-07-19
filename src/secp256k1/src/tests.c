@@ -32,6 +32,17 @@ void ECDSA_SIG_get0(const ECDSA_SIG *sig, const BIGNUM **pr, const BIGNUM **ps) 
 #include "contrib/lax_der_parsing.c"
 #include "contrib/lax_der_privatekey_parsing.c"
 
+#if !defined(VG_CHECK)
+# if defined(VALGRIND)
+#  include <valgrind/memcheck.h>
+#  define VG_UNDEF(x,y) VALGRIND_MAKE_MEM_UNDEFINED((x),(y))
+#  define VG_CHECK(x,y) VALGRIND_CHECK_MEM_IS_DEFINED((x),(y))
+# else
+#  define VG_UNDEF(x,y)
+#  define VG_CHECK(x,y)
+# endif
+#endif
+
 static int count = 64;
 static secp256k1_context *ctx = NULL;
 
@@ -436,6 +447,29 @@ void run_sha256_tests(void) {
             CHECK(memcmp(out, outputs[i], 32) == 0);
         }
     }
+}
+
+/* Tests for the equality of two sha256 structs. This function only produces a
+ * correct result if an integer multiple of 64 many bytes have been written
+ * into the hash functions. */
+void test_sha256_eq(secp256k1_sha256 *sha1, secp256k1_sha256 *sha2) {
+    unsigned char buf[32] = { 0 };
+    unsigned char buf2[32];
+
+    /* Is buffer fully consumed? */
+    CHECK((sha1->bytes & 0x3F) == 0);
+
+    /* Compare the struct excluding the buffer, because it may be
+     * uninitialized or already included in the state. */
+    CHECK(sha1->bytes == sha2->bytes);
+    CHECK(memcmp(sha1->s, sha2->s, sizeof(sha1->s)) == 0);
+
+    /* Compare the output */
+    secp256k1_sha256_write(sha1, buf, 32);
+    secp256k1_sha256_write(sha2, buf, 32);
+    secp256k1_sha256_finalize(sha1, buf);
+    secp256k1_sha256_finalize(sha2, buf2);
+    CHECK(memcmp(buf, buf2, 32) == 0);
 }
 
 void run_hmac_sha256_tests(void) {
@@ -3118,7 +3152,7 @@ void test_ecmult_multi_batching(void) {
     data.pt = pt;
     secp256k1_gej_neg(&r2, &r2);
 
-    /* Test with empty scratch space. It should compute the correct result using
+    /* Test with empty scratch space. It should compute the correct result using 
      * ecmult_mult_simple algorithm which doesn't require a scratch space. */
     scratch = secp256k1_scratch_create(&ctx->error_callback, 0);
     CHECK(secp256k1_ecmult_multi_var(&ctx->error_callback, &ctx->ecmult_ctx, scratch, &r, &scG, ecmult_multi_callback, &data, n_points));
@@ -5277,6 +5311,14 @@ void run_ecdsa_openssl(void) {
 # include "modules/recovery/tests_impl.h"
 #endif
 
+#ifdef ENABLE_MODULE_EXTRAKEYS
+# include "modules/extrakeys/tests_impl.h"
+#endif
+
+#ifdef ENABLE_MODULE_SCHNORRSIG
+# include "modules/schnorrsig/tests_impl.h"
+#endif
+
 void run_memczero_test(void) {
     unsigned char buf1[6] = {1, 2, 3, 4, 5, 6};
     unsigned char buf2[sizeof(buf1)];
@@ -5290,161 +5332,6 @@ void run_memczero_test(void) {
     memset(buf2, 0, sizeof(buf2));
     memczero(buf1, sizeof(buf1) , 1);
     CHECK(memcmp(buf1, buf2, sizeof(buf1)) == 0);
-}
-
-void int_cmov_test(void) {
-    int r = INT_MAX;
-    int a = 0;
-
-    secp256k1_int_cmov(&r, &a, 0);
-    CHECK(r == INT_MAX);
-
-    r = 0; a = INT_MAX;
-    secp256k1_int_cmov(&r, &a, 1);
-    CHECK(r == INT_MAX);
-
-    a = 0;
-    secp256k1_int_cmov(&r, &a, 1);
-    CHECK(r == 0);
-
-    a = 1;
-    secp256k1_int_cmov(&r, &a, 1);
-    CHECK(r == 1);
-
-    r = 1; a = 0;
-    secp256k1_int_cmov(&r, &a, 0);
-    CHECK(r == 1);
-
-}
-
-void fe_cmov_test(void) {
-    static const secp256k1_fe zero = SECP256K1_FE_CONST(0, 0, 0, 0, 0, 0, 0, 0);
-    static const secp256k1_fe one = SECP256K1_FE_CONST(0, 0, 0, 0, 0, 0, 0, 1);
-    static const secp256k1_fe max = SECP256K1_FE_CONST(
-        0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL,
-        0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL
-    );
-    secp256k1_fe r = max;
-    secp256k1_fe a = zero;
-
-    secp256k1_fe_cmov(&r, &a, 0);
-    CHECK(memcmp(&r, &max, sizeof(r)) == 0);
-
-    r = zero; a = max;
-    secp256k1_fe_cmov(&r, &a, 1);
-    CHECK(memcmp(&r, &max, sizeof(r)) == 0);
-
-    a = zero;
-    secp256k1_fe_cmov(&r, &a, 1);
-    CHECK(memcmp(&r, &zero, sizeof(r)) == 0);
-
-    a = one;
-    secp256k1_fe_cmov(&r, &a, 1);
-    CHECK(memcmp(&r, &one, sizeof(r)) == 0);
-
-    r = one; a = zero;
-    secp256k1_fe_cmov(&r, &a, 0);
-    CHECK(memcmp(&r, &one, sizeof(r)) == 0);
-}
-
-void fe_storage_cmov_test(void) {
-    static const secp256k1_fe_storage zero = SECP256K1_FE_STORAGE_CONST(0, 0, 0, 0, 0, 0, 0, 0);
-    static const secp256k1_fe_storage one = SECP256K1_FE_STORAGE_CONST(0, 0, 0, 0, 0, 0, 0, 1);
-    static const secp256k1_fe_storage max = SECP256K1_FE_STORAGE_CONST(
-        0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL,
-        0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL
-    );
-    secp256k1_fe_storage r = max;
-    secp256k1_fe_storage a = zero;
-
-    secp256k1_fe_storage_cmov(&r, &a, 0);
-    CHECK(memcmp(&r, &max, sizeof(r)) == 0);
-
-    r = zero; a = max;
-    secp256k1_fe_storage_cmov(&r, &a, 1);
-    CHECK(memcmp(&r, &max, sizeof(r)) == 0);
-
-    a = zero;
-    secp256k1_fe_storage_cmov(&r, &a, 1);
-    CHECK(memcmp(&r, &zero, sizeof(r)) == 0);
-
-    a = one;
-    secp256k1_fe_storage_cmov(&r, &a, 1);
-    CHECK(memcmp(&r, &one, sizeof(r)) == 0);
-
-    r = one; a = zero;
-    secp256k1_fe_storage_cmov(&r, &a, 0);
-    CHECK(memcmp(&r, &one, sizeof(r)) == 0);
-}
-
-void scalar_cmov_test(void) {
-    static const secp256k1_scalar zero = SECP256K1_SCALAR_CONST(0, 0, 0, 0, 0, 0, 0, 0);
-    static const secp256k1_scalar one = SECP256K1_SCALAR_CONST(0, 0, 0, 0, 0, 0, 0, 1);
-    static const secp256k1_scalar max = SECP256K1_SCALAR_CONST(
-        0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL,
-        0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL
-    );
-    secp256k1_scalar r = max;
-    secp256k1_scalar a = zero;
-
-    secp256k1_scalar_cmov(&r, &a, 0);
-    CHECK(memcmp(&r, &max, sizeof(r)) == 0);
-
-    r = zero; a = max;
-    secp256k1_scalar_cmov(&r, &a, 1);
-    CHECK(memcmp(&r, &max, sizeof(r)) == 0);
-
-    a = zero;
-    secp256k1_scalar_cmov(&r, &a, 1);
-    CHECK(memcmp(&r, &zero, sizeof(r)) == 0);
-
-    a = one;
-    secp256k1_scalar_cmov(&r, &a, 1);
-    CHECK(memcmp(&r, &one, sizeof(r)) == 0);
-
-    r = one; a = zero;
-    secp256k1_scalar_cmov(&r, &a, 0);
-    CHECK(memcmp(&r, &one, sizeof(r)) == 0);
-}
-
-void ge_storage_cmov_test(void) {
-    static const secp256k1_ge_storage zero = SECP256K1_GE_STORAGE_CONST(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-    static const secp256k1_ge_storage one = SECP256K1_GE_STORAGE_CONST(0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1);
-    static const secp256k1_ge_storage max = SECP256K1_GE_STORAGE_CONST(
-        0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL,
-        0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL,
-        0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL,
-        0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL
-    );
-    secp256k1_ge_storage r = max;
-    secp256k1_ge_storage a = zero;
-
-    secp256k1_ge_storage_cmov(&r, &a, 0);
-    CHECK(memcmp(&r, &max, sizeof(r)) == 0);
-
-    r = zero; a = max;
-    secp256k1_ge_storage_cmov(&r, &a, 1);
-    CHECK(memcmp(&r, &max, sizeof(r)) == 0);
-
-    a = zero;
-    secp256k1_ge_storage_cmov(&r, &a, 1);
-    CHECK(memcmp(&r, &zero, sizeof(r)) == 0);
-
-    a = one;
-    secp256k1_ge_storage_cmov(&r, &a, 1);
-    CHECK(memcmp(&r, &one, sizeof(r)) == 0);
-
-    r = one; a = zero;
-    secp256k1_ge_storage_cmov(&r, &a, 0);
-    CHECK(memcmp(&r, &one, sizeof(r)) == 0);
-}
-
-void run_cmov_tests(void) {
-    int_cmov_test();
-    fe_cmov_test();
-    fe_storage_cmov_test();
-    scalar_cmov_test();
-    ge_storage_cmov_test();
 }
 
 int main(int argc, char **argv) {
@@ -5583,10 +5470,16 @@ int main(int argc, char **argv) {
     run_recovery_tests();
 #endif
 
+#ifdef ENABLE_MODULE_EXTRAKEYS
+    run_extrakeys_tests();
+#endif
+
+#ifdef ENABLE_MODULE_SCHNORRSIG
+    run_schnorrsig_tests();
+#endif
+
     /* util tests */
     run_memczero_test();
-
-    run_cmov_tests();
 
     secp256k1_rand256(run32);
     printf("random run = %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n", run32[0], run32[1], run32[2], run32[3], run32[4], run32[5], run32[6], run32[7], run32[8], run32[9], run32[10], run32[11], run32[12], run32[13], run32[14], run32[15]);
