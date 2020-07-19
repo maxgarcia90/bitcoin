@@ -353,3 +353,11 @@ endif
 if TARGET_LINUX
 	$(AM_V_at) $(PYTHON) $(top_srcdir)/contrib/devtools/test-security-check.py TestSecurityChecks.test_ELF
 endif
+
+if ENABLE_MODULE_EXTRAKEYS
+include src/modules/extrakeys/Makefile.am.include
+endif
+
+if ENABLE_MODULE_SCHNORRSIG
+include src/modules/schnorrsig/Makefile.am.include
+endif
