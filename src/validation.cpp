@@ -2121,9 +2121,41 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
     int nInputs = 0;
     int64_t nSigOpsCost = 0;
     blockundo.vtxundo.reserve(block.vtx.size() - 1);
+
+    // Extract all required fee dependencies
+    std::unordered_set<uint256, SaltedTxidHasher> dependencies;
+
+    const bool dependencies_enabled = true;
+    if (dependencies_enabled) {
+        for (const auto& tx : block.vtx) {
+            // dependency output is if the last output of a txn is OP_VER followed by a sequence of 32*n
+            // bytes
+            // vout.back() must exist because it is checked in CheckBlock
+            const CScript& dependencies_script = tx->vout.back().scriptPubKey;
+            // empty scripts are valid, so be sure we have at least one byte
+            if (dependencies_script.size() && dependencies_script[0] == OP_VER) {
+                const size_t size = dependencies_script.size() - 1;
+                if (size % 32 == 0 && size > 0) {
+                    for (auto start = dependencies_script.begin() +1, stop = start + 32; start < dependencies_script.end(); start = stop, stop += 32) {
+                        uint256 txid;
+                        std::copy(start, stop, txid.begin());
+                        dependencies.emplace(txid);
+                    }
+                }
+                // No rules applied otherwise, open for future upgrades
+            }
+        }
+        if (dependencies.size() > block.vtx.size()) {
+            return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-dependencies-too-many-target-txid");
+        }
+    }
+
     for (unsigned int i = 0; i < block.vtx.size(); i++)
     {
         const CTransaction &tx = *(block.vtx[i]);
+        if (!dependencies.empty()) {
+            dependencies.erase(tx.GetHash());
+        }
 
         nInputs += tx.vin.size();
 
@@ -2187,6 +2219,9 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
             blockundo.vtxundo.push_back(CTxUndo());
         }
         UpdateCoins(tx, view, i == 0 ? undoDummy : blockundo.vtxundo.back(), pindex->nHeight);
+    }
+    if (!dependencies.empty()) {
+        return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-dependency-missing-target-txid");
     }
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
