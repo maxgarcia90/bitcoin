@@ -2213,7 +2213,7 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
     // Extract all required fee dependencies
     std::unordered_set<uint256, SaltedTxidHasher> dependencies;
 
-    const bool dependencies_enabled = true;
+    const bool dependencies_enabled = VersionBitsState(pindex->pprev, chainparams.GetConsensus(), Consensus::DeploymentPos::DEPLOYMENT_TXID_DEPENDENCY, versionbitscache) == ThresholdState::ACTIVE;
     if (dependencies_enabled) {
         for (const auto& tx : block.vtx) {
             // dependency output is if the last output of a txn is OP_VER followed by a sequence of 32*n
