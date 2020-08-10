@@ -369,6 +369,7 @@ enum class MemPoolRemovalReason {
     BLOCK,       //!< Removed for block
     CONFLICT,    //!< Removed for conflict with in-block transaction
     REPLACED,    //!< Removed for replacement
+    UNSPONSOR,    //!< Removed because target confirmed without sponsor
 };
 
 class SaltedTxidHasher
@@ -557,7 +558,16 @@ public:
     const setEntries & GetMemPoolParents(txiter entry) const EXCLUSIVE_LOCKS_REQUIRED(cs);
     const setEntries & GetMemPoolChildren(txiter entry) const EXCLUSIVE_LOCKS_REQUIRED(cs);
     uint64_t CalculateDescendantMaximum(txiter entry) const EXCLUSIVE_LOCKS_REQUIRED(cs);
+    typedef std::map<uint256, txiter> sponsor_map;
+    sponsor_map txid_sponsored_by;
+    Optional<txiter> GetSponsorFor(txiter entry) const EXCLUSIVE_LOCKS_REQUIRED(cs);
+    Optional<txiter> GetSponsorFor(const CTransaction& tx) const EXCLUSIVE_LOCKS_REQUIRED(cs);
+    Optional<txiter> Sponsoring(txiter entry) const EXCLUSIVE_LOCKS_REQUIRED(cs);
+    std::pair<Optional<txiter>, bool> Sponsoring(const CTransaction& tx) const EXCLUSIVE_LOCKS_REQUIRED(cs);
+
+
 private:
+
     typedef std::map<txiter, setEntries, CompareIteratorByHash> cacheMap;
 
     struct TxLinks {

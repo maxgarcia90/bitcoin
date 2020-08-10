@@ -18,6 +18,17 @@
 #include <util/moneystr.h>
 #include <util/time.h>
 #include <validationinterface.h>
+static Optional<uint256> SponsoringTXID(const CTransaction& tx) {
+    const CScript& sponsor_script = tx.vout.back().scriptPubKey;
+    // N.B. order is important as first check prevents sponsor_script[0] from invalid deref
+    const bool is_sponsor =  (sponsor_script.size()) == 33 && sponsor_script[0] == OP_VER;
+    if (!is_sponsor) {
+        return nullopt;
+    }
+    uint256 txid;
+    std::copy(sponsor_script.begin() + 1, sponsor_script.end(), txid.begin());
+    return txid;
+}
 
 CTxMemPoolEntry::CTxMemPoolEntry(const CTransactionRef& _tx, const CAmount& _nFee,
                                  int64_t _nTime, unsigned int _entryHeight,
@@ -144,6 +155,11 @@ void CTxMemPool::UpdateTransactionsFromBlock(const std::vector<uint256> &vHashes
                     UpdateParent(childIter, it, true);
                 }
             }
+            // Add a sponsor as if it were a direct child/descendant
+            if (txid_sponsored_by.count(it->GetTx().GetHash())) {
+                UpdateParent(txid_sponsored_by[it->GetTx().GetHash()], it, true);
+                UpdateChild(it, txid_sponsored_by[it->GetTx().GetHash()], true);
+            }
         } // release epoch guard for UpdateForDescendants
         UpdateForDescendants(it, mapMemPoolDescendantsToUpdate, setAlreadyIncluded);
     }
@@ -166,6 +182,13 @@ bool CTxMemPool::CalculateMemPoolAncestors(const CTxMemPoolEntry &entry, setEntr
                     errString = strprintf("too many unconfirmed parents [limit: %u]", limitAncestorCount);
                     return false;
                 }
+            }
+        }
+        auto maybe_txid = SponsoringTXID(tx);
+        if (maybe_txid) {
+            Optional<txiter> piter = GetIter(*maybe_txid);
+            if (piter) {
+                parentHashes.insert(*piter);
             }
         }
     } else {
@@ -218,6 +241,8 @@ void CTxMemPool::UpdateAncestorsOf(bool add, txiter it, setEntries &setAncestors
     for (txiter piter : parentIters) {
         UpdateChild(piter, it, add);
     }
+    auto maybe_sponsoring = Sponsoring(it);
+    if (maybe_sponsoring) UpdateChild(*maybe_sponsoring, it, add);
     const int64_t updateCount = (add ? 1 : -1);
     const int64_t updateSize = updateCount * it->GetTxSize();
     const CAmount updateFee = updateCount * it->GetModifiedFee();
@@ -238,6 +263,7 @@ void CTxMemPool::UpdateEntryForAncestors(txiter it, const setEntries &setAncesto
         updateSigOpsCost += ancestorIt->GetSigOpCost();
     }
     mapTx.modify(it, update_ancestor_state(updateSize, updateFee, updateCount, updateSigOpsCost));
+
 }
 
 void CTxMemPool::UpdateChildrenForRemoval(txiter it)
@@ -246,6 +272,8 @@ void CTxMemPool::UpdateChildrenForRemoval(txiter it)
     for (txiter updateIt : setMemPoolChildren) {
         UpdateParent(updateIt, it, false);
     }
+    auto maybe_sponsor = GetSponsorFor(it);
+    if (maybe_sponsor) UpdateParent(*maybe_sponsor, it, false);
 }
 
 void CTxMemPool::UpdateForRemoveFromMempool(const setEntries &entriesToRemove, bool updateDescendants)
@@ -392,6 +420,19 @@ void CTxMemPool::addUnchecked(const CTxMemPoolEntry &entry, setEntries &setAnces
     for (const auto& pit : GetIterSet(setParentTransactions)) {
             UpdateParent(newit, pit, true);
     }
+
+    // Fee Sponsoring Logic
+    auto maybe_tx_to_bump = Sponsoring(newit);
+    if (maybe_tx_to_bump) {
+        CTxMemPool::txiter tx_to_bump = *maybe_tx_to_bump;
+        UpdateParent(newit, tx_to_bump, true);
+        const auto inserted = txid_sponsored_by.emplace(std::make_pair(tx_to_bump->GetTx().GetHash(), newit));
+        if (inserted.second) {
+            cachedInnerUsage += memusage::IncrementalDynamicUsage(sponsor_map{});
+        } else {
+            inserted.first->second = newit;
+        }
+    }
     UpdateAncestorsOf(true, newit, setAncestors);
     UpdateEntryForAncestors(newit, setAncestors);
 
@@ -416,6 +457,26 @@ void CTxMemPool::removeUnchecked(txiter it, MemPoolRemovalReason reason)
     const uint256 hash = it->GetTx().GetHash();
     for (const CTxIn& txin : it->GetTx().vin)
         mapNextTx.erase(txin.prevout);
+
+    const auto sponsor = GetSponsorFor(it);
+    if (sponsor) {
+        // always must erase if sponsor is found.
+        assert(txid_sponsored_by.erase(hash));
+        cachedInnerUsage -= memusage::IncrementalDynamicUsage(sponsor_map{});
+    }
+
+    // If the transaction is itself a sponsor of another transaction, make
+    // sure its entry is deleted
+    auto sponsoring = Sponsoring(it);
+    if (sponsoring) {
+        CTxMemPool::txiter tx_to_bump = *sponsoring;
+        // potentially already erased by an earlier removal.
+        if (txid_sponsored_by.erase(tx_to_bump->GetTx().GetHash())) {
+            cachedInnerUsage -= memusage::IncrementalDynamicUsage(sponsor_map{});
+        }
+    }
+
+
 
     RemoveUnbroadcastTx(hash, true /* add logging because unchecked */ );
 
@@ -488,6 +549,7 @@ void CTxMemPool::removeRecursive(const CTransaction &origTx, MemPoolRemovalReaso
                 txToRemove.insert(nextit);
             }
         }
+
         setEntries setAllRemoves;
         for (txiter it : txToRemove) {
             CalculateDescendants(it, setAllRemoves);
@@ -577,6 +639,24 @@ void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigne
         }
         removeConflicts(*tx);
         ClearPrioritisation(tx->GetHash());
+    }
+
+    // Sponsors should also be removed here because it must be in the same block
+    // as the original. This is naturally de-duplicated in the case where the
+    // sponsor tx is also in the block because if The sponsor was in the block
+    // GetSponsorFor will return nullopt
+    //
+    // we remove the sponsors as a separate loop to be able to deliver the
+    // proper UNSPONSOR reason (if we were conflicted, we'll say CONFLICT, if we
+    // were in block, we'll send BLOCK, if neither only then UNSPONSOR, so no
+    // existing flows break)
+    for (const auto& tx : vtx)
+    {
+        auto sponsor = GetSponsorFor(*tx);
+        if (sponsor) {
+            setEntries stage {*sponsor};
+            RemoveStaged(stage, true, MemPoolRemovalReason::UNSPONSOR);
+        }
     }
     lastRollingFeeUpdate = GetTime();
     blockSinceLastRollingFeeBump = true;
@@ -920,7 +1000,7 @@ bool CCoinsViewMemPool::GetCoin(const COutPoint &outpoint, Coin &coin) const {
 size_t CTxMemPool::DynamicMemoryUsage() const {
     LOCK(cs);
     // Estimate the overhead of mapTx to be 15 pointers + an allocation, as no exact formula for boost::multi_index_contained is implemented.
-    return memusage::MallocUsage(sizeof(CTxMemPoolEntry) + 15 * sizeof(void*)) * mapTx.size() + memusage::DynamicUsage(mapNextTx) + memusage::DynamicUsage(mapDeltas) + memusage::DynamicUsage(mapLinks) + memusage::DynamicUsage(vTxHashes) + cachedInnerUsage;
+    return memusage::MallocUsage(sizeof(CTxMemPoolEntry) + 15 * sizeof(void*)) * mapTx.size() + memusage::DynamicUsage(mapNextTx) + memusage::DynamicUsage(mapDeltas) + memusage::DynamicUsage(mapLinks) + memusage::DynamicUsage(vTxHashes) + memusage::DynamicUsage(txid_sponsored_by) + cachedInnerUsage;
 }
 
 void CTxMemPool::RemoveUnbroadcastTx(const uint256& txid, const bool unchecked) {
@@ -1000,6 +1080,34 @@ const CTxMemPool::setEntries & CTxMemPool::GetMemPoolChildren(txiter entry) cons
     txlinksMap::const_iterator it = mapLinks.find(entry);
     assert(it != mapLinks.end());
     return it->second.children;
+}
+
+Optional<CTxMemPool::txiter> CTxMemPool::GetSponsorFor(const CTransaction& tx) const {
+    auto sponsor = txid_sponsored_by.find(tx.GetHash());
+    if (sponsor == txid_sponsored_by.end()) {
+        return nullopt;
+    }
+    return sponsor->second;
+
+}
+
+Optional<CTxMemPool::txiter> CTxMemPool::GetSponsorFor(txiter entry) const
+{
+    return GetSponsorFor(entry->GetTx());
+}
+
+Optional<CTxMemPool::txiter> CTxMemPool::Sponsoring(txiter entry) const
+{
+    return Sponsoring(entry->GetTx()).first;
+}
+
+std::pair<Optional<CTxMemPool::txiter>,bool> CTxMemPool::Sponsoring(const CTransaction& tx) const
+{
+    const auto& maybe_hash = SponsoringTXID(tx);
+    if (maybe_hash) {
+        return std::make_pair(GetIter(*maybe_hash), true);
+    }
+    return std::make_pair(nullopt, false);
 }
 
 CFeeRate CTxMemPool::GetMinFee(size_t sizelimit) const {
