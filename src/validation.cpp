@@ -729,6 +729,31 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
         return state.Invalid(TxValidationResult::TX_NOT_STANDARD,
                 "absurdly-high-fee", strprintf("%d > %d", nFees, nAbsurdFee));
 
+    // Fee Sponsor Checks!
+    auto sponsoring = m_pool.Sponsoring(tx);
+    if (sponsoring.second) {
+        if (sponsoring.first) {
+            const CTransaction& tx_to_sponsor = (*sponsoring.first)->GetTx();
+            // Forbid any transaction being sponsored from directly sponsoring another.
+            if (m_pool.Sponsoring(tx_to_sponsor).second) {
+                return state.Invalid(TxValidationResult::TX_MEMPOOL_POLICY, "sponsoring-sponsor-forbidden");
+            }
+            auto existing_sponsor = m_pool.GetSponsorFor(tx_to_sponsor);
+            if (existing_sponsor) {
+                setConflicts.emplace((*existing_sponsor)->GetTx().GetHash());
+            }
+            // Make sure the sponsor feerate is higher than the target's feerate
+            // TODO: Might be good to be more agressive here and require some
+            // minimum greater feerate
+            if (CFeeRate(nModifiedFees, nSize) < CFeeRate((*sponsoring.first)->GetModFeesWithAncestors(), (*sponsoring.first)->GetSizeWithAncestors())) {
+                return state.Invalid(TxValidationResult::TX_MEMPOOL_POLICY, "sponsoring-too-low-feerate");
+            }
+
+        } else {
+            return state.Invalid(TxValidationResult::TX_MEMPOOL_POLICY, "missing-sponsor-target");
+        }
+    }
+
     const CTxMemPool::setEntries setIterConflicting = m_pool.GetIterSet(setConflicts);
     // Calculate in-mempool ancestors, up to a limit.
     if (setConflicts.size() == 1) {
@@ -766,8 +791,60 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
         m_limit_descendant_size += conflict->GetSizeWithDescendants();
     }
 
+
+
     std::string errString;
-    if (!m_pool.CalculateMemPoolAncestors(*entry, setAncestors, m_limit_ancestors, m_limit_ancestor_size, m_limit_descendants, m_limit_descendant_size, errString)) {
+    if (sponsoring.second) {
+        // We only want to have exactly 1 ancestor, which is the one we are
+        // sponsoring. All other ancestors must not be mempool transactions.
+        // Therefore we also don't care about ancestor size limits either.
+        //
+        // We do not care about the descendant limits, since we forbid
+        // sponsoring transactions from having any children.
+        //
+        // DOS Security: Because we only ever look at 1 ancestor, this can't be
+        // DoS'd even though we have everything else unlimited here. Essentially
+        // this is saying that these checks are the responsibility of other ATMP
+        // calls.
+        //
+        // This has some slightly funny effects on the mempool behavior around
+        // sequences of transactions. If you were to submit a chain of
+        // descendant limit size first, then add sponsor to each one, you can
+        // end up with 2*descendant limit transactions. However, if you submit a
+        // chain of descendant limit / 2 transactions, then sponsor each one,
+        // you cannot submit any further transactions until the sponsors clear.
+        // This behavior isn't bad per-se, but it could be fixed to be more
+        // consistent to e.g.,
+        //
+        //   1) Not count sponsor txs against descendant limits
+        //   2) Double descendant limits while keeping ancestors 1x. Possible to
+        //      have e.g. 50 descendants + 50 sponsors = 100 descendants, but guaranteed
+        //      to have at least 25.
+        //   3) Only guarantee half the requested descendant limit.
+        //   4) Something more clever
+        //
+        // Each of the above approaches has a trade-off. Method 1 adds
+        // complexity in appropriately discounting while keeping eviction orders
+        // intact. Method 2 may not be feasible as mempool algorithms may be
+        // O(|descendants|^2). Method 3 is simple, but may upset users wanting
+        // perfect compatibility with previous behavior. Thus Method 3 is currently
+        // employed as the simplest correct policy.
+        uint64_t true_parents = 0;
+        if (!m_pool.CalculateMemPoolAncestors(*entry, setAncestors,
+                                              1 /*limit_ancestors*/,
+                                              std::numeric_limits<uint64_t>::max() /*limit_ancestor_size*/,
+                                              std::numeric_limits<uint64_t>::max() /*descendant_limit*/,
+                                              std::numeric_limits<uint64_t>::max() /*limit_descendant_size*/,
+                                              errString, true, &true_parents)) {
+            return state.Invalid(TxValidationResult::TX_MEMPOOL_POLICY, "too-long-mempool-chain");
+        }
+        // This must be true at this point, or there was an internal flaw (as we
+        // checked our sponsoree earlier)
+        assert(setAncestors.count(*sponsoring.first));
+        // Make sure no new true_parents
+        assert(true_parents == 0);
+
+    } else if (!m_pool.CalculateMemPoolAncestors(*entry, setAncestors, m_limit_ancestors, m_limit_ancestor_size, m_limit_descendants, m_limit_descendant_size, errString)) {
         setAncestors.clear();
         // If CalculateMemPoolAncestors fails second time, we want the original error string.
         std::string dummy_err_string;
@@ -782,11 +859,22 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
         // to be secure by simply only having two immediately-spendable
         // outputs - one for each counterparty. For more info on the uses for
         // this, see https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2018-November/016518.html
-        if (nSize >  EXTRA_DESCENDANT_TX_SIZE_LIMIT ||
-                !m_pool.CalculateMemPoolAncestors(*entry, setAncestors, 2, m_limit_ancestor_size, m_limit_descendants + 1, m_limit_descendant_size + EXTRA_DESCENDANT_TX_SIZE_LIMIT, dummy_err_string)) {
+        if (nSize > EXTRA_DESCENDANT_TX_SIZE_LIMIT ||
+            !m_pool.CalculateMemPoolAncestors(*entry, setAncestors, 2, m_limit_ancestor_size, m_limit_descendants + 1, m_limit_descendant_size + EXTRA_DESCENDANT_TX_SIZE_LIMIT, dummy_err_string)) {
             return state.Invalid(TxValidationResult::TX_MEMPOOL_POLICY, "too-long-mempool-chain", errString);
         }
     }
+
+
+    // Fee Sponsor Txs may not have any children (by policy only!), so make sure none of our parents are a fee sponsor
+    for (unsigned int i = 0; i < tx.vin.size(); i++) {
+        Optional<CTxMemPool::txiter> ancestorIt = m_pool.GetIter(tx.vin[i].prevout.hash);
+        // at this point, should always be true
+        if (ancestorIt && m_pool.Sponsoring((*ancestorIt)->GetTx()).second) {
+            return state.Invalid(TxValidationResult::TX_MEMPOOL_POLICY, "too-long-mempool-chain");
+        }
+    }
+
 
     // A transaction that spends outputs that would be replaced by it is invalid. Now
     // that we have the set of all ancestors we can detect this

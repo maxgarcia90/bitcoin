@@ -165,7 +165,7 @@ void CTxMemPool::UpdateTransactionsFromBlock(const std::vector<uint256> &vHashes
     }
 }
 
-bool CTxMemPool::CalculateMemPoolAncestors(const CTxMemPoolEntry &entry, setEntries &setAncestors, uint64_t limitAncestorCount, uint64_t limitAncestorSize, uint64_t limitDescendantCount, uint64_t limitDescendantSize, std::string &errString, bool fSearchForParents /* = true */) const
+bool CTxMemPool::CalculateMemPoolAncestors(const CTxMemPoolEntry &entry, setEntries &setAncestors, uint64_t limitAncestorCount, uint64_t limitAncestorSize, uint64_t limitDescendantCount, uint64_t limitDescendantSize, std::string &errString, bool fSearchForParents /* = true */, uint64_t* true_parents /* = nullptr */) const
 {
     setEntries parentHashes;
     const CTransaction &tx = entry.GetTx();
@@ -184,6 +184,8 @@ bool CTxMemPool::CalculateMemPoolAncestors(const CTxMemPoolEntry &entry, setEntr
                 }
             }
         }
+        if (true_parents)
+            *true_parents = parentHashes.size();
         auto maybe_txid = SponsoringTXID(tx);
         if (maybe_txid) {
             Optional<txiter> piter = GetIter(*maybe_txid);
@@ -192,6 +194,7 @@ bool CTxMemPool::CalculateMemPoolAncestors(const CTxMemPoolEntry &entry, setEntr
             }
         }
     } else {
+        assert(true_parents == nullptr);
         // If we're not searching for parents, we require this to be an
         // entry in the mempool already.
         txiter it = mapTx.iterator_to(entry);
