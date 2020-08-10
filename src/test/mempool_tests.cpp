@@ -287,9 +287,67 @@ BOOST_AUTO_TEST_CASE(MempoolIndexingTest)
     // Now try removing tx10 and verify the sort order returns to normal
     pool.removeRecursive(pool.mapTx.find(tx10.GetHash())->GetTx(), REMOVAL_REASON_DUMMY);
     CheckSort<descendant_score>(pool, snapshotOrder);
-
     pool.removeRecursive(pool.mapTx.find(tx9.GetHash())->GetTx(), REMOVAL_REASON_DUMMY);
     pool.removeRecursive(pool.mapTx.find(tx8.GetHash())->GetTx(), REMOVAL_REASON_DUMMY);
+
+    CMutableTransaction tx11 = CMutableTransaction();
+    tx11.vout.resize(1);
+    std::vector<unsigned char> bump_script(33);
+    bump_script[0] = OP_VER;
+    uint256 tx1_hash = tx1.GetHash();
+    std::copy(tx1_hash.begin(), tx1_hash.end(), bump_script.begin()+1);
+    tx11.vout[0].scriptPubKey = CScript(bump_script.begin(), bump_script.end());
+    tx11.vout[0].nValue = 0;
+    pool.addUnchecked(entry.Fee(10000000000LL).FromTx(tx11));
+    sortedOrder.clear();
+    sortedOrder.resize(8);
+
+
+     /*  tx3 = 0 (1)
+     *  tx5 = 10000 (1)
+     *  tx4 = 15000 (1)
+     *  tx2 = 20000 (1)
+     *  tx6 = 2.2M (5 txs)
+     *  tx7 = 2.2M (4 txs)
+     *  tx1 = 10000 (2 txs)
+     *  tx11 = 100000000 (1 tx)
+     * 
+     * */
+    sortedOrder[0] = tx3.GetHash().ToString(); // 10000
+    sortedOrder[1] = tx5.GetHash().ToString(); // 15000
+    sortedOrder[2] = tx4.GetHash().ToString(); // 20000
+    sortedOrder[3] = tx2.GetHash().ToString(); // 20000
+    sortedOrder[4] = tx6.GetHash().ToString(); // 20000
+    sortedOrder[5] = tx7.GetHash().ToString(); // 20000
+    sortedOrder[6] = tx1.GetHash().ToString(); // 20000
+    sortedOrder[7] = tx11.GetHash().ToString(); // 20000
+
+    CheckSort<descendant_score>(pool, sortedOrder);
+
+    // Now try removing tx10 and verify the sort order returns to normal
+    pool.removeRecursive(pool.mapTx.find(tx11.GetHash())->GetTx(), REMOVAL_REASON_DUMMY);
+
+
+     /*  tx3 = 0 (1)
+     *  tx5 = 10000 (1)
+     *  tx1 = 10000 (1 txs)
+     *  tx4 = 15000 (1)
+     *  tx2 = 20000 (1)
+     *  tx6 = 2.2M (5 txs)
+     *  tx7 = 2.2M (4 txs)
+     * 
+     * */
+    sortedOrder.clear();
+    sortedOrder.resize(7);
+    sortedOrder[0] = tx3.GetHash().ToString(); // 10000
+    sortedOrder[1] = tx5.GetHash().ToString(); // 15000
+    sortedOrder[2] = tx1.GetHash().ToString(); // 20000
+    sortedOrder[3] = tx4.GetHash().ToString(); // 20000
+    sortedOrder[4] = tx2.GetHash().ToString(); // 20000
+    sortedOrder[5] = tx6.GetHash().ToString(); // 20000
+    sortedOrder[6] = tx7.GetHash().ToString(); // 20000
+    CheckSort<descendant_score>(pool, sortedOrder);
+
 }
 
 BOOST_AUTO_TEST_CASE(MempoolAncestorIndexingTest)
@@ -417,6 +475,36 @@ BOOST_AUTO_TEST_CASE(MempoolAncestorIndexingTest)
     // but the transaction's own feerate is lower
     pool.addUnchecked(entry.Fee(5000LL).FromTx(tx8));
     sortedOrder.insert(sortedOrder.end()-1, tx8.GetHash().ToString());
+    CheckSort<ancestor_score>(pool, sortedOrder);
+
+
+    std::vector<unsigned char> bump_script(33);
+    bump_script[0] = OP_VER;
+    uint256 tx7_hash = tx7.GetHash();
+    std::copy(tx7_hash.begin(), tx7_hash.end(), bump_script.begin()+1);
+    // Check that an little bump is not the best thing in the mempool.
+    CMutableTransaction tx9 = CMutableTransaction();
+    tx9.vout.resize(2);
+    // makes tx9 worse than tx7 with same fee
+    std::vector<unsigned char> some_script(10);
+    tx9.vout[0].scriptPubKey = CScript() << some_script;
+    tx9.vout[1].scriptPubKey = CScript(bump_script.begin(), bump_script.end());
+    tx9.vout[1].nValue = 0;
+    pool.addUnchecked(entry.Fee(fee).FromTx(tx9));
+    sortedOrder.insert(sortedOrder.begin()+1, tx9.GetHash().ToString());
+    CheckSort<ancestor_score>(pool, sortedOrder);
+    sortedOrder.erase(sortedOrder.begin()+1);
+    pool.removeRecursive(CTransaction(tx9), REMOVAL_REASON_DUMMY);
+
+
+    // Check that an huge bump becomes the best thing in the mempool.
+    CMutableTransaction tx10 = CMutableTransaction();
+    tx10.vout.resize(1);
+    tx10.vout[0].scriptPubKey = CScript(bump_script.begin(), bump_script.end());
+    tx10.vout[0].nValue = 0;
+
+    pool.addUnchecked(entry.Fee(50000000LL).FromTx(tx10));
+    sortedOrder.insert(sortedOrder.begin(), tx10.GetHash().ToString());
     CheckSort<ancestor_score>(pool, sortedOrder);
 }
 
