@@ -230,6 +230,12 @@ bool CScript::IsWitnessProgram(int& version, std::vector<unsigned char>& program
     return false;
 }
 
+bool CScript::IsTXIDDependency() const
+{
+    // Extra-fast test for txid-dependency CScripts:
+    return this->size() > 1  && this->back() == OP_VER && (this->size() -1 ) %32 == 0;
+}
+
 bool CScript::IsPushOnly(const_iterator pc) const
 {
     while (pc < end())
