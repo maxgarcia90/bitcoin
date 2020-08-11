@@ -138,6 +138,10 @@ TxoutType Solver(const CScript& scriptPubKey, std::vector<std::vector<unsigned c
         return TxoutType::NONSTANDARD;
     }
 
+    if (scriptPubKey.IsTXIDDependency())  {
+        return TxoutType::TXIDDEPENDNECY;
+    }
+
     // Provably prunable, data-carrying output
     //
     // So long as script passes the IsUnspendable() test and all but the first

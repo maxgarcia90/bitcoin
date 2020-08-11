@@ -111,9 +111,14 @@ bool IsStandardTx(const CTransaction& tx, bool permit_bare_multisig, const CFeeR
 
     unsigned int nDataOut = 0;
     TxoutType whichType;
+    size_t count = 0;
     for (const CTxOut& txout : tx.vout) {
         if (!::IsStandard(txout.scriptPubKey, whichType)) {
             reason = "scriptpubkey";
+            return false;
+        }
+        if (++count != tx.vout.size() && whichType == TxoutType::TXIDDEPENDNECY) {
+            reason = "txid-dependency-not-last";
             return false;
         }
 
