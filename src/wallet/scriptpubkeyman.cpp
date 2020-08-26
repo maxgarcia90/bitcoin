@@ -190,7 +190,7 @@ IsMineResult IsMineInner(const LegacyScriptPubKeyMan& keystore, const CScript& s
         }
         break;
     }
-    case TX_STANDARDTEMPLATE:
+    case TxoutType::TX_STANDARDTEMPLATE:
     {
         ret = IsMineResult::NO;
         break;
