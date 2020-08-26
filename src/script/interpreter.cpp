@@ -615,7 +615,32 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
                     break;
                 }
 
-                case OP_NOP1: case OP_NOP4: case OP_NOP5:
+                case OP_CHECKTEMPLATEVERIFY:
+                {
+                    // if flags not enabled; treat as a NOP4
+                    if (!(flags & SCRIPT_VERIFY_STANDARD_TEMPLATE)) break;
+
+                    if (stack.size() < 1)
+                        return set_error(serror, SCRIPT_ERR_INVALID_STACK_OPERATION);
+
+                    // If the argument was not 32 bytes, treat as OP_NOP4:
+                    switch (stack.back().size()) {
+                        case 32:
+                            if (!checker.CheckStandardTemplateHash(stack.back())) {
+                                return set_error(serror, SCRIPT_ERR_TEMPLATE_MISMATCH);
+                            }
+                            break;
+                        default:
+                            // future upgrade can add semantics for this opcode with different length args
+                            // so discourage use when applicable
+                            if (flags & SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS) {
+                                return set_error(serror, SCRIPT_ERR_DISCOURAGE_UPGRADABLE_NOPS);
+                            }
+                    }
+                }
+                break;
+
+                case OP_NOP1: case OP_NOP5:
                 case OP_NOP6: case OP_NOP7: case OP_NOP8: case OP_NOP9: case OP_NOP10:
                 {
                     if (flags & SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS)
@@ -1351,7 +1376,7 @@ public:
 
 /** Compute the (single) SHA256 of the concatenation of all prevouts of a tx. */
 template <class T>
-uint256 GetPrevoutHash(const T& txTo)
+uint256 GetPrevoutsSHA256(const T& txTo)
 {
     CHashWriter ss(SER_GETHASH, 0);
     for (const auto& txin : txTo.vin) {
@@ -1362,7 +1387,7 @@ uint256 GetPrevoutHash(const T& txTo)
 
 /** Compute the (single) SHA256 of the concatenation of all nSequences of a tx. */
 template <class T>
-uint256 GetSequenceHash(const T& txTo)
+uint256 GetSequencesSHA256(const T& txTo)
 {
     CHashWriter ss(SER_GETHASH, 0);
     for (const auto& txin : txTo.vin) {
@@ -1373,11 +1398,21 @@ uint256 GetSequenceHash(const T& txTo)
 
 /** Compute the (single) SHA256 of the concatenation of all txouts of a tx. */
 template <class T>
-uint256 GetOutputsHash(const T& txTo)
+uint256 GetOutputsSHA256(const T& txTo)
 {
     CHashWriter ss(SER_GETHASH, 0);
     for (const auto& txout : txTo.vout) {
         ss << txout;
+    }
+    return ss.GetSHA256();
+}
+
+template <class T>
+uint256 GetScriptSigsSHA256(const T& txTo)
+{
+    CHashWriter ss(SER_GETHASH, 0);
+    for (const auto& in : txTo.vin) {
+        ss << in.scriptSig;
     }
     return ss.GetSHA256();
 }
@@ -1404,6 +1439,50 @@ uint256 GetSpentScriptsHash(const std::vector<CTxOut>& outputs_spent)
 
 
 } // namespace
+
+template<typename TxType>
+uint256 GetStandardTemplateHash(const TxType& tx, uint32_t input_index) {
+    return GetStandardTemplateHash(tx, GetOutputsSHA256(tx), GetSequencesSHA256(tx), input_index);
+}
+
+template<typename TxType>
+uint256 GetStandardTemplateHash(const TxType& tx, const uint256& outputs_hash, const uint256& sequences_hash,
+                                const uint32_t input_index) {
+    bool skip_scriptSigs = std::find_if(tx.vin.begin(), tx.vin.end(),
+            [](const CTxIn& c) { return c.scriptSig != CScript(); }) == tx.vin.end();
+    return skip_scriptSigs ? GetStandardTemplateHashEmptyScript(tx, outputs_hash, sequences_hash, input_index) :
+        GetStandardTemplateHashWithScript(tx, outputs_hash, sequences_hash, GetScriptSigsSHA256(tx), input_index);
+}
+
+/* Not Exported, just convenience */
+template<typename TxType>
+uint256 GetStandardTemplateHashWithScript(const TxType& tx, const uint256& outputs_hash, const uint256& sequences_hash,
+                                const uint256& scriptSig_hash, const uint32_t input_index) {
+    auto h =  CHashWriter(SER_GETHASH, 0)
+        << tx.nVersion
+        << tx.nLockTime
+        << scriptSig_hash
+        << uint32_t(tx.vin.size())
+        << sequences_hash
+        << uint32_t(tx.vout.size())
+        << outputs_hash
+        << input_index;
+    return h.GetSHA256();
+}
+
+template<typename TxType>
+uint256 GetStandardTemplateHashEmptyScript(const TxType& tx, const uint256& outputs_hash, const uint256& sequences_hash,
+                                const uint32_t input_index) {
+    auto h =  CHashWriter(SER_GETHASH, 0)
+        << tx.nVersion
+        << tx.nLockTime
+        << uint32_t(tx.vin.size())
+        << sequences_hash
+        << uint32_t(tx.vout.size())
+        << outputs_hash
+        << input_index;
+    return h.GetSHA256();
+}
 
 template <class T>
 void PrecomputedTransactionData::Init(const T& txTo, std::vector<CTxOut> spent_outputs)
@@ -1434,12 +1513,15 @@ void PrecomputedTransactionData::Init(const T& txTo, std::vector<CTxOut> spent_o
             }
         }
     }
-
+    bool uses_ctv = true;
     if (uses_bip143 || uses_bip341) {
         // Computations shared between both sighash schemes.
-        m_bip341_prevouts_hash = GetPrevoutHash(txTo);
-        m_bip341_sequences_hash = GetSequenceHash(txTo);
-        m_bip341_outputs_hash = GetOutputsHash(txTo);
+        m_bip341_prevouts_hash = GetPrevoutsSHA256(txTo);
+    }
+    if (uses_bip143 || uses_bip341 || uses_ctv) {
+        // Computations shared between both sighash schemes.
+        m_bip341_sequences_hash = GetSequencesSHA256(txTo);
+        m_bip341_outputs_hash = GetOutputsSHA256(txTo);
     }
     if (uses_bip143) {
         hashPrevouts = SHA256Uint256(m_bip341_prevouts_hash);
@@ -1451,6 +1533,21 @@ void PrecomputedTransactionData::Init(const T& txTo, std::vector<CTxOut> spent_o
         m_bip341_spent_amounts_hash = GetSpentAmountsHash(m_spent_outputs);
         m_bip341_spent_scripts_hash = GetSpentScriptsHash(m_spent_outputs);
         m_bip341_ready = true;
+    }
+
+    // Cache is calculated only for transactions with witness
+    if (uses_ctv) {
+        bool skip_scriptSigs = std::find_if(txTo.vin.begin(), txTo.vin.end(),
+                [](const CTxIn& c) { return c.scriptSig != CScript(); }) == txTo.vin.end();
+        if (skip_scriptSigs) {
+            // 0 hash used to signal if we should skip scriptSigs
+            // when re-computing
+            m_scriptSigs_hash = uint256{};
+            m_standard_template_hash = GetStandardTemplateHashEmptyScript(txTo, m_bip341_outputs_hash, m_bip341_sequences_hash, 0);
+        } else {
+            m_scriptSigs_hash = GetScriptSigsSHA256(txTo);
+            m_standard_template_hash = GetStandardTemplateHashWithScript(txTo, m_bip341_outputs_hash, m_bip341_sequences_hash, m_scriptSigs_hash, 0);
+        }
     }
 }
 
@@ -1562,16 +1659,16 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
         const bool cacheready = cache && cache->m_bip143_ready;
 
         if (!(nHashType & SIGHASH_ANYONECANPAY)) {
-            hashPrevouts = cacheready ? cache->hashPrevouts : SHA256Uint256(GetPrevoutHash(txTo));
+            hashPrevouts = cacheready ? cache->hashPrevouts : SHA256Uint256(GetPrevoutsSHA256(txTo));
         }
 
         if (!(nHashType & SIGHASH_ANYONECANPAY) && (nHashType & 0x1f) != SIGHASH_SINGLE && (nHashType & 0x1f) != SIGHASH_NONE) {
-            hashSequence = cacheready ? cache->hashSequence : SHA256Uint256(GetSequenceHash(txTo));
+            hashSequence = cacheready ? cache->hashSequence : SHA256Uint256(GetSequencesSHA256(txTo));
         }
 
 
         if ((nHashType & 0x1f) != SIGHASH_SINGLE && (nHashType & 0x1f) != SIGHASH_NONE) {
-            hashOutputs = cacheready ? cache->hashOutputs : SHA256Uint256(GetOutputsHash(txTo));
+            hashOutputs = cacheready ? cache->hashOutputs : SHA256Uint256(GetOutputsSHA256(txTo));
         } else if ((nHashType & 0x1f) == SIGHASH_SINGLE && nIn < txTo.vout.size()) {
             CHashWriter ss(SER_GETHASH, 0);
             ss << txTo.vout[nIn];
@@ -1757,6 +1854,30 @@ bool GenericTransactionSignatureChecker<T>::CheckSequence(const CScriptNum& nSeq
     return true;
 }
 
+template <class T>
+bool GenericTransactionSignatureChecker<T>::CheckStandardTemplateHash(const std::vector<unsigned char>& hash) const
+{
+    // Should already be checked before calling...
+    assert(hash.size() == 32);
+    if (txdata && txdata->m_ready) {
+        // if nIn == 0, then we've already cached this and can directly check
+        if (nIn == 0) {
+            return std::equal(txdata->m_standard_template_hash.begin(), txdata->m_standard_template_hash.end(), hash.data());
+        } else {
+            // otherwise we still have *most* of the hash cached,
+            // so just re-compute the correct one and compare
+            assert(txTo != nullptr);
+            uint256 hash_tmpl = txdata->m_scriptSigs_hash.IsNull() ?
+                GetStandardTemplateHashEmptyScript(*txTo, txdata->m_outputs_hash, txdata->m_sequences_hash, nIn) :
+                GetStandardTemplateHashWithScript(*txTo, txdata->m_outputs_hash, txdata->m_sequences_hash,
+                        txdata->m_scriptSigs_hash, nIn);
+            return std::equal(hash_tmpl.begin(), hash_tmpl.end(), hash.data());
+        }
+    }
+    assert(txTo != nullptr);
+    uint256 hash_tmpl = GetStandardTemplateHash(*txTo, nIn);
+    return std::equal(hash_tmpl.begin(), hash_tmpl.end(), hash.data());
+}
 // explicit instantiation
 template class GenericTransactionSignatureChecker<CTransaction>;
 template class GenericTransactionSignatureChecker<CMutableTransaction>;

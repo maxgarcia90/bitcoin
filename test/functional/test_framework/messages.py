@@ -32,7 +32,7 @@ from test_framework.util import hex_str_to_bytes, assert_equal
 
 MIN_VERSION_SUPPORTED = 60001
 MY_VERSION = 70016  # past wtxid relay
-MY_SUBVERSION = b"/python-mininode-tester:0.0.3/"
+MY_SUBVERSION = b"/python-p2p-tester:0.0.3/"
 MY_RELAY = 1 # from version 70001 onwards, fRelay should be appended to version messages (BIP37)
 
 MAX_LOCATOR_SZ = 101
@@ -483,6 +483,19 @@ class CTransaction:
         r += ser_vector(self.vout)
         r += struct.pack("<I", self.nLockTime)
         return r
+
+    def get_standard_template_hash(self, nIn):
+        r = b""
+        r += struct.pack("<i", self.nVersion)
+        r += struct.pack("<I", self.nLockTime)
+        if any(inp.scriptSig for inp in self.vin):
+            r += sha256(b"".join(ser_string(inp.scriptSig) for inp in self.vin))
+        r += struct.pack("<I", len(self.vin))
+        r += sha256(b"".join(struct.pack("<I", inp.nSequence) for inp in self.vin))
+        r += struct.pack("<I", len(self.vout))
+        r += sha256(b"".join(out.serialize() for out in self.vout))
+        r += struct.pack("<I", nIn)
+        return sha256(r)
 
     # Only serialize with witness when explicitly called for
     def serialize_with_witness(self):
