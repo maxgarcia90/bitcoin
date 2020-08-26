@@ -1548,6 +1548,7 @@ void PrecomputedTransactionData::Init(const T& txTo, std::vector<CTxOut> spent_o
             m_scriptSigs_hash = GetScriptSigsSHA256(txTo);
             m_standard_template_hash = GetStandardTemplateHashWithScript(txTo, m_bip341_outputs_hash, m_bip341_sequences_hash, m_scriptSigs_hash, 0);
         }
+        m_ctv_ready = true;
     }
 }
 
@@ -1859,7 +1860,7 @@ bool GenericTransactionSignatureChecker<T>::CheckStandardTemplateHash(const std:
 {
     // Should already be checked before calling...
     assert(hash.size() == 32);
-    if (txdata && txdata->m_ready) {
+    if (txdata && txdata->m_ctv_ready) {
         // if nIn == 0, then we've already cached this and can directly check
         if (nIn == 0) {
             return std::equal(txdata->m_standard_template_hash.begin(), txdata->m_standard_template_hash.end(), hash.data());
@@ -1868,8 +1869,8 @@ bool GenericTransactionSignatureChecker<T>::CheckStandardTemplateHash(const std:
             // so just re-compute the correct one and compare
             assert(txTo != nullptr);
             uint256 hash_tmpl = txdata->m_scriptSigs_hash.IsNull() ?
-                GetStandardTemplateHashEmptyScript(*txTo, txdata->m_outputs_hash, txdata->m_sequences_hash, nIn) :
-                GetStandardTemplateHashWithScript(*txTo, txdata->m_outputs_hash, txdata->m_sequences_hash,
+                GetStandardTemplateHashEmptyScript(*txTo, txdata->m_bip341_outputs_hash, txdata->m_bip341_sequences_hash, nIn) :
+                GetStandardTemplateHashWithScript(*txTo, txdata->m_bip341_outputs_hash, txdata->m_bip341_sequences_hash,
                         txdata->m_scriptSigs_hash, nIn);
             return std::equal(hash_tmpl.begin(), hash_tmpl.end(), hash.data());
         }
