@@ -1370,7 +1370,7 @@ template PrecomputedTransactionData::PrecomputedTransactionData(const CMutableTr
 
 template<typename TxType>
 uint256 GetStandardTemplateHash(const TxType& tx, uint32_t input_index) {
-    return GetStandardTemplateHash(tx, GetOutputsSHA256(tx), GetSequenceSHA256(tx), input_index);
+    return GetStandardTemplateHash(tx, GetOutputsSHA256(tx), GetSequencesSHA256(tx), input_index);
 }
 
 template<typename TxType>
