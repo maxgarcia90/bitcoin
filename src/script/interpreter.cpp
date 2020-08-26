@@ -1597,7 +1597,7 @@ bool GenericTransactionSignatureChecker<T>::CheckStandardTemplateHash(const std:
 {
     // Should already be checked before calling...
     assert(hash.size() == 32);
-    if (txdata && txdata->ready) {
+    if (txdata && txdata->m_ready) {
         // if nIn == 0, then we've already cached this and can directly check
         if (nIn == 0) {
             return std::equal(txdata->m_standard_template_hash.begin(), txdata->m_standard_template_hash.end(), hash.data());
