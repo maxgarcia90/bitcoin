@@ -7,6 +7,7 @@
 
 #include <secp256k1.h>
 #include <secp256k1_recovery.h>
+#include <secp256k1_schnorrsig.h>
 
 namespace
 {
@@ -164,6 +165,20 @@ static int ecdsa_signature_parse_der_lax(const secp256k1_context* ctx, secp256k1
         secp256k1_ecdsa_signature_parse_compact(ctx, sig, tmpsig);
     }
     return 1;
+}
+
+bool XOnlyPubKey::VerifySchnorr(const uint256 &hash, const std::vector<unsigned char>& sigbytes) const {
+    if (sigbytes.size() != 64) return false;
+    secp256k1_xonly_pubkey pubkey;
+    if (!secp256k1_xonly_pubkey_parse(secp256k1_context_verify, &pubkey, m_keydata.begin())) return false;
+    return secp256k1_schnorrsig_verify(secp256k1_context_verify, sigbytes.data(), hash.begin(), &pubkey);
+}
+
+bool XOnlyPubKey::CheckPayToContract(const XOnlyPubKey& base, const uint256& hash, bool negated) const
+{
+    secp256k1_xonly_pubkey base_point;
+    if (!secp256k1_xonly_pubkey_parse(secp256k1_context_verify, &base_point, base.data())) return false;
+    return secp256k1_xonly_pubkey_tweak_add_check(secp256k1_context_verify, m_keydata.begin(), negated, &base_point, hash.begin());
 }
 
 bool CPubKey::Verify(const uint256 &hash, const std::vector<unsigned char>& vchSig) const {
