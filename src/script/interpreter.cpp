@@ -1328,46 +1328,6 @@ uint256 GetScriptSigsSHA256(const T& txTo)
 
 } // namespace
 
-template <class T>
-void PrecomputedTransactionData::Init(const T& txTo)
-{
-    assert(!m_ready);
-
-    // Cache is calculated only for transactions with witness
-    if (txTo.HasWitness()) {
-        m_outputs_hash = GetOutputsSHA256(txTo);
-        m_sequences_hash = GetSequencesSHA256(txTo);
-        bool skip_scriptSigs = std::find_if(txTo.vin.begin(), txTo.vin.end(),
-                [](const CTxIn& c) { return c.scriptSig != CScript(); }) == txTo.vin.end();
-        if (skip_scriptSigs) {
-            // 0 hash used to signal if we should skip scriptSigs
-            // when re-computing
-            m_scriptSigs_hash = uint256{};
-            m_standard_template_hash = GetStandardTemplateHashEmptyScript(txTo, m_outputs_hash, m_sequences_hash, 0);
-        } else {
-            m_scriptSigs_hash = GetScriptSigsSHA256(txTo);
-            m_standard_template_hash = GetStandardTemplateHashWithScript(txTo, m_outputs_hash, m_sequences_hash, m_scriptSigs_hash, 0);
-        }
-        hashOutputs = SHA256Uint256(m_outputs_hash);
-        hashSequence = SHA256Uint256(m_sequences_hash);
-        hashPrevouts = SHA256Uint256(GetPrevoutsSHA256(txTo));
-    }
-
-    m_ready = true;
-}
-
-template <class T>
-PrecomputedTransactionData::PrecomputedTransactionData(const T& txTo)
-{
-    Init(txTo);
-}
-
-// explicit instantiation
-template void PrecomputedTransactionData::Init(const CTransaction& txTo);
-template void PrecomputedTransactionData::Init(const CMutableTransaction& txTo);
-template PrecomputedTransactionData::PrecomputedTransactionData(const CTransaction& txTo);
-template PrecomputedTransactionData::PrecomputedTransactionData(const CMutableTransaction& txTo);
-
 template<typename TxType>
 uint256 GetStandardTemplateHash(const TxType& tx, uint32_t input_index) {
     return GetStandardTemplateHash(tx, GetOutputsSHA256(tx), GetSequencesSHA256(tx), input_index);
@@ -1411,6 +1371,47 @@ uint256 GetStandardTemplateHashEmptyScript(const TxType& tx, const uint256& outp
         << input_index;
     return h.GetSHA256();
 }
+
+template <class T>
+void PrecomputedTransactionData::Init(const T& txTo)
+{
+    assert(!m_ready);
+
+    // Cache is calculated only for transactions with witness
+    if (txTo.HasWitness()) {
+        m_outputs_hash = GetOutputsSHA256(txTo);
+        m_sequences_hash = GetSequencesSHA256(txTo);
+        bool skip_scriptSigs = std::find_if(txTo.vin.begin(), txTo.vin.end(),
+                [](const CTxIn& c) { return c.scriptSig != CScript(); }) == txTo.vin.end();
+        if (skip_scriptSigs) {
+            // 0 hash used to signal if we should skip scriptSigs
+            // when re-computing
+            m_scriptSigs_hash = uint256{};
+            m_standard_template_hash = GetStandardTemplateHashEmptyScript(txTo, m_outputs_hash, m_sequences_hash, 0);
+        } else {
+            m_scriptSigs_hash = GetScriptSigsSHA256(txTo);
+            m_standard_template_hash = GetStandardTemplateHashWithScript(txTo, m_outputs_hash, m_sequences_hash, m_scriptSigs_hash, 0);
+        }
+        hashOutputs = SHA256Uint256(m_outputs_hash);
+        hashSequence = SHA256Uint256(m_sequences_hash);
+        hashPrevouts = SHA256Uint256(GetPrevoutsSHA256(txTo));
+    }
+
+    m_ready = true;
+}
+
+template <class T>
+PrecomputedTransactionData::PrecomputedTransactionData(const T& txTo)
+{
+    Init(txTo);
+}
+
+// explicit instantiation
+template void PrecomputedTransactionData::Init(const CTransaction& txTo);
+template void PrecomputedTransactionData::Init(const CMutableTransaction& txTo);
+template PrecomputedTransactionData::PrecomputedTransactionData(const CTransaction& txTo);
+template PrecomputedTransactionData::PrecomputedTransactionData(const CMutableTransaction& txTo);
+
 
 template <class T>
 uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn, int nHashType, const CAmount& amount, SigVersion sigversion, const PrecomputedTransactionData* cache)
