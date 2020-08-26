@@ -183,7 +183,7 @@ bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs)
             if (subscript.GetSigOpCount(true) > MAX_P2SH_SIGOPS) {
                 return false;
             }
-        } else if (whichType == TX_STANDARDTEMPLATE) {
+        } else if (whichType == TxoutType::TX_STANDARDTEMPLATE) {
             if (tx.vin[i].scriptSig.size() != 0) return false;
         }
     }
