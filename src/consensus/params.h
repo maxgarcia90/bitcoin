@@ -29,6 +29,11 @@ struct BIP9Deployment {
     int64_t nStartTime;
     /** Timeout/expiry MedianTime for the deployment attempt. */
     int64_t nTimeout;
+    /** Delay lock in occuring until at least this timestamp.
+     *  Note that lock in will still only occur on a retarget
+     *  boundary.
+     */
+    int64_t min_lock_in_time{0};
 
     /** Constant for nTimeout very far in the future. */
     static constexpr int64_t NO_TIMEOUT = std::numeric_limits<int64_t>::max();

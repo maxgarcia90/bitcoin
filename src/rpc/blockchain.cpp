@@ -1235,6 +1235,7 @@ static void BIP9SoftForkDescPushBack(UniValue& softforks, const std::string &nam
     switch (thresholdState) {
     case ThresholdState::DEFINED: bip9.pushKV("status", "defined"); break;
     case ThresholdState::STARTED: bip9.pushKV("status", "started"); break;
+    case ThresholdState::DELAYED: bip9.pushKV("status", "delayed"); break;
     case ThresholdState::LOCKED_IN: bip9.pushKV("status", "locked_in"); break;
     case ThresholdState::ACTIVE: bip9.pushKV("status", "active"); break;
     case ThresholdState::FAILED: bip9.pushKV("status", "failed"); break;
@@ -1257,6 +1258,9 @@ static void BIP9SoftForkDescPushBack(UniValue& softforks, const std::string &nam
         statsUV.pushKV("count", statsStruct.count);
         statsUV.pushKV("possible", statsStruct.possible);
         bip9.pushKV("statistics", statsUV);
+    }
+    if (consensusParams.vDeployments[id].min_lock_in_time != 0) {
+        bip9.pushKV("min_lock_in_time", consensusParams.vDeployments[id].min_lock_in_time);
     }
 
     UniValue rv(UniValue::VOBJ);
@@ -1304,6 +1308,7 @@ RPCHelpMan getblockchaininfo()
                                     {RPCResult::Type::NUM_TIME, "start_time", "the minimum median time past of a block at which the bit gains its meaning"},
                                     {RPCResult::Type::NUM_TIME, "timeout", "the median time past of a block at which the deployment is considered failed if not yet locked in"},
                                     {RPCResult::Type::NUM, "since", "height of the first block to which the status applies"},
+                                    {RPCResult::Type::NUM, "min_lock_in_time", "minimum median time that much be reached before switching to LOCKED_IN (only if non-zero)"},
                                     {RPCResult::Type::OBJ, "statistics", "numeric statistics about BIP9 signalling for a softfork (only for \"started\" status)",
                                     {
                                         {RPCResult::Type::NUM, "period", "the length in blocks of the BIP9 signalling period"},

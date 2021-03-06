@@ -11,6 +11,7 @@ ThresholdState AbstractThresholdConditionChecker::GetStateFor(const CBlockIndex*
     int nThreshold = Threshold(params);
     int64_t nTimeStart = BeginTime(params);
     int64_t nTimeTimeout = EndTime(params);
+    int64_t min_lock_in_time = MinLockInTime(params);
 
     // Check if this deployment is always active.
     if (nTimeStart == Consensus::BIP9Deployment::ALWAYS_ACTIVE) {
@@ -73,6 +74,12 @@ ThresholdState AbstractThresholdConditionChecker::GetStateFor(const CBlockIndex*
                     pindexCount = pindexCount->pprev;
                 }
                 if (count >= nThreshold) {
+                    stateNext = (pindexPrev->GetMedianTimePast() < min_lock_in_time ? ThresholdState::DELAYED : ThresholdState::LOCKED_IN);
+                }
+                break;
+            }
+            case ThresholdState::DELAYED: {
+                if (min_lock_in_time <= pindexPrev->GetMedianTimePast()) {
                     stateNext = ThresholdState::LOCKED_IN;
                 }
                 break;
@@ -170,6 +177,7 @@ private:
 protected:
     int64_t BeginTime(const Consensus::Params& params) const override { return params.vDeployments[id].nStartTime; }
     int64_t EndTime(const Consensus::Params& params) const override { return params.vDeployments[id].nTimeout; }
+    int64_t MinLockInTime(const Consensus::Params& params) const override { return params.vDeployments[id].min_lock_in_time; }
     int Period(const Consensus::Params& params) const override { return params.nMinerConfirmationWindow; }
     int Threshold(const Consensus::Params& params) const override { return params.nRuleChangeActivationThreshold; }
 

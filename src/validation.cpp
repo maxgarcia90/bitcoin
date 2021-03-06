@@ -1818,8 +1818,16 @@ int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Para
 
     for (int i = 0; i < (int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; i++) {
         ThresholdState state = VersionBitsState(pindexPrev, params, static_cast<Consensus::DeploymentPos>(i), versionbitscache);
-        if (state == ThresholdState::LOCKED_IN || state == ThresholdState::STARTED) {
+        switch (state) {
+        case ThresholdState::STARTED:
+        case ThresholdState::DELAYED:
+        case ThresholdState::LOCKED_IN:
             nVersion |= VersionBitsMask(params, static_cast<Consensus::DeploymentPos>(i));
+            break;
+        case ThresholdState::DEFINED:
+        case ThresholdState::FAILED:
+        case ThresholdState::ACTIVE:
+            break;
         }
     }
 
@@ -2456,6 +2464,7 @@ static void UpdateTip(CTxMemPool& mempool, const CBlockIndex* pindexNew, const C
             WarningBitsConditionChecker checker(bit);
             ThresholdState state = checker.GetStateFor(pindex, chainParams.GetConsensus(), warningcache[bit]);
             if (state == ThresholdState::ACTIVE || state == ThresholdState::LOCKED_IN) {
+                // DELAYED unreachable since min_lock_in_time = 0
                 const bilingual_str warning = strprintf(_("Warning: unknown new rules activated (versionbit %i)"), bit);
                 if (state == ThresholdState::ACTIVE) {
                     DoWarning(warning);

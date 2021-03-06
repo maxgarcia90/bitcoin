@@ -19,6 +19,7 @@ static const std::string StateName(ThresholdState state)
     switch (state) {
     case ThresholdState::DEFINED:   return "DEFINED";
     case ThresholdState::STARTED:   return "STARTED";
+    case ThresholdState::DELAYED:   return "DELAYED";
     case ThresholdState::LOCKED_IN: return "LOCKED_IN";
     case ThresholdState::ACTIVE:    return "ACTIVE";
     case ThresholdState::FAILED:    return "FAILED";
