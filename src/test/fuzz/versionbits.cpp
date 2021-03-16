@@ -27,12 +27,13 @@ private:
 public:
     const int64_t m_begin;
     const int64_t m_end;
+    const int64_t m_min_lock_in_time;
     const int m_period;
     const int m_threshold;
     const int m_bit;
 
-    TestConditionChecker(int64_t begin, int64_t end, int period, int threshold, int bit)
-        : m_begin{begin}, m_end{end}, m_period{period}, m_threshold{threshold}, m_bit{bit}
+    TestConditionChecker(int64_t begin, int64_t end, int64_t min_lock_in_time, int period, int threshold, int bit)
+        : m_begin{begin}, m_end{end}, m_min_lock_in_time{min_lock_in_time}, m_period{period}, m_threshold{threshold}, m_bit{bit}
     {
         assert(m_period > 0);
         assert(0 <= m_threshold && m_threshold <= m_period);
@@ -42,6 +43,7 @@ public:
     bool Condition(const CBlockIndex* pindex, const Consensus::Params& params) const override { return Condition(pindex->nVersion); }
     int64_t BeginTime(const Consensus::Params& params) const override { return m_begin; }
     int64_t EndTime(const Consensus::Params& params) const override { return m_end; }
+    int64_t MinLockInTime(const Consensus::Params& params) const override { return m_min_lock_in_time; }
     int Period(const Consensus::Params& params) const override { return m_period; }
     int Threshold(const Consensus::Params& params) const override { return m_threshold; }
 
@@ -168,8 +170,9 @@ FUZZ_TARGET_INIT(versionbits, initialize)
             never_active_test = true;
         }
     }
+    const int64_t min_lock_in_time = fuzzed_data_provider.ConsumeBool() ? block_start_time + fuzzed_data_provider.ConsumeIntegralInRange<int64_t>(0, (period * (max_periods - 3)) * interval) : 0;
 
-    TestConditionChecker checker(start_time, timeout, period, threshold, bit);
+    TestConditionChecker checker(start_time, timeout, min_lock_in_time, period, threshold, bit);
 
     // Early exit if the versions don't signal sensibly for the deployment
     if (!checker.Condition(ver_signal)) return;
@@ -305,10 +308,19 @@ FUZZ_TARGET_INIT(versionbits, initialize)
             assert(exp_state == ThresholdState::DEFINED);
         }
         break;
+    case ThresholdState::DELAYED:
     case ThresholdState::LOCKED_IN:
-        assert(exp_state == ThresholdState::STARTED);
-        assert(current_block->GetMedianTimePast() < checker.m_end);
-        assert(blocks_sig >= threshold);
+        if (state == ThresholdState::DELAYED) {
+            assert(current_block->GetMedianTimePast() < min_lock_in_time);
+        } else {
+            assert(min_lock_in_time <= current_block->GetMedianTimePast());
+        }
+        if (exp_state == ThresholdState::STARTED) {
+            assert(blocks_sig >= threshold);
+            assert(current_block->GetMedianTimePast() < checker.m_end);
+        } else {
+            assert(exp_state == ThresholdState::DELAYED);
+        }
         break;
     case ThresholdState::ACTIVE:
         assert(exp_state == ThresholdState::ACTIVE || exp_state == ThresholdState::LOCKED_IN);
