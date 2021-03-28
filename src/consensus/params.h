@@ -34,6 +34,9 @@ struct BIP9Deployment {
      *  boundary.
      */
     int64_t min_lock_in_time{0};
+     /** Minimum number of full signaling periods that must occur, may override `nTimeout` if
+      * `min_signal_periods` have not occurred after `nStartTime`.  */
+    int64_t min_signal_periods{0};
 
     /** Constant for nTimeout very far in the future. */
     static constexpr int64_t NO_TIMEOUT = std::numeric_limits<int64_t>::max();

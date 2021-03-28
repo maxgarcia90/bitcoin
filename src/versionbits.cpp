@@ -11,6 +11,7 @@ ThresholdState AbstractThresholdConditionChecker::GetStateFor(const CBlockIndex*
     int nThreshold = Threshold(params);
     int64_t nTimeStart = BeginTime(params);
     int64_t nTimeTimeout = EndTime(params);
+    int64_t signal_periods = MinSignalPeriods(params);
     int64_t min_lock_in_time = MinLockInTime(params);
 
     // Check if this deployment is always active.
@@ -43,7 +44,7 @@ ThresholdState AbstractThresholdConditionChecker::GetStateFor(const CBlockIndex*
     // At this point, cache[pindexPrev] is known
     assert(cache.count(pindexPrev));
     ThresholdState state = cache[pindexPrev];
-
+    int min_stop_height = 0;
     // Now walk forward and compute the state of descendants of pindexPrev
     while (!vToCompute.empty()) {
         ThresholdState stateNext = state;
@@ -52,15 +53,16 @@ ThresholdState AbstractThresholdConditionChecker::GetStateFor(const CBlockIndex*
 
         switch (state) {
             case ThresholdState::DEFINED: {
-                if (pindexPrev->GetMedianTimePast() >= nTimeTimeout) {
+                if (pindexPrev->GetMedianTimePast() >= nTimeTimeout && signal_periods == 0) {
                     stateNext = ThresholdState::FAILED;
                 } else if (pindexPrev->GetMedianTimePast() >= nTimeStart) {
                     stateNext = ThresholdState::STARTED;
+                    min_stop_height = pindexPrev->nHeight + (nPeriod*signal_periods);
                 }
                 break;
             }
             case ThresholdState::STARTED: {
-                if (pindexPrev->GetMedianTimePast() >= nTimeTimeout) {
+                if (pindexPrev->GetMedianTimePast() >= nTimeTimeout && pindexPrev->nHeight + 1 >= min_stop_height) {
                     stateNext = ThresholdState::FAILED;
                     break;
                 }
@@ -178,6 +180,7 @@ protected:
     int64_t BeginTime(const Consensus::Params& params) const override { return params.vDeployments[id].nStartTime; }
     int64_t EndTime(const Consensus::Params& params) const override { return params.vDeployments[id].nTimeout; }
     int64_t MinLockInTime(const Consensus::Params& params) const override { return params.vDeployments[id].min_lock_in_time; }
+    int64_t MinSignalPeriods(const Consensus::Params& params) const override { return params.vDeployments[id].min_signal_periods; }
     int Period(const Consensus::Params& params) const override { return params.nMinerConfirmationWindow; }
     int Threshold(const Consensus::Params& params) const override { return params.nRuleChangeActivationThreshold; }
 
