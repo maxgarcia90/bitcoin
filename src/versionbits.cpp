@@ -44,7 +44,6 @@ ThresholdState AbstractThresholdConditionChecker::GetStateFor(const CBlockIndex*
     // At this point, cache[pindexPrev] is known
     assert(cache.count(pindexPrev));
     ThresholdState state = cache[pindexPrev];
-    int min_stop_height = 0;
     // Now walk forward and compute the state of descendants of pindexPrev
     while (!vToCompute.empty()) {
         ThresholdState stateNext = state;
@@ -57,12 +56,12 @@ ThresholdState AbstractThresholdConditionChecker::GetStateFor(const CBlockIndex*
                     stateNext = ThresholdState::FAILED;
                 } else if (pindexPrev->GetMedianTimePast() >= nTimeStart) {
                     stateNext = ThresholdState::STARTED;
-                    min_stop_height = pindexPrev->nHeight + (nPeriod*signal_periods);
+                    cache.min_stop_height = pindexPrev->nHeight + (nPeriod*signal_periods);
                 }
                 break;
             }
             case ThresholdState::STARTED: {
-                if (pindexPrev->GetMedianTimePast() >= nTimeTimeout && pindexPrev->nHeight + 1 >= min_stop_height) {
+                if (pindexPrev->GetMedianTimePast() >= nTimeTimeout && pindexPrev->nHeight + 1 >= cache.min_stop_height) {
                     stateNext = ThresholdState::FAILED;
                     break;
                 }

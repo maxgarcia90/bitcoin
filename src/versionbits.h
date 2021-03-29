@@ -31,10 +31,28 @@ enum class ThresholdState {
     FAILED,    // For all blocks once the first retarget period after the timeout time is hit, if LOCKED_IN wasn't already reached (final state)
 };
 
+
 // A map that gives the state for blocks whose height is a multiple of Period().
 // The map is indexed by the block's parent, however, so all keys in the map
 // will either be nullptr or a block with (height + 1) % Period() == 0.
-typedef std::map<const CBlockIndex*, ThresholdState> ThresholdConditionCache;
+typedef std::map<const CBlockIndex*, ThresholdState> ThresholdConditionCacheMap;
+
+/** Additional Data tracked in the finite-state-machine
+ */
+struct ThresholdConditionCache {
+    ThresholdConditionCacheMap map{};
+    int min_stop_height{0};
+    void clear() {
+        map.clear();
+        min_stop_height = 0;
+    }
+    bool count(const CBlockIndex* p) {
+        return map.count(p);
+    }
+    ThresholdState& operator[](const CBlockIndex* p) {
+        return map[p];
+    }
+};
 
 /** Display status of an in-progress BIP9 softfork */
 struct BIP9Stats {
