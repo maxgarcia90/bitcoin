@@ -323,8 +323,11 @@ bool GetScriptOp(CScriptBase::const_iterator& pc, CScriptBase::const_iterator en
         }
         if (end - pc < 0 || (unsigned int)(end - pc) < nSize)
             return false;
-        if (pvchRet)
+        if (pvchRet) {
+            if (nSize > MAX_SCRIPT_ELEMENT_SIZE)
+                return false;
             pvchRet->assign(pc, pc + nSize);
+        }
         pc += nSize;
     }
 

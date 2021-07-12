@@ -331,17 +331,17 @@ public:
         return m_value;
     }
 
-    std::vector<unsigned char> getvch() const
+    std::vector<unsigned char> getvch(std::optional<std::vector<unsigned char>> prealloc = std::nullopt_t) const
     {
         return serialize(m_value);
     }
 
-    static std::vector<unsigned char> serialize(const int64_t& value)
+    static std::vector<unsigned char> serialize(const int64_t& value, std::optional<std::vector<unsigned char>> prealloc = std::nullopt_t)
     {
         if(value == 0)
             return std::vector<unsigned char>();
 
-        std::vector<unsigned char> result;
+        std::vector<unsigned char> result = prealloc ? std::move(*prealloc) : {};
         const bool neg = value < 0;
         uint64_t absvalue = neg ? ~static_cast<uint64_t>(value) + 1 : static_cast<uint64_t>(value);
 
