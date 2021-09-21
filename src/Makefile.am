@@ -148,7 +148,6 @@ BITCOIN_CORE_H = \
   interfaces/init.h \
   interfaces/ipc.h \
   interfaces/node.h \
-  interfaces/wallet.h \
   key.h \
   key_io.h \
   logging.h \
@@ -252,7 +251,6 @@ BITCOIN_CORE_H = \
   validation.h \
   validationinterface.h \
   versionbits.h \
-  walletinitinterface.h \
   warnings.h \
   zmq/zmqabstractnotifier.h \
   zmq/zmqnotificationinterface.h \

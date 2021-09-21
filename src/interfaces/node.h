@@ -171,9 +171,6 @@ public:
     //! Get unspent outputs associated with a transaction.
     virtual bool getUnspentOutput(const COutPoint& output, Coin& coin) = 0;
 
-    //! Get wallet client.
-    virtual WalletClient& walletClient() = 0;
-
     //! Register handler for init messages.
     using InitMessageFn = std::function<void(const std::string& message)>;
     virtual std::unique_ptr<Handler> handleInitMessage(InitMessageFn fn) = 0;

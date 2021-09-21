@@ -11,7 +11,6 @@
 #include <interfaces/chain.h>
 #include <interfaces/handler.h>
 #include <interfaces/node.h>
-#include <interfaces/wallet.h>
 #include <mapport.h>
 #include <net.h>
 #include <net_processing.h>
@@ -241,10 +240,6 @@ public:
     {
         LOCK(::cs_main);
         return chainman().ActiveChainstate().CoinsTip().GetCoin(output, coin);
-    }
-    WalletClient& walletClient() override
-    {
-        return *Assert(m_context->wallet_client);
     }
     std::unique_ptr<Handler> handleInitMessage(InitMessageFn fn) override
     {

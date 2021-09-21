@@ -12,7 +12,6 @@
 #include <util/strencodings.h>
 #include <util/system.h>
 #include <util/translation.h>
-#include <walletinitinterface.h>
 
 #include <algorithm>
 #include <iterator>
