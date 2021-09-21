@@ -195,7 +195,6 @@ BITCOIN_CORE_H = \
   rpc/mining.h \
   rpc/net.h \
   rpc/protocol.h \
-  rpc/rawtransaction_util.h \
   rpc/register.h \
   rpc/request.h \
   rpc/server.h \
@@ -457,7 +456,6 @@ libbitcoin_common_a_SOURCES = \
   policy/feerate.cpp \
   policy/policy.cpp \
   protocol.cpp \
-  rpc/rawtransaction_util.cpp \
   rpc/util.cpp \
   scheduler.cpp \
   script/descriptor.cpp \
