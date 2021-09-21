@@ -8,12 +8,10 @@
 #include <addrman.h>
 #include <banman.h>
 #include <blockencodings.h>
-#include <blockfilter.h>
 #include <chainparams.h>
 #include <consensus/validation.h>
 #include <deploymentstatus.h>
 #include <hash.h>
-#include <index/blockfilterindex.h>
 #include <merkleblock.h>
 #include <netbase.h>
 #include <netmessagemaker.h>
@@ -148,8 +146,6 @@ static_assert(INVENTORY_MAX_RECENT_RELAY >= INVENTORY_BROADCAST_PER_SECOND * UNC
 static constexpr auto AVG_FEEFILTER_BROADCAST_INTERVAL = 10min;
 /** Maximum feefilter broadcast delay after significant change. */
 static constexpr auto MAX_FEEFILTER_CHANGE_DELAY = 5min;
-/** Maximum number of compact filters that may be requested with one getcfilters. See BIP 157. */
-static constexpr uint32_t MAX_GETCFILTERS_SIZE = 1000;
 /** Maximum number of cf hashes that may be requested with one getcfheaders. See BIP 157. */
 static constexpr uint32_t MAX_GETCFHEADERS_SIZE = 2000;
 /** the maximum percentage of addresses from our addrman to return in response to a getaddr message. */
@@ -596,56 +592,6 @@ private:
     bool BlockRequestAllowed(const CBlockIndex* pindex) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
     bool AlreadyHaveBlock(const uint256& block_hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
     void ProcessGetBlockData(CNode& pfrom, Peer& peer, const CInv& inv);
-
-    /**
-     * Validation logic for compact filters request handling.
-     *
-     * May disconnect from the peer in the case of a bad request.
-     *
-     * @param[in]   peer            The peer that we received the request from
-     * @param[in]   filter_type     The filter type the request is for. Must be basic filters.
-     * @param[in]   start_height    The start height for the request
-     * @param[in]   stop_hash       The stop_hash for the request
-     * @param[in]   max_height_diff The maximum number of items permitted to request, as specified in BIP 157
-     * @param[out]  stop_index      The CBlockIndex for the stop_hash block, if the request can be serviced.
-     * @param[out]  filter_index    The filter index, if the request can be serviced.
-     * @return                      True if the request can be serviced.
-     */
-    bool PrepareBlockFilterRequest(CNode& peer,
-                                   BlockFilterType filter_type, uint32_t start_height,
-                                   const uint256& stop_hash, uint32_t max_height_diff,
-                                   const CBlockIndex*& stop_index,
-                                   BlockFilterIndex*& filter_index);
-
-    /**
-     * Handle a cfilters request.
-     *
-     * May disconnect from the peer in the case of a bad request.
-     *
-     * @param[in]   peer            The peer that we received the request from
-     * @param[in]   vRecv           The raw message received
-     */
-    void ProcessGetCFilters(CNode& peer, CDataStream& vRecv);
-
-    /**
-     * Handle a cfheaders request.
-     *
-     * May disconnect from the peer in the case of a bad request.
-     *
-     * @param[in]   peer            The peer that we received the request from
-     * @param[in]   vRecv           The raw message received
-     */
-    void ProcessGetCFHeaders(CNode& peer, CDataStream& vRecv);
-
-    /**
-     * Handle a getcfcheckpt request.
-     *
-     * May disconnect from the peer in the case of a bad request.
-     *
-     * @param[in]   peer            The peer that we received the request from
-     * @param[in]   vRecv           The raw message received
-     */
-    void ProcessGetCFCheckPt(CNode& peer, CDataStream& vRecv);
 
     /** Checks if address relay is permitted with peer. If needed, initializes
      * the m_addr_known bloom filter and sets m_addr_relay_enabled to true.
@@ -2291,173 +2237,8 @@ void PeerManagerImpl::ProcessOrphanTx(std::set<uint256>& orphan_work_set)
     m_mempool.check(m_chainman.ActiveChainstate());
 }
 
-bool PeerManagerImpl::PrepareBlockFilterRequest(CNode& peer,
-                                                BlockFilterType filter_type, uint32_t start_height,
-                                                const uint256& stop_hash, uint32_t max_height_diff,
-                                                const CBlockIndex*& stop_index,
-                                                BlockFilterIndex*& filter_index)
-{
-    const bool supported_filter_type =
-        (filter_type == BlockFilterType::BASIC &&
-         (peer.GetLocalServices() & NODE_COMPACT_FILTERS));
-    if (!supported_filter_type) {
-        LogPrint(BCLog::NET, "peer %d requested unsupported block filter type: %d\n",
-                 peer.GetId(), static_cast<uint8_t>(filter_type));
-        peer.fDisconnect = true;
-        return false;
-    }
 
-    {
-        LOCK(cs_main);
-        stop_index = m_chainman.m_blockman.LookupBlockIndex(stop_hash);
 
-        // Check that the stop block exists and the peer would be allowed to fetch it.
-        if (!stop_index || !BlockRequestAllowed(stop_index)) {
-            LogPrint(BCLog::NET, "peer %d requested invalid block hash: %s\n",
-                     peer.GetId(), stop_hash.ToString());
-            peer.fDisconnect = true;
-            return false;
-        }
-    }
-
-    uint32_t stop_height = stop_index->nHeight;
-    if (start_height > stop_height) {
-        LogPrint(BCLog::NET, "peer %d sent invalid getcfilters/getcfheaders with " /* Continued */
-                 "start height %d and stop height %d\n",
-                 peer.GetId(), start_height, stop_height);
-        peer.fDisconnect = true;
-        return false;
-    }
-    if (stop_height - start_height >= max_height_diff) {
-        LogPrint(BCLog::NET, "peer %d requested too many cfilters/cfheaders: %d / %d\n",
-                 peer.GetId(), stop_height - start_height + 1, max_height_diff);
-        peer.fDisconnect = true;
-        return false;
-    }
-
-    filter_index = GetBlockFilterIndex(filter_type);
-    if (!filter_index) {
-        LogPrint(BCLog::NET, "Filter index for supported type %s not found\n", BlockFilterTypeName(filter_type));
-        return false;
-    }
-
-    return true;
-}
-
-void PeerManagerImpl::ProcessGetCFilters(CNode& peer, CDataStream& vRecv)
-{
-    uint8_t filter_type_ser;
-    uint32_t start_height;
-    uint256 stop_hash;
-
-    vRecv >> filter_type_ser >> start_height >> stop_hash;
-
-    const BlockFilterType filter_type = static_cast<BlockFilterType>(filter_type_ser);
-
-    const CBlockIndex* stop_index;
-    BlockFilterIndex* filter_index;
-    if (!PrepareBlockFilterRequest(peer, filter_type, start_height, stop_hash,
-                                   MAX_GETCFILTERS_SIZE, stop_index, filter_index)) {
-        return;
-    }
-
-    std::vector<BlockFilter> filters;
-    if (!filter_index->LookupFilterRange(start_height, stop_index, filters)) {
-        LogPrint(BCLog::NET, "Failed to find block filter in index: filter_type=%s, start_height=%d, stop_hash=%s\n",
-                     BlockFilterTypeName(filter_type), start_height, stop_hash.ToString());
-        return;
-    }
-
-    for (const auto& filter : filters) {
-        CSerializedNetMsg msg = CNetMsgMaker(peer.GetCommonVersion())
-            .Make(NetMsgType::CFILTER, filter);
-        m_connman.PushMessage(&peer, std::move(msg));
-    }
-}
-
-void PeerManagerImpl::ProcessGetCFHeaders(CNode& peer, CDataStream& vRecv)
-{
-    uint8_t filter_type_ser;
-    uint32_t start_height;
-    uint256 stop_hash;
-
-    vRecv >> filter_type_ser >> start_height >> stop_hash;
-
-    const BlockFilterType filter_type = static_cast<BlockFilterType>(filter_type_ser);
-
-    const CBlockIndex* stop_index;
-    BlockFilterIndex* filter_index;
-    if (!PrepareBlockFilterRequest(peer, filter_type, start_height, stop_hash,
-                                   MAX_GETCFHEADERS_SIZE, stop_index, filter_index)) {
-        return;
-    }
-
-    uint256 prev_header;
-    if (start_height > 0) {
-        const CBlockIndex* const prev_block =
-            stop_index->GetAncestor(static_cast<int>(start_height - 1));
-        if (!filter_index->LookupFilterHeader(prev_block, prev_header)) {
-            LogPrint(BCLog::NET, "Failed to find block filter header in index: filter_type=%s, block_hash=%s\n",
-                         BlockFilterTypeName(filter_type), prev_block->GetBlockHash().ToString());
-            return;
-        }
-    }
-
-    std::vector<uint256> filter_hashes;
-    if (!filter_index->LookupFilterHashRange(start_height, stop_index, filter_hashes)) {
-        LogPrint(BCLog::NET, "Failed to find block filter hashes in index: filter_type=%s, start_height=%d, stop_hash=%s\n",
-                     BlockFilterTypeName(filter_type), start_height, stop_hash.ToString());
-        return;
-    }
-
-    CSerializedNetMsg msg = CNetMsgMaker(peer.GetCommonVersion())
-        .Make(NetMsgType::CFHEADERS,
-              filter_type_ser,
-              stop_index->GetBlockHash(),
-              prev_header,
-              filter_hashes);
-    m_connman.PushMessage(&peer, std::move(msg));
-}
-
-void PeerManagerImpl::ProcessGetCFCheckPt(CNode& peer, CDataStream& vRecv)
-{
-    uint8_t filter_type_ser;
-    uint256 stop_hash;
-
-    vRecv >> filter_type_ser >> stop_hash;
-
-    const BlockFilterType filter_type = static_cast<BlockFilterType>(filter_type_ser);
-
-    const CBlockIndex* stop_index;
-    BlockFilterIndex* filter_index;
-    if (!PrepareBlockFilterRequest(peer, filter_type, /*start_height=*/0, stop_hash,
-                                   /*max_height_diff=*/std::numeric_limits<uint32_t>::max(),
-                                   stop_index, filter_index)) {
-        return;
-    }
-
-    std::vector<uint256> headers(stop_index->nHeight / CFCHECKPT_INTERVAL);
-
-    // Populate headers.
-    const CBlockIndex* block_index = stop_index;
-    for (int i = headers.size() - 1; i >= 0; i--) {
-        int height = (i + 1) * CFCHECKPT_INTERVAL;
-        block_index = block_index->GetAncestor(height);
-
-        if (!filter_index->LookupFilterHeader(block_index, headers[i])) {
-            LogPrint(BCLog::NET, "Failed to find block filter header in index: filter_type=%s, block_hash=%s\n",
-                         BlockFilterTypeName(filter_type), block_index->GetBlockHash().ToString());
-            return;
-        }
-    }
-
-    CSerializedNetMsg msg = CNetMsgMaker(peer.GetCommonVersion())
-        .Make(NetMsgType::CFCHECKPT,
-              filter_type_ser,
-              stop_index->GetBlockHash(),
-              headers);
-    m_connman.PushMessage(&peer, std::move(msg));
-}
 
 void PeerManagerImpl::ProcessBlock(CNode& node, const std::shared_ptr<const CBlock>& block, bool force_processing)
 {
@@ -3955,21 +3736,6 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
             }
             LogPrint(BCLog::NET, "received: feefilter of %s from peer=%d\n", CFeeRate(newFeeFilter).ToString(), pfrom.GetId());
         }
-        return;
-    }
-
-    if (msg_type == NetMsgType::GETCFILTERS) {
-        ProcessGetCFilters(pfrom, vRecv);
-        return;
-    }
-
-    if (msg_type == NetMsgType::GETCFHEADERS) {
-        ProcessGetCFHeaders(pfrom, vRecv);
-        return;
-    }
-
-    if (msg_type == NetMsgType::GETCFCHECKPT) {
-        ProcessGetCFCheckPt(pfrom, vRecv);
         return;
     }
 

@@ -5,7 +5,6 @@
 #include <addrdb.h>
 #include <addrman.h>
 #include <blockencodings.h>
-#include <blockfilter.h>
 #include <chain.h>
 #include <coins.h>
 #include <compressor.h>
@@ -98,10 +97,6 @@ void AssertEqualAfterSerializeDeserialize(const T& obj, const int version = INIT
 
 } // namespace
 
-FUZZ_TARGET_DESERIALIZE(block_filter_deserialize, {
-    BlockFilter block_filter;
-    DeserializeFromFuzzingInput(buffer, block_filter);
-})
 FUZZ_TARGET_DESERIALIZE(addr_info_deserialize, {
     CAddrInfo addr_info;
     DeserializeFromFuzzingInput(buffer, addr_info);

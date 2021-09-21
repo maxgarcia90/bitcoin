@@ -110,7 +110,6 @@ BITCOIN_CORE_H = \
   base58.h \
   bech32.h \
   blockencodings.h \
-  blockfilter.h \
   bloom.h \
   chain.h \
   chainparams.h \
@@ -141,7 +140,6 @@ BITCOIN_CORE_H = \
   httpserver.h \
   i2p.h \
   index/base.h \
-  index/blockfilterindex.h \
   index/coinstatsindex.h \
   index/disktxpos.h \
   index/txindex.h \
@@ -286,7 +284,6 @@ libbitcoin_server_a_SOURCES = \
   addrman.cpp \
   banman.cpp \
   blockencodings.cpp \
-  blockfilter.cpp \
   chain.cpp \
   consensus/tx_verify.cpp \
   dbwrapper.cpp \
@@ -296,7 +293,6 @@ libbitcoin_server_a_SOURCES = \
   httpserver.cpp \
   i2p.cpp \
   index/base.cpp \
-  index/blockfilterindex.cpp \
   index/coinstatsindex.cpp \
   index/txindex.cpp \
   init.cpp \

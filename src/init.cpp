@@ -12,7 +12,6 @@
 #include <addrman.h>
 #include <amount.h>
 #include <banman.h>
-#include <blockfilter.h>
 #include <chain.h>
 #include <chainparams.h>
 #include <compat/sanity.h>
@@ -21,7 +20,6 @@
 #include <hash.h>
 #include <httprpc.h>
 #include <httpserver.h>
-#include <index/blockfilterindex.h>
 #include <index/coinstatsindex.h>
 #include <index/txindex.h>
 #include <init/common.h>
@@ -167,7 +165,6 @@ void Interrupt(NodeContext& node)
     if (g_txindex) {
         g_txindex->Interrupt();
     }
-    ForEachBlockFilterIndex([](BlockFilterIndex& index) { index.Interrupt(); });
     if (g_coin_stats_index) {
         g_coin_stats_index->Interrupt();
     }
@@ -247,8 +244,6 @@ void Shutdown(NodeContext& node)
         g_coin_stats_index->Stop();
         g_coin_stats_index.reset();
     }
-    ForEachBlockFilterIndex([](BlockFilterIndex& index) { index.Stop(); });
-    DestroyAllBlockFilterIndexes();
 
     // Any future callbacks will be dropped. This should absolutely be safe - if
     // missing a callback results in an unrecoverable situation, unclean shutdown
@@ -411,10 +406,6 @@ void SetupServerArgs(ArgsManager& argsman)
     hidden_args.emplace_back("-sysperms");
 #endif
     argsman.AddArg("-txindex", strprintf("Maintain a full transaction index, used by the getrawtransaction rpc call (default: %u)", DEFAULT_TXINDEX), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
-    argsman.AddArg("-blockfilterindex=<type>",
-                 strprintf("Maintain an index of compact filters by block (default: %s, values: %s).", DEFAULT_BLOCKFILTERINDEX, ListBlockFilterTypes()) +
-                 " If <type> is not supplied or if <type> = 1, indexes for all known types are enabled.",
-                 ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
 
     argsman.AddArg("-addnode=<ip>", strprintf("Add a node to connect to and attempt to keep the connection open (see the addnode RPC help for more info). This option can be specified multiple times to add multiple nodes; connections are limited to %u at a time and are counted separately from the -maxconnections limit.", MAX_ADDNODE_CONNECTIONS), ArgsManager::ALLOW_ANY | ArgsManager::NETWORK_ONLY, OptionsCategory::CONNECTION);
     argsman.AddArg("-asmap=<file>", strprintf("Specify asn mapping used for bucketing of the peers (default: %s). Relative paths will be prefixed by the net-specific datadir location.", DEFAULT_ASMAP_FILENAME), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
@@ -438,8 +429,6 @@ void SetupServerArgs(ArgsManager& argsman)
     argsman.AddArg("-i2psam=<ip:port>", "I2P SAM proxy to reach I2P peers and accept I2P connections (default: none)", ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
     argsman.AddArg("-i2pacceptincoming", "If set and -i2psam is also set then incoming I2P connections are accepted via the SAM proxy. If this is not set but -i2psam is set then only outgoing connections will be made to the I2P network. Ignored if -i2psam is not set. Listening for incoming I2P connections is done through the SAM proxy, not by binding to a local address and port (default: 1)", ArgsManager::ALLOW_BOOL, OptionsCategory::CONNECTION);
     argsman.AddArg("-onlynet=<net>", "Make outgoing connections only through network <net> (" + Join(GetNetworkNames(), ", ") + "). Incoming connections are not affected by this option. This option can be specified multiple times to allow multiple networks. Warning: if it is used with non-onion networks and the -onion or -proxy option is set, then outbound onion connections will still be made; use -noonion or -onion=0 to disable outbound onion connections in this case.", ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
-    argsman.AddArg("-peerbloomfilters", strprintf("Support filtering of blocks and transaction with bloom filters (default: %u)", DEFAULT_PEERBLOOMFILTERS), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
-    argsman.AddArg("-peerblockfilters", strprintf("Serve compact block filters to peers per BIP 157 (default: %u)", DEFAULT_PEERBLOCKFILTERS), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
     argsman.AddArg("-permitbaremultisig", strprintf("Relay non-P2SH multisig (default: %u)", DEFAULT_PERMIT_BAREMULTISIG), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
     argsman.AddArg("-port=<port>", strprintf("Listen for connections on <port>. Nodes not using the default ports (default: %u, testnet: %u, signet: %u, regtest: %u) are unlikely to get incoming connections. Not relevant for I2P (see doc/i2p.md).", defaultChainParams->GetDefaultPort(), testnetChainParams->GetDefaultPort(), signetChainParams->GetDefaultPort(), regtestChainParams->GetDefaultPort()), ArgsManager::ALLOW_ANY | ArgsManager::NETWORK_ONLY, OptionsCategory::CONNECTION);
     argsman.AddArg("-proxy=<ip:port>", "Connect through SOCKS5 proxy, set -noproxy to disable (default: disabled)", ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
@@ -717,7 +706,6 @@ int nUserMaxConnections;
 int nFD;
 ServiceFlags nLocalServices = ServiceFlags(NODE_NETWORK | NODE_NETWORK_LIMITED | NODE_WITNESS);
 int64_t peer_connect_timeout;
-std::set<BlockFilterType> g_enabled_filter_types;
 
 } // namespace
 
@@ -816,29 +804,7 @@ bool AppInitParameterInteraction(const ArgsManager& args)
         return InitError(strprintf(_("Specified blocks directory \"%s\" does not exist."), args.GetArg("-blocksdir", "")));
     }
 
-    // parse and validate enabled filter types
-    std::string blockfilterindex_value = args.GetArg("-blockfilterindex", DEFAULT_BLOCKFILTERINDEX);
-    if (blockfilterindex_value == "" || blockfilterindex_value == "1") {
-        g_enabled_filter_types = AllBlockFilterTypes();
-    } else if (blockfilterindex_value != "0") {
-        const std::vector<std::string> names = args.GetArgs("-blockfilterindex");
-        for (const auto& name : names) {
-            BlockFilterType filter_type;
-            if (!BlockFilterTypeByName(name, filter_type)) {
-                return InitError(strprintf(_("Unknown -blockfilterindex value %s."), name));
-            }
-            g_enabled_filter_types.insert(filter_type);
-        }
-    }
 
-    // Signal NODE_COMPACT_FILTERS if peerblockfilters and basic filters index are both enabled.
-    if (args.GetBoolArg("-peerblockfilters", DEFAULT_PEERBLOCKFILTERS)) {
-        if (g_enabled_filter_types.count(BlockFilterType::BASIC) != 1) {
-            return InitError(_("Cannot set -peerblockfilters without -blockfilterindex."));
-        }
-
-        nLocalServices = ServiceFlags(nLocalServices | NODE_COMPACT_FILTERS);
-    }
 
     // if using block pruning, then disallow txindex and coinstatsindex
     if (args.GetArg("-prune", 0)) {
@@ -1331,12 +1297,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     int64_t nTxIndexCache = std::min(nTotalCache / 8, args.GetBoolArg("-txindex", DEFAULT_TXINDEX) ? nMaxTxIndexCache << 20 : 0);
     nTotalCache -= nTxIndexCache;
     int64_t filter_index_cache = 0;
-    if (!g_enabled_filter_types.empty()) {
-        size_t n_indexes = g_enabled_filter_types.size();
-        int64_t max_cache = std::min(nTotalCache / 8, max_filter_index_cache << 20);
-        filter_index_cache = max_cache / n_indexes;
-        nTotalCache -= filter_index_cache * n_indexes;
-    }
     int64_t nCoinDBCache = std::min(nTotalCache / 2, (nTotalCache / 4) + (1 << 23)); // use 25%-50% of the remainder for disk cache
     nCoinDBCache = std::min(nCoinDBCache, nMaxCoinsDBCache << 20); // cap total coins db cache
     nTotalCache -= nCoinDBCache;
@@ -1346,10 +1306,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     LogPrintf("* Using %.1f MiB for block index database\n", nBlockTreeDBCache * (1.0 / 1024 / 1024));
     if (args.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
         LogPrintf("* Using %.1f MiB for transaction index database\n", nTxIndexCache * (1.0 / 1024 / 1024));
-    }
-    for (BlockFilterType filter_type : g_enabled_filter_types) {
-        LogPrintf("* Using %.1f MiB for %s block filter index database\n",
-                  filter_index_cache * (1.0 / 1024 / 1024), BlockFilterTypeName(filter_type));
     }
     LogPrintf("* Using %.1f MiB for chain state database\n", nCoinDBCache * (1.0 / 1024 / 1024));
     LogPrintf("* Using %.1f MiB for in-memory UTXO set (plus up to %.1f MiB of unused mempool space)\n", nCoinCacheUsage * (1.0 / 1024 / 1024), nMempoolSizeMax * (1.0 / 1024 / 1024));
@@ -1567,13 +1523,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     if (args.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
         g_txindex = std::make_unique<TxIndex>(nTxIndexCache, false, fReindex);
         if (!g_txindex->Start(chainman.ActiveChainstate())) {
-            return false;
-        }
-    }
-
-    for (const auto& filter_type : g_enabled_filter_types) {
-        InitBlockFilterIndex(filter_type, filter_index_cache, false, fReindex);
-        if (!GetBlockFilterIndex(filter_type)->Start(chainman.ActiveChainstate())) {
             return false;
         }
     }

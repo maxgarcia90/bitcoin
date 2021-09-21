@@ -6,7 +6,6 @@
 #include <rpc/blockchain.h>
 
 #include <amount.h>
-#include <blockfilter.h>
 #include <chain.h>
 #include <chainparams.h>
 #include <coins.h>
@@ -16,7 +15,6 @@
 #include <deploymentinfo.h>
 #include <deploymentstatus.h>
 #include <hash.h>
-#include <index/blockfilterindex.h>
 #include <index/coinstatsindex.h>
 #include <node/blockstorage.h>
 #include <node/coinstats.h>
@@ -2440,85 +2438,6 @@ static RPCHelpMan scantxoutset()
     };
 }
 
-static RPCHelpMan getblockfilter()
-{
-    return RPCHelpMan{"getblockfilter",
-                "\nRetrieve a BIP 157 content filter for a particular block.\n",
-                {
-                    {"blockhash", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The hash of the block"},
-                    {"filtertype", RPCArg::Type::STR, RPCArg::Default{"basic"}, "The type name of the filter"},
-                },
-                RPCResult{
-                    RPCResult::Type::OBJ, "", "",
-                    {
-                        {RPCResult::Type::STR_HEX, "filter", "the hex-encoded filter data"},
-                        {RPCResult::Type::STR_HEX, "header", "the hex-encoded filter header"},
-                    }},
-                RPCExamples{
-                    HelpExampleCli("getblockfilter", "\"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\" \"basic\"") +
-                    HelpExampleRpc("getblockfilter", "\"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\", \"basic\"")
-                },
-        [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
-{
-    uint256 block_hash = ParseHashV(request.params[0], "blockhash");
-    std::string filtertype_name = "basic";
-    if (!request.params[1].isNull()) {
-        filtertype_name = request.params[1].get_str();
-    }
-
-    BlockFilterType filtertype;
-    if (!BlockFilterTypeByName(filtertype_name, filtertype)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Unknown filtertype");
-    }
-
-    BlockFilterIndex* index = GetBlockFilterIndex(filtertype);
-    if (!index) {
-        throw JSONRPCError(RPC_MISC_ERROR, "Index is not enabled for filtertype " + filtertype_name);
-    }
-
-    const CBlockIndex* block_index;
-    bool block_was_connected;
-    {
-        ChainstateManager& chainman = EnsureAnyChainman(request.context);
-        LOCK(cs_main);
-        block_index = chainman.m_blockman.LookupBlockIndex(block_hash);
-        if (!block_index) {
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
-        }
-        block_was_connected = block_index->IsValid(BLOCK_VALID_SCRIPTS);
-    }
-
-    bool index_ready = index->BlockUntilSyncedToCurrentChain();
-
-    BlockFilter filter;
-    uint256 filter_header;
-    if (!index->LookupFilter(block_index, filter) ||
-        !index->LookupFilterHeader(block_index, filter_header)) {
-        int err_code;
-        std::string errmsg = "Filter not found.";
-
-        if (!block_was_connected) {
-            err_code = RPC_INVALID_ADDRESS_OR_KEY;
-            errmsg += " Block was not connected to active chain.";
-        } else if (!index_ready) {
-            err_code = RPC_MISC_ERROR;
-            errmsg += " Block filters are still in the process of being indexed.";
-        } else {
-            err_code = RPC_INTERNAL_ERROR;
-            errmsg += " This error is unexpected and indicates index corruption.";
-        }
-
-        throw JSONRPCError(err_code, errmsg);
-    }
-
-    UniValue ret(UniValue::VOBJ);
-    ret.pushKV("filter", HexStr(filter.GetEncodedFilter()));
-    ret.pushKV("header", filter_header.GetHex());
-    return ret;
-},
-    };
-}
-
 /**
  * Serialize the UTXO set to a file for loading elsewhere.
  *
@@ -2664,7 +2583,6 @@ static const CRPCCommand commands[] =
 
     { "blockchain",         &preciousblock,                      },
     { "blockchain",         &scantxoutset,                       },
-    { "blockchain",         &getblockfilter,                     },
 
     /* Not shown in help */
     { "hidden",              &invalidateblock,                   },

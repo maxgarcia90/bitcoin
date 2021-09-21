@@ -2,7 +2,6 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <blockfilter.h>
 #include <clientversion.h>
 #include <logging.h>
 #include <netaddress.h>
@@ -43,8 +42,6 @@ FUZZ_TARGET(string)
 
     (void)AmountErrMsg(random_string_1, random_string_2);
     (void)AmountHighWarn(random_string_1);
-    BlockFilterType block_filter_type;
-    (void)BlockFilterTypeByName(random_string_1, block_filter_type);
     (void)Capitalize(random_string_1);
     (void)CopyrightHolders(random_string_1);
     FeeEstimateMode fee_estimate_mode;
