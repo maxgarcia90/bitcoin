@@ -135,7 +135,6 @@ BITCOIN_CORE_H = \
   dbwrapper.h \
   deploymentinfo.h \
   deploymentstatus.h \
-  external_signer.h \
   flatfile.h \
   fs.h \
   httprpc.h \
@@ -175,7 +174,6 @@ BITCOIN_CORE_H = \
   node/coin.h \
   node/coinstats.h \
   node/context.h \
-  node/psbt.h \
   node/transaction.h \
   node/ui_interface.h \
   node/utxo_snapshot.h \
@@ -189,7 +187,6 @@ BITCOIN_CORE_H = \
   policy/settings.h \
   pow.h \
   protocol.h \
-  psbt.h \
   random.h \
   randomenv.h \
   reverse_iterator.h \
@@ -313,7 +310,6 @@ libbitcoin_server_a_SOURCES = \
   node/coinstats.cpp \
   node/context.cpp \
   node/interfaces.cpp \
-  node/psbt.cpp \
   node/transaction.cpp \
   node/ui_interface.cpp \
   noui.cpp \
@@ -450,7 +446,6 @@ libbitcoin_common_a_SOURCES = \
   core_read.cpp \
   core_write.cpp \
   deploymentinfo.cpp \
-  external_signer.cpp \
   init/common.cpp \
   key.cpp \
   key_io.cpp \
@@ -462,9 +457,7 @@ libbitcoin_common_a_SOURCES = \
   policy/feerate.cpp \
   policy/policy.cpp \
   protocol.cpp \
-  psbt.cpp \
   rpc/rawtransaction_util.cpp \
-  rpc/external_signer.cpp \
   rpc/util.cpp \
   scheduler.cpp \
   script/descriptor.cpp \

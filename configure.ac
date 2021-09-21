@@ -298,10 +298,6 @@ AC_ARG_ENABLE([werror],
     [enable_werror=$enableval],
     [enable_werror=no])
 
-AC_ARG_ENABLE([external-signer],
-    [AS_HELP_STRING([--enable-external-signer],[compile external signer support (default is yes, requires Boost::Process)])],
-    [use_external_signer=$enableval],
-    [use_external_signer=yes])
 
 AC_LANG_PUSH([C++])
 
@@ -1221,7 +1217,6 @@ if test "x$enable_fuzz" = "xyes"; then
   build_bitcoind=no
   build_bitcoin_libs=no
   use_bench=no
-  use_external_signer=no
   use_upnp=no
   use_natpmp=no
   use_zmq=no
@@ -1320,10 +1315,6 @@ if test x$use_boost = xyes; then
   BOOST_LIBS="$BOOST_LDFLAGS $BOOST_SYSTEM_LIB $BOOST_FILESYSTEM_LIB"
 fi
 
-if test "x$use_external_signer" != xno; then
-  AC_DEFINE([ENABLE_EXTERNAL_SIGNER],,[define if external signer support is enabled])
-fi
-AM_CONDITIONAL([ENABLE_EXTERNAL_SIGNER], [test "x$use_external_signer" = "xyes"])
 
 dnl Check for reduced exports
 if test x$use_reduce_exports = xyes; then
@@ -1677,7 +1668,6 @@ AC_SUBST(ARM_CRC_CXXFLAGS)
 AC_SUBST(LIBTOOL_APP_LDFLAGS)
 AC_SUBST(USE_SQLITE)
 AC_SUBST(USE_BDB)
-AC_SUBST(ENABLE_EXTERNAL_SIGNER)
 AC_SUBST(USE_UPNP)
 AC_SUBST(USE_QRCODE)
 AC_SUBST(BOOST_LIBS)
@@ -1755,7 +1745,6 @@ esac
 
 echo
 echo "Options used to compile and link:"
-echo "  external signer = $use_external_signer"
 echo "  multiprocess    = $build_multiprocess"
 echo "  with libs       = $build_bitcoin_libs"
 echo "  with zmq        = $use_zmq"

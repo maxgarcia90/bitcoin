@@ -7,7 +7,6 @@
 #include <chain.h>
 #include <chainparams.h>
 #include <deploymentstatus.h>
-#include <external_signer.h>
 #include <init.h>
 #include <interfaces/chain.h>
 #include <interfaces/handler.h>
@@ -171,24 +170,6 @@ public:
             return m_context->connman->DisconnectNode(id);
         }
         return false;
-    }
-    std::vector<ExternalSigner> externalSigners() override
-    {
-#ifdef ENABLE_EXTERNAL_SIGNER
-        std::vector<ExternalSigner> signers = {};
-        const std::string command = gArgs.GetArg("-signer", "");
-        if (command == "") return signers;
-        ExternalSigner::Enumerate(command, signers, Params().NetworkIDString());
-        return signers;
-#else
-        // This result is indistinguishable from a successful call that returns
-        // no signers. For the current GUI this doesn't matter, because the wallet
-        // creation dialog disables the external signer checkbox in both
-        // cases. The return type could be changed to std::optional<std::vector>
-        // (or something that also includes error messages) if this distinction
-        // becomes important.
-        return {};
-#endif // ENABLE_EXTERNAL_SIGNER
     }
     int64_t getTotalBytesRecv() override { return m_context->connman ? m_context->connman->GetTotalBytesRecv() : 0; }
     int64_t getTotalBytesSent() override { return m_context->connman ? m_context->connman->GetTotalBytesSent() : 0; }

@@ -9,7 +9,6 @@
 #include <node/context.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
-#include <psbt.h>
 #include <rpc/blockchain.h>
 #include <rpc/client.h>
 #include <rpc/request.h>
@@ -66,7 +65,6 @@ const std::vector<std::string> RPC_COMMANDS_NOT_SAFE_FOR_FUZZING{
     "addconnection",  // avoid DNS lookups
     "addnode",        // avoid DNS lookups
     "addpeeraddress", // avoid DNS lookups
-    "analyzepsbt",    // avoid signed integer overflow in CFeeRate::GetFee(unsigned long) (https://github.com/bitcoin/bitcoin/issues/20607)
     "dumptxoutset",   // avoid writing to disk
     "dumpwallet", // avoid writing to disk
     "echoipc",              // avoid assertion failure (Assertion `"EnsureAnyNodeContext(request.context).init" && check' failed.)
@@ -84,13 +82,9 @@ const std::vector<std::string> RPC_COMMANDS_NOT_SAFE_FOR_FUZZING{
 // RPC commands which are safe for fuzzing.
 const std::vector<std::string> RPC_COMMANDS_SAFE_FOR_FUZZING{
     "clearbanned",
-    "combinepsbt",
     "combinerawtransaction",
-    "converttopsbt",
     "createmultisig",
-    "createpsbt",
     "createrawtransaction",
-    "decodepsbt",
     "decoderawtransaction",
     "decodescript",
     "deriveaddresses",
@@ -99,7 +93,6 @@ const std::vector<std::string> RPC_COMMANDS_SAFE_FOR_FUZZING{
     "echojson",
     "estimaterawfee",
     "estimatesmartfee",
-    "finalizepsbt",
     "generate",
     "generateblock",
     "getaddednodeinfo",
@@ -136,7 +129,6 @@ const std::vector<std::string> RPC_COMMANDS_SAFE_FOR_FUZZING{
     "gettxoutsetinfo",
     "help",
     "invalidateblock",
-    "joinpsbts",
     "listbanned",
     "logging",
     "mockscheduler",
@@ -155,7 +147,6 @@ const std::vector<std::string> RPC_COMMANDS_SAFE_FOR_FUZZING{
     "syncwithvalidationinterfacequeue",
     "testmempoolaccept",
     "uptime",
-    "utxoupdatepsbt",
     "validateaddress",
     "verifychain",
     "verifymessage",
@@ -257,16 +248,6 @@ std::string ConsumeScalarRPCArgument(FuzzedDataProvider& fuzzed_data_provider)
             CDataStream data_stream{SER_NETWORK, fuzzed_data_provider.ConsumeBool() ? PROTOCOL_VERSION : (PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS)};
             data_stream << *opt_tx;
             r = HexStr(data_stream);
-        },
-        [&] {
-            // base64 encoded psbt
-            std::optional<PartiallySignedTransaction> opt_psbt = ConsumeDeserializable<PartiallySignedTransaction>(fuzzed_data_provider);
-            if (!opt_psbt) {
-                return;
-            }
-            CDataStream data_stream{SER_NETWORK, PROTOCOL_VERSION};
-            data_stream << *opt_psbt;
-            r = EncodeBase64({data_stream.begin(), data_stream.end()});
         },
         [&] {
             // base58 encoded key
