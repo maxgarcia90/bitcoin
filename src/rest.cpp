@@ -7,7 +7,6 @@
 #include <chainparams.h>
 #include <core_io.h>
 #include <httpserver.h>
-#include <index/txindex.h>
 #include <node/blockstorage.h>
 #include <node/context.h>
 #include <primitives/block.h>
@@ -419,10 +418,6 @@ static bool rest_tx(const std::any& context, HTTPRequest* req, const std::string
     uint256 hash;
     if (!ParseHashStr(hashStr, hash))
         return RESTERR(req, HTTP_BAD_REQUEST, "Invalid hash: " + hashStr);
-
-    if (g_txindex) {
-        g_txindex->BlockUntilSyncedToCurrentChain();
-    }
 
     const NodeContext* const node = GetNodeContext(context, req);
     if (!node) return false;

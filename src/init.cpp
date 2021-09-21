@@ -20,8 +20,6 @@
 #include <hash.h>
 #include <httprpc.h>
 #include <httpserver.h>
-#include <index/coinstatsindex.h>
-#include <index/txindex.h>
 #include <init/common.h>
 #include <interfaces/chain.h>
 #include <interfaces/node.h>
@@ -162,12 +160,6 @@ void Interrupt(NodeContext& node)
     InterruptMapPort();
     if (node.connman)
         node.connman->Interrupt();
-    if (g_txindex) {
-        g_txindex->Interrupt();
-    }
-    if (g_coin_stats_index) {
-        g_coin_stats_index->Interrupt();
-    }
 }
 
 void Shutdown(NodeContext& node)
@@ -234,16 +226,6 @@ void Shutdown(NodeContext& node)
     // After there are no more peers/RPC left to give us new data which may generate
     // CValidationInterface callbacks, flush them...
     GetMainSignals().FlushBackgroundCallbacks();
-
-    // Stop and delete all indexes only after flushing background callbacks.
-    if (g_txindex) {
-        g_txindex->Stop();
-        g_txindex.reset();
-    }
-    if (g_coin_stats_index) {
-        g_coin_stats_index->Stop();
-        g_coin_stats_index.reset();
-    }
 
     // Any future callbacks will be dropped. This should absolutely be safe - if
     // missing a callback results in an unrecoverable situation, unclean shutdown
@@ -376,7 +358,6 @@ void SetupServerArgs(ArgsManager& argsman)
 #endif
     argsman.AddArg("-blockreconstructionextratxn=<n>", strprintf("Extra transactions to keep in memory for compact block reconstructions (default: %u)", DEFAULT_BLOCK_RECONSTRUCTION_EXTRA_TXN), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-blocksonly", strprintf("Whether to reject transactions from network peers. Automatic broadcast and rebroadcast of any transactions from inbound peers is disabled, unless the peer has the 'forcerelay' permission. RPC transactions are not affected. (default: %u)", DEFAULT_BLOCKSONLY), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
-    argsman.AddArg("-coinstatsindex", strprintf("Maintain coinstats index used by the gettxoutsetinfo RPC (default: %u)", DEFAULT_COINSTATSINDEX), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-conf=<file>", strprintf("Specify path to read-only configuration file. Relative paths will be prefixed by datadir location. (default: %s)", BITCOIN_CONF_FILENAME), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-datadir=<dir>", "Specify data directory", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-dbbatchsize", strprintf("Maximum database write batch size in bytes (default: %u)", nDefaultDbBatchSize), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::OPTIONS);
@@ -405,7 +386,6 @@ void SetupServerArgs(ArgsManager& argsman)
 #else
     hidden_args.emplace_back("-sysperms");
 #endif
-    argsman.AddArg("-txindex", strprintf("Maintain a full transaction index, used by the getrawtransaction rpc call (default: %u)", DEFAULT_TXINDEX), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
 
     argsman.AddArg("-addnode=<ip>", strprintf("Add a node to connect to and attempt to keep the connection open (see the addnode RPC help for more info). This option can be specified multiple times to add multiple nodes; connections are limited to %u at a time and are counted separately from the -maxconnections limit.", MAX_ADDNODE_CONNECTIONS), ArgsManager::ALLOW_ANY | ArgsManager::NETWORK_ONLY, OptionsCategory::CONNECTION);
     argsman.AddArg("-asmap=<file>", strprintf("Specify asn mapping used for bucketing of the peers (default: %s). Relative paths will be prefixed by the net-specific datadir location.", DEFAULT_ASMAP_FILENAME), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
@@ -804,15 +784,6 @@ bool AppInitParameterInteraction(const ArgsManager& args)
         return InitError(strprintf(_("Specified blocks directory \"%s\" does not exist."), args.GetArg("-blocksdir", "")));
     }
 
-
-
-    // if using block pruning, then disallow txindex and coinstatsindex
-    if (args.GetArg("-prune", 0)) {
-        if (args.GetBoolArg("-txindex", DEFAULT_TXINDEX))
-            return InitError(_("Prune mode is incompatible with -txindex."));
-        if (args.GetBoolArg("-coinstatsindex", DEFAULT_COINSTATSINDEX))
-            return InitError(_("Prune mode is incompatible with -coinstatsindex."));
-    }
 
     // If -forcednsseed is set to true, ensure -dnsseed has not been set to false
     if (args.GetBoolArg("-forcednsseed", DEFAULT_FORCEDNSSEED) && !args.GetBoolArg("-dnsseed", DEFAULT_DNSSEED)){
@@ -1294,9 +1265,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     nTotalCache = std::min(nTotalCache, nMaxDbCache << 20); // total cache cannot be greater than nMaxDbcache
     int64_t nBlockTreeDBCache = std::min(nTotalCache / 8, nMaxBlockDBCache << 20);
     nTotalCache -= nBlockTreeDBCache;
-    int64_t nTxIndexCache = std::min(nTotalCache / 8, args.GetBoolArg("-txindex", DEFAULT_TXINDEX) ? nMaxTxIndexCache << 20 : 0);
-    nTotalCache -= nTxIndexCache;
-    int64_t filter_index_cache = 0;
     int64_t nCoinDBCache = std::min(nTotalCache / 2, (nTotalCache / 4) + (1 << 23)); // use 25%-50% of the remainder for disk cache
     nCoinDBCache = std::min(nCoinDBCache, nMaxCoinsDBCache << 20); // cap total coins db cache
     nTotalCache -= nCoinDBCache;
@@ -1304,9 +1272,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     int64_t nMempoolSizeMax = args.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000;
     LogPrintf("Cache configuration:\n");
     LogPrintf("* Using %.1f MiB for block index database\n", nBlockTreeDBCache * (1.0 / 1024 / 1024));
-    if (args.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
-        LogPrintf("* Using %.1f MiB for transaction index database\n", nTxIndexCache * (1.0 / 1024 / 1024));
-    }
     LogPrintf("* Using %.1f MiB for chain state database\n", nCoinDBCache * (1.0 / 1024 / 1024));
     LogPrintf("* Using %.1f MiB for in-memory UTXO set (plus up to %.1f MiB of unused mempool space)\n", nCoinCacheUsage * (1.0 / 1024 / 1024), nMempoolSizeMax * (1.0 / 1024 / 1024));
 
@@ -1517,21 +1482,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     if (ShutdownRequested()) {
         LogPrintf("Shutdown requested. Exiting.\n");
         return false;
-    }
-
-    // ********************************************************* Step 8: start indexers
-    if (args.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
-        g_txindex = std::make_unique<TxIndex>(nTxIndexCache, false, fReindex);
-        if (!g_txindex->Start(chainman.ActiveChainstate())) {
-            return false;
-        }
-    }
-
-    if (args.GetBoolArg("-coinstatsindex", DEFAULT_COINSTATSINDEX)) {
-        g_coin_stats_index = std::make_unique<CoinStatsIndex>(/* cache size */ 0, false, fReindex);
-        if (!g_coin_stats_index->Start(chainman.ActiveChainstate())) {
-            return false;
-        }
     }
 
     // ********************************************************* Step 9: load wallet

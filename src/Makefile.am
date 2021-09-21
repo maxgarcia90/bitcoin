@@ -139,10 +139,6 @@ BITCOIN_CORE_H = \
   httprpc.h \
   httpserver.h \
   i2p.h \
-  index/base.h \
-  index/coinstatsindex.h \
-  index/disktxpos.h \
-  index/txindex.h \
   indirectmap.h \
   init.h \
   init/common.h \
@@ -292,9 +288,6 @@ libbitcoin_server_a_SOURCES = \
   httprpc.cpp \
   httpserver.cpp \
   i2p.cpp \
-  index/base.cpp \
-  index/coinstatsindex.cpp \
-  index/txindex.cpp \
   init.cpp \
   mapport.cpp \
   miner.cpp \
@@ -656,7 +649,6 @@ CLEANFILES += compat/*.gcda compat/*.gcno
 CLEANFILES += consensus/*.gcda consensus/*.gcno
 CLEANFILES += crc32c/src/*.gcda crc32c/src/*.gcno
 CLEANFILES += crypto/*.gcda crypto/*.gcno
-CLEANFILES += index/*.gcda index/*.gcno
 CLEANFILES += interfaces/*.gcda interfaces/*.gcno
 CLEANFILES += node/*.gcda node/*.gcno
 CLEANFILES += policy/*.gcda policy/*.gcno

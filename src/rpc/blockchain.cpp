@@ -15,7 +15,6 @@
 #include <deploymentinfo.h>
 #include <deploymentstatus.h>
 #include <hash.h>
-#include <index/coinstatsindex.h>
 #include <node/blockstorage.h>
 #include <node/coinstats.h>
 #include <node/context.h>
@@ -1166,27 +1165,13 @@ static RPCHelpMan gettxoutsetinfo()
     }
 
     if (!request.params[1].isNull()) {
-        if (!g_coin_stats_index) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Querying specific block heights requires coinstatsindex");
-        }
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Querying specific block heights requires coinstatsindex");
 
         if (stats.m_hash_type == CoinStatsHashType::HASH_SERIALIZED) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "hash_serialized_2 hash type cannot be queried for a specific block");
         }
 
         pindex = ParseHashOrHeight(request.params[1], chainman);
-    }
-
-    if (stats.index_requested && g_coin_stats_index) {
-        if (!g_coin_stats_index->BlockUntilSyncedToCurrentChain()) {
-            const IndexSummary summary{g_coin_stats_index->GetSummary()};
-
-            // If a specific block was requested and the index has already synced past that height, we can return the
-            // data already even though the index is not fully synced yet.
-            if (pindex->nHeight > summary.best_block_height) {
-                throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("Unable to get data because coinstatsindex is still syncing. Current height: %d", summary.best_block_height));
-            }
-        }
     }
 
     if (GetUTXOStats(coins_view, *blockman, stats, node.rpc_interruption_point, pindex)) {
