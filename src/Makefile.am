@@ -37,15 +37,8 @@ LIBBITCOIN_CRYPTO_BASE=crypto/libbitcoin_crypto_base.a
 LIBBITCOINQT=qt/libbitcoinqt.a
 LIBSECP256K1=secp256k1/libsecp256k1.la
 
-if ENABLE_ZMQ
-LIBBITCOIN_ZMQ=libbitcoin_zmq.a
-endif
 if BUILD_BITCOIN_LIBS
 LIBBITCOINCONSENSUS=libbitcoinconsensus.la
-endif
-if ENABLE_WALLET
-LIBBITCOIN_WALLET=libbitcoin_wallet.a
-LIBBITCOIN_WALLET_TOOL=libbitcoin_wallet_tool.a
 endif
 
 LIBBITCOIN_CRYPTO= $(LIBBITCOIN_CRYPTO_BASE)
@@ -102,11 +95,6 @@ if BUILD_BITCOIN_TX
   bin_PROGRAMS += bitcoin-tx
 endif
 
-if ENABLE_WALLET
-if BUILD_BITCOIN_WALLET
-  bin_PROGRAMS += bitcoin-wallet
-endif
-endif
 
 if BUILD_BITCOIN_UTIL
   bin_PROGRAMS += bitcoin-util
@@ -274,29 +262,6 @@ BITCOIN_CORE_H = \
   validation.h \
   validationinterface.h \
   versionbits.h \
-  wallet/bdb.h \
-  wallet/coincontrol.h \
-  wallet/coinselection.h \
-  wallet/context.h \
-  wallet/crypter.h \
-  wallet/db.h \
-  wallet/dump.h \
-  wallet/external_signer_scriptpubkeyman.h \
-  wallet/feebumper.h \
-  wallet/fees.h \
-  wallet/ismine.h \
-  wallet/load.h \
-  wallet/receive.h \
-  wallet/rpcwallet.h \
-  wallet/salvage.h \
-  wallet/scriptpubkeyman.h \
-  wallet/spend.h \
-  wallet/sqlite.h \
-  wallet/transaction.h \
-  wallet/wallet.h \
-  wallet/walletdb.h \
-  wallet/wallettool.h \
-  wallet/walletutil.h \
   walletinitinterface.h \
   warnings.h \
   zmq/zmqabstractnotifier.h \
@@ -378,64 +343,6 @@ libbitcoin_server_a_SOURCES = \
   versionbits.cpp \
   $(BITCOIN_CORE_H)
 
-if ENABLE_WALLET
-libbitcoin_server_a_SOURCES += wallet/init.cpp
-endif
-if !ENABLE_WALLET
-libbitcoin_server_a_SOURCES += dummywallet.cpp
-endif
-
-if ENABLE_ZMQ
-libbitcoin_zmq_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(ZMQ_CFLAGS)
-libbitcoin_zmq_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbitcoin_zmq_a_SOURCES = \
-  zmq/zmqabstractnotifier.cpp \
-  zmq/zmqnotificationinterface.cpp \
-  zmq/zmqpublishnotifier.cpp \
-  zmq/zmqrpc.cpp \
-  zmq/zmqutil.cpp
-endif
-
-
-# wallet: shared between bitcoind and bitcoin-qt, but only linked
-# when wallet enabled
-libbitcoin_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(SQLITE_CFLAGS)
-libbitcoin_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbitcoin_wallet_a_SOURCES = \
-  wallet/coincontrol.cpp \
-  wallet/context.cpp \
-  wallet/crypter.cpp \
-  wallet/db.cpp \
-  wallet/dump.cpp \
-  wallet/external_signer_scriptpubkeyman.cpp \
-  wallet/feebumper.cpp \
-  wallet/fees.cpp \
-  wallet/interfaces.cpp \
-  wallet/load.cpp \
-  wallet/receive.cpp \
-  wallet/rpcdump.cpp \
-  wallet/rpcwallet.cpp \
-  wallet/scriptpubkeyman.cpp \
-  wallet/spend.cpp \
-  wallet/transaction.cpp \
-  wallet/wallet.cpp \
-  wallet/walletdb.cpp \
-  wallet/walletutil.cpp \
-  wallet/coinselection.cpp \
-  $(BITCOIN_CORE_H)
-
-if USE_SQLITE
-libbitcoin_wallet_a_SOURCES += wallet/sqlite.cpp
-endif
-if USE_BDB
-libbitcoin_wallet_a_SOURCES += wallet/bdb.cpp wallet/salvage.cpp
-endif
-
-libbitcoin_wallet_tool_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-libbitcoin_wallet_tool_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbitcoin_wallet_tool_a_SOURCES = \
-  wallet/wallettool.cpp \
-  $(BITCOIN_CORE_H)
 
 # crypto primitives library
 crypto_libbitcoin_crypto_base_a_CPPFLAGS = $(AM_CPPFLAGS)
@@ -711,18 +618,6 @@ bitcoin_tx_LDADD = \
 bitcoin_tx_LDADD += $(BOOST_LIBS)
 #
 
-# bitcoin-wallet binary #
-bitcoin_wallet_SOURCES = bitcoin-wallet.cpp
-bitcoin_wallet_CPPFLAGS = $(bitcoin_bin_cppflags)
-bitcoin_wallet_CXXFLAGS = $(bitcoin_bin_cxxflags)
-bitcoin_wallet_LDFLAGS = $(bitcoin_bin_ldflags)
-bitcoin_wallet_LDADD = $(LIBBITCOIN_WALLET_TOOL) $(bitcoin_bin_ldadd)
-
-if TARGET_WINDOWS
-bitcoin_wallet_SOURCES += bitcoin-wallet-res.rc
-endif
-#
-
 # bitcoin-util binary #
 bitcoin_util_SOURCES = bitcoin-util.cpp
 bitcoin_util_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
@@ -784,8 +679,6 @@ CLEANFILES += script/*.gcda script/*.gcno
 CLEANFILES += support/*.gcda support/*.gcno
 CLEANFILES += univalue/*.gcda univalue/*.gcno
 CLEANFILES += util/*.gcda util/*.gcno
-CLEANFILES += wallet/*.gcda wallet/*.gcno
-CLEANFILES += wallet/test/*.gcda wallet/test/*.gcno
 CLEANFILES += zmq/*.gcda zmq/*.gcno
 CLEANFILES += obj/build.h
 
@@ -884,10 +777,3 @@ if ENABLE_BENCH
 include Makefile.bench.include
 endif
 
-if ENABLE_QT
-include Makefile.qt.include
-endif
-
-if ENABLE_QT_TESTS
-include Makefile.qttest.include
-endif

@@ -297,9 +297,6 @@ bool StartHTTPRPC(const std::any& context)
 
     auto handle_rpc = [context](HTTPRequest* req, const std::string&) { return HTTPReq_JSONRPC(context, req); };
     RegisterHTTPHandler("/", true, handle_rpc);
-    if (g_wallet_init_interface.HasWalletSupport()) {
-        RegisterHTTPHandler("/wallet/", false, handle_rpc);
-    }
     struct event_base* eventBase = EventBase();
     assert(eventBase);
     httpRPCTimerInterface = std::make_unique<HTTPRPCTimerInterface>(eventBase);
@@ -316,9 +313,6 @@ void StopHTTPRPC()
 {
     LogPrint(BCLog::RPC, "Stopping HTTP RPC server\n");
     UnregisterHTTPHandler("/", true);
-    if (g_wallet_init_interface.HasWalletSupport()) {
-        UnregisterHTTPHandler("/wallet/", false);
-    }
     if (httpRPCTimerInterface) {
         RPCUnsetTimerInterface(httpRPCTimerInterface.get());
         httpRPCTimerInterface.reset();

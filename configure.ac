@@ -20,14 +20,11 @@ if test "x$PKG_CONFIG" = x; then
 fi
 
 BITCOIN_DAEMON_NAME=bitcoind
-BITCOIN_GUI_NAME=bitcoin-qt
 BITCOIN_CLI_NAME=bitcoin-cli
 BITCOIN_TX_NAME=bitcoin-tx
 BITCOIN_UTIL_NAME=bitcoin-util
-BITCOIN_WALLET_TOOL_NAME=bitcoin-wallet
 dnl Multi Process
 BITCOIN_MP_NODE_NAME=bitcoin-node
-BITCOIN_MP_GUI_NAME=bitcoin-gui
 
 dnl Unless the user specified ARFLAGS, force it to be cr
 AC_ARG_VAR(ARFLAGS, [Flags for the archiver, defaults to <cr> if not set])
@@ -114,23 +111,8 @@ AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
 
 AC_ARG_VAR(PYTHONPATH, Augments the default search path for python module files)
 
-AC_ARG_ENABLE([wallet],
-  [AS_HELP_STRING([--disable-wallet],
-  [disable wallet (enabled by default)])],
-  [enable_wallet=$enableval],
-  [enable_wallet=auto])
 
-AC_ARG_WITH([sqlite],
-  [AS_HELP_STRING([--with-sqlite=yes|no|auto],
-  [enable sqlite wallet support (default: auto, i.e., enabled if wallet is enabled and sqlite is found)])],
-  [use_sqlite=$withval],
-  [use_sqlite=auto])
 
-AC_ARG_WITH([bdb],
-  [AS_HELP_STRING([--without-bdb],
-  [disable bdb wallet support (default is enabled if wallet is enabled)])],
-  [use_bdb=$withval],
-  [use_bdb=auto])
 
 AC_ARG_ENABLE([ebpf],
   [AS_HELP_STRING([--enable-ebpf],
@@ -167,10 +149,6 @@ AC_ARG_ENABLE(tests,
     [use_tests=$enableval],
     [use_tests=yes])
 
-AC_ARG_ENABLE(gui-tests,
-    AS_HELP_STRING([--disable-gui-tests],[do not compile GUI tests (default is to compile if GUI and tests enabled)]),
-    [use_gui_tests=$enableval],
-    [use_gui_tests=$use_tests])
 
 AC_ARG_ENABLE(bench,
     AS_HELP_STRING([--disable-bench],[do not compile benchmarks (default is to compile)]),
@@ -194,11 +172,6 @@ AC_ARG_ENABLE([fuzz-binary],
     [enable_fuzz_binary=$enableval],
     [enable_fuzz_binary=yes])
 
-AC_ARG_WITH([qrencode],
-  [AS_HELP_STRING([--with-qrencode],
-  [enable QR code support (default is yes if qt is enabled and libqrencode is found)])],
-  [use_qr=$withval],
-  [use_qr=auto])
 
 AC_ARG_ENABLE([hardening],
   [AS_HELP_STRING([--disable-hardening],
@@ -288,7 +261,7 @@ AC_ARG_WITH([mpgen],
 
 AC_ARG_ENABLE([multiprocess],
   [AS_HELP_STRING([--enable-multiprocess],
-  [build multiprocess bitcoin-node, bitcoin-wallet, and bitcoin-gui executables in addition to monolithic bitcoind and bitcoin-qt executables. Requires libmultiprocess library. Experimental (default is no)])],
+  [build multiprocess bitcoin-node, bitcoin-wallet executables in addition to monolithic bitcoind executable. Requires libmultiprocess library. Experimental (default is no)])],
   [enable_multiprocess=$enableval],
   [enable_multiprocess=no])
 
@@ -684,28 +657,6 @@ case $host in
        BUILD_OS=darwin
        AC_PATH_PROGS([RSVG_CONVERT], [rsvg-convert rsvg],rsvg-convert)
        AC_CHECK_PROG([BREW],brew, brew)
-       if test x$BREW = xbrew; then
-         dnl These Homebrew packages may be keg-only, meaning that they won't be found
-         dnl in expected paths because they may conflict with system files. Ask
-         dnl Homebrew where each one is located, then adjust paths accordingly.
-         dnl It's safe to add these paths even if the functionality is disabled by
-         dnl the user (--without-wallet or --without-gui for example).
-
-         if test "x$use_bdb" != xno && $BREW list --versions berkeley-db4 >/dev/null && test "x$BDB_CFLAGS" = "x" && test "x$BDB_LIBS" = "x"; then
-           bdb_prefix=$($BREW --prefix berkeley-db4 2>/dev/null)
-           dnl This must precede the call to BITCOIN_FIND_BDB48 below.
-           BDB_CFLAGS="-I$bdb_prefix/include"
-           BDB_LIBS="-L$bdb_prefix/lib -ldb_cxx-4.8"
-         fi
-
-         if test "x$use_sqlite" != xno && $BREW list --versions sqlite3 >/dev/null; then
-           export PKG_CONFIG_PATH="$($BREW --prefix sqlite3 2>/dev/null)/lib/pkgconfig:$PKG_CONFIG_PATH"
-         fi
-
-         if $BREW list --versions qt5 >/dev/null; then
-           export PKG_CONFIG_PATH="$($BREW --prefix qt5 2>/dev/null)/lib/pkgconfig:$PKG_CONFIG_PATH"
-         fi
-       fi
      else
        case $build_os in
          *darwin*)
@@ -1267,13 +1218,8 @@ if test "x$enable_fuzz" = "xyes"; then
   build_bitcoin_cli=no
   build_bitcoin_tx=no
   build_bitcoin_util=no
-  build_bitcoin_wallet=no
   build_bitcoind=no
   build_bitcoin_libs=no
-  bitcoin_enable_qt=no
-  bitcoin_enable_qt_test=no
-  bitcoin_enable_qt_dbus=no
-  enable_wallet=no
   use_bench=no
   use_external_signer=no
   use_upnp=no
@@ -1299,59 +1245,9 @@ if test "x$enable_fuzz" = "xyes"; then
       */ int not_main() {
      ]])])
 else
-  BITCOIN_QT_INIT
-
-  dnl sets $bitcoin_enable_qt, $bitcoin_enable_qt_test, $bitcoin_enable_qt_dbus
-  BITCOIN_QT_CONFIGURE([5.9.5])
-
-  dnl Keep a copy of the original $QT_INCLUDES and use it when invoking qt's moc
-  QT_INCLUDES_UNSUPPRESSED=$QT_INCLUDES
-  if test x$suppress_external_warnings != xno ; then
-    QT_INCLUDES=SUPPRESS_WARNINGS($QT_INCLUDES)
-    QT_DBUS_INCLUDES=SUPPRESS_WARNINGS($QT_DBUS_INCLUDES)
-    QT_TEST_INCLUDES=SUPPRESS_WARNINGS($QT_TEST_INCLUDES)
-  fi
-
   CPPFLAGS="$CPPFLAGS -DPROVIDE_FUZZ_MAIN_FUNCTION"
 fi
 
-if test x$enable_wallet != xno; then
-    dnl Check for libdb_cxx only if wallet enabled
-    if test "x$use_bdb" != "xno"; then
-      BITCOIN_FIND_BDB48
-      if test x$suppress_external_warnings != xno ; then
-        BDB_CPPFLAGS=SUPPRESS_WARNINGS($BDB_CPPFLAGS)
-      fi
-    fi
-
-    dnl Check for sqlite3
-    if test "x$use_sqlite" != "xno"; then
-      PKG_CHECK_MODULES([SQLITE], [sqlite3 >= 3.7.17], [have_sqlite=yes], [have_sqlite=no])
-    fi
-    AC_MSG_CHECKING([whether to build wallet with support for sqlite])
-    if test "x$use_sqlite" = "xno"; then
-      use_sqlite=no
-    elif test "x$have_sqlite" = "xno"; then
-      if test "x$use_sqlite" = "xyes"; then
-        AC_MSG_ERROR([sqlite support requested but cannot be built. Use --without-sqlite])
-      fi
-      use_sqlite=no
-    else
-      if test x$use_sqlite != xno; then
-        AC_DEFINE([USE_SQLITE],[1],[Define if sqlite support should be compiled in])
-        use_sqlite=yes
-      fi
-    fi
-    AC_MSG_RESULT([$use_sqlite])
-
-    dnl Disable wallet if both --without-bdb and --without-sqlite
-    if test "x$use_bdb$use_sqlite" = "xnono"; then
-        if test "x$enable_wallet" = "xyes"; then
-            AC_MSG_ERROR([wallet functionality requested but no BDB or SQLite support available.])
-        fi
-        enable_wallet=no
-    fi
-fi
 
 if test x$use_ebpf != xno; then
   AC_MSG_CHECKING([whether eBPF tracepoints are supported])
@@ -1401,7 +1297,7 @@ if test "x$use_natpmp" != xno; then
                    [have_natpmp=no])
 fi
 
-if test x$build_bitcoin_wallet$build_bitcoin_cli$build_bitcoin_tx$build_bitcoind$bitcoin_enable_qt$use_tests$use_bench = xnonononononono; then
+if test x$build_bitcoin_cli$build_bitcoin_tx$build_bitcoind$use_tests$use_bench = xnonononono; then
   use_boost=no
 else
   use_boost=yes
@@ -1469,7 +1365,7 @@ fi
 
 dnl libevent check
 
-if test x$build_bitcoin_cli$build_bitcoind$bitcoin_enable_qt$use_tests$use_bench != xnonononono; then
+if test x$build_bitcoin_cli$build_bitcoind$use_tests$use_bench != xnononono; then
   PKG_CHECK_MODULES([EVENT], [libevent >= 2.0.21], [use_libevent=yes], [AC_MSG_ERROR([libevent version 2.0.21 or greater not found.])])
   if test x$TARGET_OS != xwindows; then
     PKG_CHECK_MODULES([EVENT_PTHREADS], [libevent_pthreads >= 2.0.21],, [AC_MSG_ERROR([libevent_pthreads version 2.0.21 or greater not found.])])
@@ -1482,9 +1378,6 @@ fi
 
 dnl QR Code encoding library check
 
-if test "x$use_qr" != xno; then
-  BITCOIN_QT_CHECK([PKG_CHECK_MODULES([QR], [libqrencode], [have_qrencode=yes], [have_qrencode=no])])
-fi
 
 dnl ZMQ check
 
@@ -1510,7 +1403,7 @@ fi
 dnl univalue check
 
 need_bundled_univalue=yes
-if test x$build_bitcoin_wallet$build_bitcoin_cli$build_bitcoin_tx$build_bitcoin_util$build_bitcoind$bitcoin_enable_qt$use_tests$use_bench = xnononononononono; then
+if test x$build_bitcoin_cli$build_bitcoin_tx$build_bitcoin_util$build_bitcoind$use_tests$use_bench = xnononononono; then
   need_bundled_univalue=no
 else
   if test x$system_univalue != xno; then
@@ -1589,10 +1482,6 @@ AC_MSG_CHECKING([whether to build bitcoin-tx])
 AM_CONDITIONAL([BUILD_BITCOIN_TX], [test x$build_bitcoin_tx = xyes])
 AC_MSG_RESULT($build_bitcoin_tx)
 
-AC_MSG_CHECKING([whether to build bitcoin-wallet])
-AM_CONDITIONAL([BUILD_BITCOIN_WALLET], [test x$build_bitcoin_wallet = xyes])
-AC_MSG_RESULT($build_bitcoin_wallet)
-
 AC_MSG_CHECKING([whether to build bitcoin-util])
 AM_CONDITIONAL([BUILD_BITCOIN_UTIL], [test x$build_bitcoin_util = xyes])
 AC_MSG_RESULT($build_bitcoin_util)
@@ -1627,16 +1516,6 @@ if test "x$use_ccache" != "xno"; then
   fi
 fi
 
-dnl enable wallet
-AC_MSG_CHECKING([if wallet should be enabled])
-if test x$enable_wallet != xno; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE_UNQUOTED([ENABLE_WALLET],[1],[Define to 1 to enable wallet functions])
-  enable_wallet=yes
-
-else
-  AC_MSG_RESULT(no)
-fi
 
 dnl enable upnp support
 AC_MSG_CHECKING([whether to build with support for UPnP])
@@ -1694,44 +1573,6 @@ else
   fi
 fi
 
-dnl these are only used when qt is enabled
-BUILD_TEST_QT=""
-if test x$bitcoin_enable_qt != xno; then
-  dnl enable dbus support
-  AC_MSG_CHECKING([whether to build GUI with support for D-Bus])
-  if test x$bitcoin_enable_qt_dbus != xno; then
-    AC_DEFINE([USE_DBUS],[1],[Define if dbus support should be compiled in])
-  fi
-  AC_MSG_RESULT($bitcoin_enable_qt_dbus)
-
-  dnl enable qr support
-  AC_MSG_CHECKING([whether to build GUI with support for QR codes])
-  if test x$have_qrencode = xno; then
-    if test x$use_qr = xyes; then
-      AC_MSG_ERROR([QR support requested but cannot be built. Use --without-qrencode])
-    fi
-    use_qr=no
-  else
-    if test x$use_qr != xno; then
-      AC_DEFINE([USE_QRCODE],[1],[Define if QR support should be compiled in])
-      use_qr=yes
-    fi
-  fi
-  AC_MSG_RESULT([$use_qr])
-
-  if test x$XGETTEXT = x; then
-    AC_MSG_WARN("xgettext is required to update qt translations")
-  fi
-
-  AC_MSG_CHECKING([whether to build test_bitcoin-qt])
-  if test x$use_gui_tests$bitcoin_enable_qt_test = xyesyes; then
-    AC_MSG_RESULT([yes])
-    BUILD_TEST_QT="yes"
-  else
-    AC_MSG_RESULT([no])
-  fi
-fi
-
 AM_CONDITIONAL([ENABLE_ZMQ], [test "x$use_zmq" = "xyes"])
 
 AC_MSG_CHECKING([whether to build test_bitcoin])
@@ -1754,8 +1595,8 @@ else
   AC_MSG_RESULT([no])
 fi
 
-if test x$build_bitcoin_wallet$build_bitcoin_cli$build_bitcoin_tx$build_bitcoin_libs$build_bitcoind$bitcoin_enable_qt$use_bench$use_tests = xnononononononono; then
-  AC_MSG_ERROR([No targets! Please specify at least one of: --with-utils --with-libs --with-daemon --with-gui --enable-bench or --enable-tests])
+if test x$build_bitcoin_cli$build_bitcoin_tx$build_bitcoin_libs$build_bitcoind$use_bench$use_tests = xnononononono; then
+  AC_MSG_ERROR([No targets! Please specify at least one of: --with-utils --with-libs --with-daemon --enable-bench or --enable-tests])
 fi
 
 if test x$enable_fuzz_binary = xyes; then
@@ -1766,15 +1607,10 @@ AM_CONDITIONAL([TARGET_DARWIN], [test x$TARGET_OS = xdarwin])
 AM_CONDITIONAL([BUILD_DARWIN], [test x$BUILD_OS = xdarwin])
 AM_CONDITIONAL([TARGET_LINUX], [test x$TARGET_OS = xlinux])
 AM_CONDITIONAL([TARGET_WINDOWS], [test x$TARGET_OS = xwindows])
-AM_CONDITIONAL([ENABLE_WALLET],[test x$enable_wallet = xyes])
-AM_CONDITIONAL([USE_SQLITE], [test "x$use_sqlite" = "xyes"])
-AM_CONDITIONAL([USE_BDB], [test "x$use_bdb" = "xyes"])
 AM_CONDITIONAL([ENABLE_TRACING],[test x$have_sdt = xyes])
 AM_CONDITIONAL([ENABLE_TESTS],[test x$BUILD_TEST = xyes])
 AM_CONDITIONAL([ENABLE_FUZZ],[test x$enable_fuzz = xyes])
 AM_CONDITIONAL([ENABLE_FUZZ_BINARY],[test x$enable_fuzz_binary = xyes])
-AM_CONDITIONAL([ENABLE_QT],[test x$bitcoin_enable_qt = xyes])
-AM_CONDITIONAL([ENABLE_QT_TESTS],[test x$BUILD_TEST_QT = xyes])
 AM_CONDITIONAL([ENABLE_BENCH],[test x$use_bench = xyes])
 AM_CONDITIONAL([USE_QRCODE], [test x$use_qr = xyes])
 AM_CONDITIONAL([USE_LCOV],[test x$use_lcov = xyes])
@@ -1864,7 +1700,7 @@ AC_SUBST(HAVE_MM_PREFETCH)
 AC_SUBST(HAVE_STRONG_GETAUXVAL)
 AC_SUBST(HAVE_WEAK_GETAUXVAL)
 AC_SUBST(ANDROID_ARCH)
-AC_CONFIG_FILES([Makefile src/Makefile doc/man/Makefile share/setup.nsi share/qt/Info.plist test/config.ini])
+AC_CONFIG_FILES([Makefile src/Makefile doc/man/Makefile share/setup.nsi test/config.ini])
 AC_CONFIG_FILES([contrib/devtools/split-debug.sh],[chmod +x contrib/devtools/split-debug.sh])
 AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([doc/Doxyfile])])
 AC_CONFIG_LINKS([contrib/devtools/security-check.py:contrib/devtools/security-check.py])
@@ -1922,15 +1758,6 @@ echo "Options used to compile and link:"
 echo "  external signer = $use_external_signer"
 echo "  multiprocess    = $build_multiprocess"
 echo "  with libs       = $build_bitcoin_libs"
-echo "  with wallet     = $enable_wallet"
-if test "x$enable_wallet" != "xno"; then
-    echo "    with sqlite   = $use_sqlite"
-    echo "    with bdb      = $use_bdb"
-fi
-echo "  with gui / qt   = $bitcoin_enable_qt"
-if test x$bitcoin_enable_qt != xno; then
-    echo "    with qr       = $use_qr"
-fi
 echo "  with zmq        = $use_zmq"
 if test x$enable_fuzz == xno; then
     echo "  with test       = $use_tests"

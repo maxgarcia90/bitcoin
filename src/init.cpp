@@ -472,7 +472,6 @@ void SetupServerArgs(ArgsManager& argsman)
         "CIDR-notated network (e.g. 1.2.3.0/24). Uses the same permissions as "
         "-whitebind. Can be specified multiple times." , ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
 
-    g_wallet_init_interface.AddWalletOptions(argsman);
 
 #if ENABLE_ZMQ
     argsman.AddArg("-zmqpubhashblock=<address>", "Enable publish hash block in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
@@ -993,8 +992,6 @@ bool AppInitParameterInteraction(const ArgsManager& args)
     }
     nBytesPerSigOp = args.GetArg("-bytespersigop", nBytesPerSigOp);
 
-    if (!g_wallet_init_interface.ParameterInteraction()) return false;
-
     fIsBareMultisigStd = args.GetBoolArg("-permitbaremultisig", DEFAULT_PERMIT_BAREMULTISIG);
     fAcceptDatacarrier = args.GetBoolArg("-datacarrier", DEFAULT_ACCEPT_DATACARRIER);
     nMaxDatacarrierBytes = args.GetArg("-datacarriersize", nMaxDatacarrierBytes);
@@ -1064,11 +1061,6 @@ bool AppInitLockDataDirectory()
 bool AppInitInterfaces(NodeContext& node)
 {
     node.chain = interfaces::MakeChain(node);
-    // Create client interfaces for wallets that are supposed to be loaded
-    // according to -wallet and -disablewallet options. This only constructs
-    // the interfaces, it doesn't load wallet data. Wallets actually get loaded
-    // when load() and start() interface methods are called below.
-    g_wallet_init_interface.Construct(node);
     return true;
 }
 
