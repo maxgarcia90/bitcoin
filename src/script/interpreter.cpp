@@ -1516,8 +1516,6 @@ void PrecomputedTransactionData::Init(const T& txTo, std::vector<CTxOut>&& spent
         m_spent_outputs_ready = true;
     }
 
-    // TODO: Improve this heuristic
-    bool uses_bip119_ctv = true;
     // Determine which precomputation-impacting features this transaction uses.
     bool uses_bip143_segwit = force;
     bool uses_bip341_taproot = force;
@@ -1540,18 +1538,11 @@ void PrecomputedTransactionData::Init(const T& txTo, std::vector<CTxOut>&& spent
         if (uses_bip341_taproot && uses_bip143_segwit) break; // No need to scan further if we already need all.
     }
 
-    if (uses_bip143_segwit || uses_bip341_taproot || uses_bip119_ctv) {
+    if (uses_bip143_segwit || uses_bip341_taproot) {
         // Computations shared between both sighash schemes.
         m_prevouts_single_hash = GetPrevoutsSHA256(txTo);
         m_sequences_single_hash = GetSequencesSHA256(txTo);
         m_outputs_single_hash = GetOutputsSHA256(txTo);
-
-        bool skip_scriptSigs = std::find_if(txTo.vin.begin(), txTo.vin.end(),
-                [](const CTxIn& c) { return c.scriptSig != CScript(); }) == txTo.vin.end();
-        // 0 hash used to signal if we should skip scriptSigs
-        // when re-computing for different indexes.
-        m_scriptSigs_single_hash = skip_scriptSigs ? uint256{} : GetScriptSigsSHA256(txTo);
-        m_bip119_ctv_ready = true;
     }
     if (uses_bip143_segwit) {
         hashPrevouts = SHA256Uint256(m_prevouts_single_hash);
@@ -1561,13 +1552,29 @@ void PrecomputedTransactionData::Init(const T& txTo, std::vector<CTxOut>&& spent
     }
     if (uses_bip341_taproot) {
         m_spent_amounts_single_hash = GetSpentAmountsSHA256(m_spent_outputs);
-        m_spent_scripts_single_hash = GetSpentScriptsSHA256(m_spent_outputs);
         m_bip341_taproot_ready = true;
     }
 }
 
 template <class T>
-PrecomputedTransactionData::PrecomputedTransactionData(const T& txTo)
+void PrecomputedTransactionData::BIP119LazyInit(const T& txTo)
+{
+    std::call_once(*m_bip119_ctv_init, [&]() {
+        if (!(m_bip143_segwit_ready || m_bip341_taproot_ready)) {
+            m_prevouts_single_hash = GetPrevoutsSHA256(txTo);
+            m_sequences_single_hash = GetSequencesSHA256(txTo);
+            m_outputs_single_hash = GetOutputsSHA256(txTo);
+        }
+        bool skip_scriptSigs = std::find_if(txTo.vin.begin(), txTo.vin.end(),
+                [](const CTxIn& c) { return c.scriptSig != CScript(); }) == txTo.vin.end();
+        // 0 hash used to signal if we should skip scriptSigs
+        // when re-computing for different indexes.
+        m_scriptSigs_single_hash = skip_scriptSigs ? uint256{} : GetScriptSigsSHA256(txTo);
+    });
+}
+
+template <class T>
+PrecomputedTransactionData::PrecomputedTransactionData(const T& txTo) : m_bip119_ctv_init(std::make_unique<std::once_flag>())
 {
     Init(txTo, {});
 }
@@ -1575,6 +1582,8 @@ PrecomputedTransactionData::PrecomputedTransactionData(const T& txTo)
 // explicit instantiation
 template void PrecomputedTransactionData::Init(const CTransaction& txTo, std::vector<CTxOut>&& spent_outputs, bool force);
 template void PrecomputedTransactionData::Init(const CMutableTransaction& txTo, std::vector<CTxOut>&& spent_outputs, bool force);
+template void PrecomputedTransactionData::BIP119LazyInit(const CTransaction& txTo);
+template void PrecomputedTransactionData::BIP119LazyInit(const CMutableTransaction& txTo);
 template PrecomputedTransactionData::PrecomputedTransactionData(const CTransaction& txTo);
 template PrecomputedTransactionData::PrecomputedTransactionData(const CMutableTransaction& txTo);
 
@@ -1905,8 +1914,8 @@ bool GenericTransactionSignatureChecker<T>::CheckDefaultCheckTemplateVerifyHash(
 {
     // Should already be checked before calling...
     assert(hash.size() == 32);
-    if (txdata && txdata->m_bip119_ctv_ready) {
-        assert(txTo != nullptr);
+    if (txdata && txTo) {
+        txdata->BIP119LazyInit(*txTo);
         uint256 hash_tmpl = txdata->m_scriptSigs_single_hash.IsNull() ?
             GetDefaultCheckTemplateVerifyHashEmptyScript(*txTo, txdata->m_outputs_single_hash, txdata->m_sequences_single_hash, nIn) :
             GetDefaultCheckTemplateVerifyHashWithScript(*txTo, txdata->m_outputs_single_hash, txdata->m_sequences_single_hash,
