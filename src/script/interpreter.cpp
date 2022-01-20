@@ -1548,16 +1548,9 @@ void PrecomputedTransactionData::Init(const T& txTo, std::vector<CTxOut>&& spent
 
         bool skip_scriptSigs = std::find_if(txTo.vin.begin(), txTo.vin.end(),
                 [](const CTxIn& c) { return c.scriptSig != CScript(); }) == txTo.vin.end();
-        if (skip_scriptSigs) {
-            // 0 hash used to signal if we should skip scriptSigs
-            // when re-computing for different indexes.
-            m_scriptSigs_single_hash = uint256{};
-            // TODO: Cache midstate?
-            m_standard_template_single_hash = GetDefaultCheckTemplateVerifyHashEmptyScript(txTo, m_outputs_single_hash, m_sequences_single_hash, 0);
-        } else {
-            m_scriptSigs_single_hash = GetScriptSigsSHA256(txTo);
-            m_standard_template_single_hash = GetDefaultCheckTemplateVerifyHashWithScript(txTo, m_outputs_single_hash, m_sequences_single_hash, m_scriptSigs_single_hash, 0);
-        }
+        // 0 hash used to signal if we should skip scriptSigs
+        // when re-computing for different indexes.
+        m_scriptSigs_single_hash = skip_scriptSigs ? uint256{} : GetScriptSigsSHA256(txTo);
         m_bip119_ctv_ready = true;
     }
     if (uses_bip143_segwit) {
@@ -1913,19 +1906,12 @@ bool GenericTransactionSignatureChecker<T>::CheckDefaultCheckTemplateVerifyHash(
     // Should already be checked before calling...
     assert(hash.size() == 32);
     if (txdata && txdata->m_bip119_ctv_ready) {
-        // if nIn == 0, then we've already cached this and can directly check
-        if (nIn == 0) {
-            return std::equal(txdata->m_standard_template_single_hash.begin(), txdata->m_standard_template_single_hash.end(), hash.data());
-        } else {
-            // otherwise we still have *most* of the hash cached,
-            // so just re-compute the correct one and compare
-            assert(txTo != nullptr);
-            uint256 hash_tmpl = txdata->m_scriptSigs_single_hash.IsNull() ?
-                GetDefaultCheckTemplateVerifyHashEmptyScript(*txTo, txdata->m_outputs_single_hash, txdata->m_sequences_single_hash, nIn) :
-                GetDefaultCheckTemplateVerifyHashWithScript(*txTo, txdata->m_outputs_single_hash, txdata->m_sequences_single_hash,
-                        txdata->m_scriptSigs_single_hash, nIn);
-            return std::equal(hash_tmpl.begin(), hash_tmpl.end(), hash.data());
-        }
+        assert(txTo != nullptr);
+        uint256 hash_tmpl = txdata->m_scriptSigs_single_hash.IsNull() ?
+            GetDefaultCheckTemplateVerifyHashEmptyScript(*txTo, txdata->m_outputs_single_hash, txdata->m_sequences_single_hash, nIn) :
+            GetDefaultCheckTemplateVerifyHashWithScript(*txTo, txdata->m_outputs_single_hash, txdata->m_sequences_single_hash,
+                    txdata->m_scriptSigs_single_hash, nIn);
+        return std::equal(hash_tmpl.begin(), hash_tmpl.end(), hash.data());
     } else {
         return HandleMissingData(m_mdb);
     }
